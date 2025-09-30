@@ -1,38 +1,33 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PickupController;
+use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+// 来訪者受付関連
+Route::prefix('visitor')->name('visitor.')->group(function () {
+    Route::get('/scan-qr', [VisitorController::class, 'scanQr'])->name('scan-qr');
+    Route::post('/check-in', [VisitorController::class, 'checkIn'])->name('check-in');
+    Route::get('/create', [VisitorController::class, 'create'])->name('create');
+    Route::post('/store', [VisitorController::class, 'store'])->name('store');
+    Route::get('/complete', [VisitorController::class, 'complete'])->name('complete');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+// 納品業者受付関連
+Route::prefix('delivery')->name('delivery.')->group(function () {
+    Route::get('/create', [DeliveryController::class, 'create'])->name('create');
+    Route::get('/capture', [DeliveryController::class, 'capture'])->name('capture');
+    Route::post('/store', [DeliveryController::class, 'store'])->name('store');
+    Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show');
 });
 
-require __DIR__.'/auth.php';
+// 集荷業者受付関連
+Route::prefix('pickup')->name('pickup.')->group(function () {
+    Route::get('/create', [PickupController::class, 'create'])->name('create');
+    Route::post('/store', [PickupController::class, 'store'])->name('store');
+    Route::get('/{pickup}', [PickupController::class, 'show'])->name('show');
+});
