@@ -12,6 +12,7 @@ class StaffMember extends Model
         'email',
         'department',
         'teams_id',
+        'teams_webhook_url',
         'electronic_seal',
     ];
 

@@ -31,4 +31,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'teams' => [
+        'default_webhook_url' => env('TEAMS_DEFAULT_WEBHOOK_URL'),
+        'interview_webhook_url' => env('TEAMS_INTERVIEW_WEBHOOK_URL'),
+        'departments' => [
+            1 => env('TEAMS_DEPT_SALES_WEBHOOK_URL'),      // 営業部
+            2 => env('TEAMS_DEPT_GENERAL_WEBHOOK_URL'),    // 総務部
+            3 => env('TEAMS_DEPT_ACCOUNTING_WEBHOOK_URL'), // 経理部
+            4 => env('TEAMS_DEPT_HR_WEBHOOK_URL'),         // 人事部
+            5 => env('TEAMS_DEPT_DEV_WEBHOOK_URL'),        // 開発部
+            6 => env('TEAMS_DEPT_MARKETING_WEBHOOK_URL'),  // マーケティング部
+        ],
+    ],
+
 ];

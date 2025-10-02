@@ -1,0 +1,126 @@
+<template>
+  <AuthenticatedLayout>
+    <template #header>
+      <h2 class="font-semibold text-xl text-gray-800 leading-tight">管理画面ダッシュボード</h2>
+    </template>
+
+    <div class="py-12">
+      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- お知らせセクション -->
+        <div class="mb-8" v-if="announcements.length > 0">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">お知らせ</h3>
+          <div class="space-y-4">
+            <div 
+              v-for="announcement in announcements" 
+              :key="announcement.id"
+              :class="[
+                'p-4 rounded-lg border-l-4',
+                announcement.type === 'error' ? 'bg-red-50 border-red-500' : 
+                announcement.type === 'warning' ? 'bg-yellow-50 border-yellow-500' : 
+                'bg-blue-50 border-blue-500'
+              ]"
+            >
+              <h4 class="font-semibold mb-2">{{ announcement.title }}</h4>
+              <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ announcement.content }}</p>
+              <p class="text-xs text-gray-500 mt-2">
+                表示期間: {{ announcement.start_date }} 〜 {{ announcement.end_date }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">統計情報</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+              <div class="p-6">
+                <div class="text-sm font-medium text-gray-500">今日のアポイント</div>
+                <div class="mt-2 text-3xl font-bold text-gray-900">{{ stats.todayAppointments }}</div>
+              </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+              <div class="p-6">
+                <div class="text-sm font-medium text-gray-500">未チェックイン</div>
+                <div class="mt-2 text-3xl font-bold text-gray-900">{{ stats.pendingAppointments }}</div>
+              </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+              <div class="p-6">
+                <div class="text-sm font-medium text-gray-500">有効な面接用電話番号</div>
+                <div class="mt-2 text-3xl font-bold text-gray-900">{{ stats.activePhones }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 機能メニュー -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">機能メニュー</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 事前アポイント登録 -->
+            <Link 
+              :href="route('admin.appointments.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-indigo-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">事前アポイント登録</h4>
+                <p class="text-sm text-gray-600">訪問者の事前登録とアポイント管理</p>
+              </div>
+            </Link>
+
+            <!-- 面接時の通話先電話番号 -->
+            <Link 
+              :href="route('admin.interview-phones.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-green-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">面接時の通話先電話番号</h4>
+                <p class="text-sm text-gray-600">面接時の連絡先電話番号管理</p>
+              </div>
+            </Link>
+
+            <!-- お知らせ管理 -->
+            <Link 
+              :href="route('admin.announcements.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-yellow-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">お知らせ管理</h4>
+                <p class="text-sm text-gray-600">ダッシュボードに表示するお知らせの管理</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  </AuthenticatedLayout>
+</template>
+
+<script setup>
+import { Link } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+
+defineProps({
+  announcements: Array,
+  stats: Object,
+});
+</script>
+
+
+

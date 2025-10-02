@@ -13,7 +13,12 @@ class Visitor extends Model
         'phone',
         'business_card_image',
         'staff_member_id',
+        'group_id',
         'qr_code',
+        'reception_number',
+        'visitor_type', // 'appointment', 'interview', 'other'
+        'number_of_people',
+        'purpose',
         'check_in_time',
         'check_out_time',
     ];

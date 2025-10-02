@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "@microsoft/teams-js": "^2.45.0",
+        "@twilio/voice-sdk": "^2.11.0",
         "jsqr": "^1.4.0",
         "qrcode.vue": "^3.6.0",
         "vue-web-cam": "^1.9.0",

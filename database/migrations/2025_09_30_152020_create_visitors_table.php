@@ -14,8 +14,13 @@ return new class extends Migration
             $table->string('visitor_name');
             $table->string('phone')->nullable();
             $table->string('business_card_image')->nullable();
-            $table->foreignId('staff_member_id')->constrained('staff_members');
+            $table->foreignId('staff_member_id')->nullable()->constrained('staff_members');
+            $table->unsignedBigInteger('group_id')->nullable(); // 別DBのgroupsテーブルを参照するため外部キー制約なし
+            $table->string('visitor_type'); // 'appointment', 'interview', 'other'
+            $table->integer('number_of_people')->default(1);
+            $table->text('purpose')->nullable();
             $table->string('qr_code')->nullable();
+            $table->integer('reception_number')->nullable();
             $table->timestamp('check_in_time');
             $table->timestamp('check_out_time')->nullable();
             $table->timestamps();
