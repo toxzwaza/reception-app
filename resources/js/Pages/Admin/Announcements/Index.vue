@@ -1,5 +1,5 @@
 <template>
-  <AuthenticatedLayout>
+  <AdminLayout>
     <template #header>
       <div class="flex justify-between items-center">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">お知らせ一覧</h2>
@@ -145,12 +145,12 @@
         </div>
       </div>
     </div>
-  </AuthenticatedLayout>
+  </AdminLayout>
 </template>
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 defineProps({
   announcements: Object,

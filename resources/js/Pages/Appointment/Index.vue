@@ -28,19 +28,25 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">受付番号（4桁）</label>
               <div class="flex gap-2 justify-center">
-                <input
+                <div
                   v-for="i in 4"
                   :key="i"
-                  :ref="el => digitInputs[i - 1] = el"
-                  v-model="receptionNumber[i - 1]"
-                  @input="handleDigitInput(i - 1)"
-                  @keydown="handleKeydown($event, i - 1)"
-                  type="text"
-                  maxlength="1"
-                  pattern="[0-9]"
-                  class="w-16 h-20 text-center text-3xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  inputmode="numeric"
-                />
+                  class="w-16 h-20 text-center text-3xl font-bold border-2 border-gray-300 rounded-lg bg-white flex items-center justify-center transition-all duration-150 relative"
+                  :class="{
+                    'border-indigo-500 bg-indigo-50': receptionNumber[i - 1] !== '',
+                    'border-indigo-300 bg-indigo-25': currentInputIndex === i - 1 && receptionNumber[i - 1] === '',
+                    'border-gray-300 bg-white': currentInputIndex !== i - 1 && receptionNumber[i - 1] === ''
+                  }"
+                >
+                  {{ receptionNumber[i - 1] || '' }}
+                  <!-- カーソル表示 -->
+                  <div 
+                    v-if="currentInputIndex === i - 1 && receptionNumber[i - 1] === ''"
+                    class="absolute inset-0 flex items-center justify-center"
+                  >
+                    <div class="w-0.5 h-8 bg-indigo-500 animate-pulse"></div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -51,6 +57,33 @@
             >
               {{ processing ? '処理中...' : '受付' }}
             </button>
+
+            <!-- 仮想キーボード -->
+            <div class="mt-6">
+              <p class="text-sm text-gray-600 text-center mb-3">数字をタップして入力してください</p>
+              <div class="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                <button
+                  v-for="num in [1, 2, 3, 4, 5, 6, 7, 8, 9]"
+                  :key="num"
+                  @click="inputDigit(num)"
+                  class="py-4 bg-white border-2 border-gray-300 rounded-lg text-2xl font-bold hover:bg-gray-50 hover:border-indigo-500 active:bg-indigo-100 active:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-150 shadow-sm"
+                >
+                  {{ num }}
+                </button>
+                <button
+                  @click="clearLastDigit"
+                  class="py-4 bg-gray-100 border-2 border-gray-300 rounded-lg text-lg font-semibold hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-150 shadow-sm"
+                >
+                  ←
+                </button>
+                <button
+                  @click="inputDigit(0)"
+                  class="py-4 bg-white border-2 border-gray-300 rounded-lg text-2xl font-bold hover:bg-gray-50 hover:border-indigo-500 active:bg-indigo-100 active:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-150 shadow-sm"
+                >
+                  0
+                </button>
+              </div>
+            </div>
 
           </form>
         </div>
@@ -68,7 +101,7 @@ import jsQR from 'jsqr';
 const videoElement = ref(null);
 const qrScanned = ref(false);
 const receptionNumber = ref(['', '', '', '']);
-const digitInputs = ref([]);
+const currentInputIndex = ref(0);
 const processing = ref(false);
 let stream = null;
 let animationFrameId = null;
@@ -146,25 +179,38 @@ const handleQRCodeDetected = (qrData) => {
   });
 };
 
-const handleDigitInput = (index) => {
-  const value = receptionNumber.value[index];
-  
-  // 数字以外を削除
-  if (value && !/^\d$/.test(value)) {
-    receptionNumber.value[index] = '';
-    return;
-  }
+// 物理キーボード入力を無効化
+const preventKeyboardInput = (event) => {
+  event.preventDefault();
+  return false;
+};
 
-  // 次の入力欄にフォーカス
-  if (value && index < 3) {
-    digitInputs.value[index + 1]?.focus();
+// 仮想キーボードで数字を入力
+const inputDigit = (digit) => {
+  // 現在の入力インデックスまたは空の入力欄を探す
+  let targetIndex = currentInputIndex.value;
+  
+  // 現在のインデックスが既に入力済みの場合、次の空欄を探す
+  if (receptionNumber.value[targetIndex] !== '') {
+    targetIndex = receptionNumber.value.findIndex(value => value === '');
+  }
+  
+  // 空の入力欄がある場合のみ入力
+  if (targetIndex !== -1 && receptionNumber.value[targetIndex] === '') {
+    receptionNumber.value[targetIndex] = digit.toString();
+    currentInputIndex.value = Math.min(targetIndex + 1, 3);
   }
 };
 
-const handleKeydown = (event, index) => {
-  // Backspaceで前の入力欄に戻る
-  if (event.key === 'Backspace' && !receptionNumber.value[index] && index > 0) {
-    digitInputs.value[index - 1]?.focus();
+// 最後に入力された数字を削除
+const clearLastDigit = () => {
+  // 後ろから空でない入力欄を探す
+  for (let i = 3; i >= 0; i--) {
+    if (receptionNumber.value[i] !== '') {
+      receptionNumber.value[i] = '';
+      currentInputIndex.value = i;
+      break;
+    }
   }
 };
 

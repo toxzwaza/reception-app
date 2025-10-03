@@ -24,6 +24,7 @@ class Appointment extends Model
         'qr_code',
         'is_checked_in',
         'checked_in_at',
+        'send_flg',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class Appointment extends Model
         'visit_time' => 'datetime:H:i',
         'is_checked_in' => 'boolean',
         'checked_in_at' => 'datetime',
+        'send_flg' => 'boolean',
     ];
 
     /**
@@ -38,19 +40,37 @@ class Appointment extends Model
      */
     public function staffMember(): BelongsTo
     {
-        return $this->belongsTo(StaffMember::class);
+        return $this->belongsTo(User::class);
     }
 
     /**
-     * QRコードデータを生成
+     * QRコード画像を生成してファイルパスを返す
      */
     public function generateQrCode(): string
     {
-        return json_encode([
-            'type' => 'appointment',
-            'appointment_id' => $this->id,
-            'reception_number' => $this->reception_number,
-        ]);
+        return \App\Services\QrCodeService::generateQrCodeImage($this->reception_number);
+    }
+
+    /**
+     * QRコード画像のURLを取得
+     */
+    public function getQrCodeUrl(): string
+    {
+        if ($this->qr_code) {
+            return \App\Services\QrCodeService::getQrCodeUrl($this->qr_code);
+        }
+        return '';
+    }
+
+    /**
+     * QRコード画像のBase64 data URIを取得
+     */
+    public function getQrCodeDataUri(): string
+    {
+        if ($this->qr_code) {
+            return \App\Services\QrCodeService::getQrCodeDataUri($this->qr_code);
+        }
+        return '';
     }
 
     /**

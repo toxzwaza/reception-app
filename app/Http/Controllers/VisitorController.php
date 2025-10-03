@@ -84,9 +84,15 @@ class VisitorController extends Controller
     // Teams通知の送信
     private function sendTeamsNotification(Visitor $visitor)
     {
-        $staffMember = $visitor->staffMember;
+        $teamsService = new \App\Services\TeamsNotificationService();
         
-        // Teams通知の実装（後で実装）
-        // TODO: Microsoft Teams SDKを使用して通知を送信
+        $checkinData = [
+            'reception_number' => $visitor->reception_number,
+            'company_name' => $visitor->company_name,
+            'visitor_name' => $visitor->visitor_name,
+            'staff_member_name' => $visitor->staffMember->name ?? '未設定',
+        ];
+        
+        $teamsService->sendCheckinNotification($checkinData);
     }
 }

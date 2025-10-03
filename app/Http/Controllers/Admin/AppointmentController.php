@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\StaffMember;
+use App\Models\User;
+use App\Mail\AppointmentConfirmation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Log;
+use App\Services\TeamsNotificationService;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,7 +52,9 @@ class AppointmentController extends Controller
      */
     public function create(): Response
     {
-        $staffMembers = StaffMember::select('id', 'name', 'email', 'department')
+        $staffMembers = User::select('id', 'name', 'email')
+            ->whereNotNull('email')
+            ->active()
             ->orderBy('name')
             ->get();
 
@@ -67,10 +73,11 @@ class AppointmentController extends Controller
             'visitor_name' => 'required|string|max:255',
             'visitor_email' => 'nullable|email|max:255',
             'visitor_phone' => 'nullable|string|max:20',
-            'staff_member_id' => 'required|exists:staff_members,id',
+            'staff_member_id' => 'required',
             'visit_date' => 'required|date',
             'visit_time' => 'required|date_format:H:i',
             'purpose' => 'nullable|string|max:1000',
+            'send_email' => 'nullable|boolean',
         ]);
 
         // 受付番号を自動生成
@@ -82,8 +89,66 @@ class AppointmentController extends Controller
         $appointment->qr_code = $appointment->generateQrCode();
         $appointment->save();
 
+        // メール送信処理
+        $sendEmail = $request->input('send_email', false);
+        $emailSent = false;
+
+        // デバッグログ
+        Log::info('Appointment creation debug', [
+            'send_email' => $sendEmail,
+            'visitor_email' => $appointment->visitor_email,
+            'appointment_id' => $appointment->id
+        ]);
+
+        if ($sendEmail && $appointment->visitor_email) {
+            try {
+                Log::info('Attempting to send email to: ' . $appointment->visitor_email);
+                // staffMemberリレーションをロード
+                $appointment->load('staffMember');
+                Mail::to($appointment->visitor_email)->send(new AppointmentConfirmation($appointment));
+                $appointment->update(['send_flg' => true]);
+                $emailSent = true;
+                Log::info('Email sent successfully to: ' . $appointment->visitor_email);
+            } catch (\Exception $e) {
+                // メール送信エラーはログに記録するが、処理は継続
+                Log::error('Appointment confirmation email failed: ' . $e->getMessage());
+                Log::error('Email error details', ['exception' => $e]);
+            }
+        } else {
+            Log::info('Email not sent', [
+                'send_email' => $sendEmail,
+                'has_visitor_email' => !empty($appointment->visitor_email)
+            ]);
+        }
+
+        // Teams通知を送信
+        $teamsService = new TeamsNotificationService();
+        if ($appointment->staffMember) {
+            $appointment->load('staffMember');
+        }
+        
+        $appointmentData = [
+            'reception_number' => $appointment->reception_number,
+            'company_name' => $appointment->company_name,
+            'visitor_name' => $appointment->visitor_name,
+            'staff_member_name' => $appointment->staffMember->name ?? '未設定',
+            'visit_date' => $appointment->visit_date->format('Y年m月d日'),
+            'visit_time' => $appointment->visit_time->format('H:i'),
+            'purpose' => $appointment->purpose,
+        ];
+        
+        $teamsNotificationSent = $teamsService->sendAppointmentNotification($appointmentData);
+
+        $message = '事前アポイントを登録しました。受付番号: ' . $appointment->reception_number;
+        if ($emailSent) {
+            $message .= ' (確認メールを送信しました)';
+        }
+        if ($teamsNotificationSent) {
+            $message .= ' (Teams通知を送信しました)';
+        }
+
         return Redirect::route('admin.appointments.index')
-            ->with('success', '事前アポイントを登録しました。受付番号: ' . $appointment->reception_number);
+            ->with('success', $message);
     }
 
     /**
@@ -105,7 +170,9 @@ class AppointmentController extends Controller
     {
         $appointment->load('staffMember');
 
-        $staffMembers = StaffMember::select('id', 'name', 'email', 'department')
+        $staffMembers = User::select('id', 'name', 'email')
+            ->whereNotNull('email')
+            ->active()
             ->orderBy('name')
             ->get();
 
@@ -125,7 +192,7 @@ class AppointmentController extends Controller
             'visitor_name' => 'required|string|max:255',
             'visitor_email' => 'nullable|email|max:255',
             'visitor_phone' => 'nullable|string|max:20',
-            'staff_member_id' => 'required|exists:staff_members,id',
+            'staff_member_id' => 'required|exists:users,id',
             'visit_date' => 'required|date',
             'visit_time' => 'required|date_format:H:i',
             'purpose' => 'nullable|string|max:1000',

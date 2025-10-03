@@ -16,22 +16,17 @@ use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // 認証ルート
 require __DIR__.'/auth.php';
 
-// localStorage認証用ルート
-Route::prefix('auth')->name('auth.')->group(function () {
-    Route::get('/users', [\App\Http\Controllers\Auth\UserListController::class, 'index'])->name('users');
-    Route::post('/login-local', [\App\Http\Controllers\Auth\LocalStorageAuthController::class, 'login'])->name('login-local');
-    Route::post('/verify', [\App\Http\Controllers\Auth\LocalStorageAuthController::class, 'verify'])->name('verify');
-    Route::post('/logout-local', [\App\Http\Controllers\Auth\LocalStorageAuthController::class, 'logout'])->name('logout-local');
-});
+// localStorage認証用ルート（APIルートに移動済み）
 
 // 管理画面（認証必須）
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group(function () {
     // ダッシュボード
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
@@ -111,4 +106,4 @@ Route::prefix('twilio-voice')->name('twilio-voice.')->group(function () {
     Route::get('/test', [TwilioVoiceController::class, 'testDevice'])->name('test');
 });
 
-Route::get('/test', [ TestController::class, 'test'])->name('test'); 
+Route::get('/test', [ TestController::class, 'test'])->name('test');

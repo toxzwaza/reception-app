@@ -32,6 +32,7 @@ return [
     ],
 
     'teams' => [
+        'webhook_url' => env('TEAMS_WEBHOOK_URL'),
         'default_webhook_url' => env('TEAMS_DEFAULT_WEBHOOK_URL'),
         'interview_webhook_url' => env('TEAMS_INTERVIEW_WEBHOOK_URL'),
         'departments' => [

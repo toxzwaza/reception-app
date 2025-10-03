@@ -1,5 +1,5 @@
 <template>
-  <AuthenticatedLayout>
+  <AdminLayout>
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 leading-tight">お知らせ 新規登録</h2>
     </template>
@@ -147,12 +147,12 @@
         </div>
       </div>
     </div>
-  </AuthenticatedLayout>
+  </AdminLayout>
 </template>
 
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const form = useForm({
   title: '',

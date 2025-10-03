@@ -32,6 +32,6 @@ class Visitor extends Model
     // 担当者とのリレーション
     public function staffMember(): BelongsTo
     {
-        return $this->belongsTo(StaffMember::class);
+        return $this->belongsTo(User::class);
     }
 }

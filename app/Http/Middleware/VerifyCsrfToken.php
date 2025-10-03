@@ -13,5 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'twilio-voice/*',
+        'api/set-session-user',
     ];
 }

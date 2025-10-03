@@ -12,6 +12,36 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+// リクエストインターセプターでlocalStorageからuser_idを取得してヘッダーに追加
+window.axios.interceptors.request.use(
+    config => {
+        const userId = localStorage.getItem('user_id');
+        if (userId) {
+            config.headers['X-User-ID'] = userId;
+        }
+        return config;
+    },
+    error => {
+        return Promise.reject(error);
+    }
+);
+
+// レスポンスインターセプターで認証エラーを処理
+window.axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 401) {
+            const data = error.response.data;
+            if (data && data.requires_auth) {
+                // localStorageをクリアしてログインページにリダイレクト
+                localStorage.removeItem('user_id');
+                window.location.href = data.redirect_to || '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting

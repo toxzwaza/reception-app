@@ -27,7 +27,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'login' => ['required', 'string'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'password' => ['required', 'string'],
         ];
     }
@@ -41,24 +41,28 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // ログインIDを判定（社員番号またはメールアドレス）
-        $loginField = filter_var($this->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'emp_no';
-        
-        // 削除されていないユーザーのみログイン可能
-        $credentials = [
-            $loginField => $this->input('login'),
-            'password' => $this->input('password'),
-            'del_flg' => 0,
-        ];
+        // user_idからユーザーを取得
+        $user = \App\Models\User::where('id', $this->input('user_id'))
+            ->where('del_flg', 0)
+            ->first();
 
-        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
+        if (!$user) {
             RateLimiter::hit($this->throttleKey());
-
             throw ValidationException::withMessages([
-                'login' => '社員番号またはメールアドレス、もしくはパスワードが正しくありません。',
+                'user_id' => 'ユーザーが見つかりません。',
             ]);
         }
 
+        // パスワード認証
+        if (!\Illuminate\Support\Facades\Hash::check($this->input('password'), $user->password)) {
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'password' => 'パスワードが正しくありません。',
+            ]);
+        }
+
+        // 認証成功時にログイン
+        Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }
 
@@ -90,6 +94,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('login')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->input('user_id')).'|'.$this->ip());
     }
 }
