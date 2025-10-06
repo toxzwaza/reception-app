@@ -4,19 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Visitor;
 use App\Models\StaffMember;
-use App\Services\TeamsNotificationService;
+use App\Models\Appointment;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AppointmentController extends Controller
 {
-    protected $teamsNotification;
-
-    public function __construct(TeamsNotificationService $teamsNotification)
-    {
-        $this->teamsNotification = $teamsNotification;
-    }
     // アポイントアリ受付画面
     public function index(): Response
     {
@@ -54,8 +49,8 @@ class AppointmentController extends Controller
             'check_in_time' => now(),
         ]);
 
-        // Teams通知を送信
-        $this->teamsNotification->notifyAppointmentCheckIn($visitor);
+        // アポイント通知を送信
+        $this->sendAppointmentNotification($visitor);
 
         return redirect()->route('visitor.complete');
     }
@@ -84,8 +79,8 @@ class AppointmentController extends Controller
             'check_in_time' => now(),
         ]);
 
-        // Teams通知を送信
-        $this->teamsNotification->notifyAppointmentCheckIn($visitor);
+        // アポイント通知を送信
+        $this->sendAppointmentNotification($visitor);
 
         return redirect()->route('visitor.complete');
     }
@@ -128,6 +123,46 @@ class AppointmentController extends Controller
             'visitor_name' => $appointment->visitor_name,
             'staff_member_id' => $appointment->staff_member_id,
         ];
+    }
+
+    /**
+     * アポイント通知を送信
+     *
+     * @param Visitor $visitor
+     * @return void
+     */
+    private function sendAppointmentNotification(Visitor $visitor): void
+    {
+        // アポイント情報を取得
+        $appointment = Appointment::where('reception_number', $visitor->reception_number)->first();
+        
+        if (!$appointment) {
+            return;
+        }
+
+        // スタッフメンバー情報を取得
+        $staffMember = StaffMember::with('user')->find($appointment->staff_member_id);
+        
+        // 通知データを準備
+        $data = [
+            'type' => 'visitor_checkin',
+            'reception_number' => $visitor->reception_number,
+            'company_name' => $visitor->company_name,
+            'visitor_name' => $visitor->visitor_name,
+            'staff_member_name' => $staffMember ? $staffMember->user->name : '未設定',
+            'check_in_time' => $visitor->check_in_time->format('Y年m月d日 H:i'),
+            'appointment_info' => $appointment->appointment_info ?? '',
+        ];
+
+        // メンション情報を準備
+        $mentionData = [
+            'mention_id' => $staffMember ? $staffMember->user->email : '',
+            'email' => $staffMember ? $staffMember->user->email : '',
+            'phone_number' => '', // 必要に応じて追加
+        ];
+
+        // アポイント通知を送信
+        NotificationService::sendAppointmentNotification('visitor_checkin', $data, $mentionData);
     }
 
 }

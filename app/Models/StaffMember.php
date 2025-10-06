@@ -4,17 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffMember extends Model
 {
     protected $fillable = [
-        'name',
-        'email',
-        'department',
-        'teams_id',
-        'teams_webhook_url',
-        'electronic_seal',
+        'user_id',
     ];
+
+    // ユーザーとのリレーション
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     // 来訪者とのリレーション
     public function visitors(): HasMany

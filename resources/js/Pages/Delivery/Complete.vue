@@ -14,11 +14,27 @@
       <!-- QRコード表示 -->
       <div class="max-w-sm mx-auto">
         <div class="bg-white p-6 rounded-lg shadow-lg">
-          <div class="mb-4" v-html="qrCode"></div>
+          <!-- QRコード画像を直接表示 -->
+          <div class="mb-4 flex justify-center">
+            <img 
+              :src="qrCodeImageUrl" 
+              alt="QRコード" 
+              class="w-48 h-48 object-contain"
+              @error="handleImageError"
+            />
+            <!-- エラー時の代替表示 -->
+            <div class="w-48 h-48 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 text-gray-500 text-sm" style="display: none;">
+              QRコード画像を読み込めませんでした
+            </div>
+          </div>
           <div class="text-sm text-gray-600">
-            <div class="font-medium">{{ delivery.company_name }}</div>
-            <div>{{ delivery.delivery_type }}</div>
+            <div class="font-medium">{{ delivery.delivery_type }}</div>
             <div>{{ formatDate(delivery.received_at) }}</div>
+          </div>
+          <!-- QRコード画像URL -->
+          <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div class="text-xs text-gray-500 mb-1">QRコード画像URL:</div>
+            <div class="text-xs text-blue-600 break-all">{{ qrCodeImageUrl }}</div>
           </div>
         </div>
 
@@ -59,6 +75,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 import CompleteSection from '@/Components/UI/CompleteSection.vue';
 import Button from '@/Components/UI/Button.vue';
@@ -74,6 +91,19 @@ const props = defineProps({
   },
 });
 
+// QRコード画像のURLを生成
+const qrCodeImageUrl = computed(() => {
+  return route('delivery.qr', props.delivery.id);
+});
+
+// 画像読み込みエラーハンドリング
+const handleImageError = (event) => {
+  console.error('QRコード画像の読み込みに失敗しました:', event);
+  // エラー時は代替テキストを表示
+  event.target.style.display = 'none';
+  event.target.nextElementSibling.style.display = 'block';
+};
+
 // 日付フォーマット
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString('ja-JP', {
@@ -85,62 +115,42 @@ const formatDate = (dateString) => {
   });
 };
 
-// QRコード印刷
-const printQR = () => {
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write('<!DOCTYPE html>' +
-    '<html>' +
-      '<head>' +
-        '<title>QRコード印刷</title>' +
-        '<style>' +
-          'body {' +
-            'margin: 0;' +
-            'padding: 20px;' +
-            'font-family: sans-serif;' +
-          '}' +
-          '.container {' +
-            'max-width: 400px;' +
-            'margin: 0 auto;' +
-            'text-align: center;' +
-          '}' +
-          '.qr-code {' +
-            'margin-bottom: 20px;' +
-            'padding: 20px;' +
-            'background: white;' +
-            'border-radius: 8px;' +
-            'box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);' +
-          '}' +
-          '.info {' +
-            'margin-top: 20px;' +
-            'font-size: 14px;' +
-            'color: #666;' +
-          '}' +
-          '.company {' +
-            'font-weight: bold;' +
-            'font-size: 16px;' +
-            'color: #333;' +
-          '}' +
-        '</style>' +
-      '</head>' +
-      '<body>' +
-        '<div class="container">' +
-          '<div class="qr-code">' +
-            props.qrCode +
-          '</div>' +
-          '<div class="info">' +
-            '<div class="company">' + props.delivery.company_name + '</div>' +
-            '<div>' + props.delivery.delivery_type + '</div>' +
-            '<div>' + formatDate(props.delivery.received_at) + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<script>' +
-          'window.onload = function() {' +
-            'window.print();' +
-            'window.close();' +
-          '};' +
-        '</' + 'script>' +
-      '</body>' +
-    '</html>');
-  printWindow.document.close();
+// QRコード印刷（プリントサーバーに送信）
+const printQR = async () => {
+  try {
+    // プリントサーバーに送信（画像データはサーバー側で処理）
+    const response = await fetch(route('delivery.print', props.delivery.id), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        document_info: {
+          document_type: props.delivery.delivery_type,
+          timestamp: props.delivery.received_at,
+          id: props.delivery.id
+        }
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // 印刷完了ステータスをチェック
+      if (result.status === 'completed') {
+        // 印刷完了ダイアログ
+        alert('✅ 印刷が正常に完了しました！\n\nQRコードが印刷されました。書類と一緒にお渡しください。');
+      } else {
+        // 送信完了ダイアログ
+        alert('📤 プリントサーバーに正常に送信されました。\n\n印刷処理中です。しばらくお待ちください。');
+      }
+    } else {
+      alert('❌ プリントサーバーへの送信に失敗しました: ' + result.message);
+    }
+  } catch (error) {
+    console.error('プリントサーバー送信エラー:', error);
+    alert('プリントサーバーへの送信中にエラーが発生しました。');
+  }
 };
 </script>

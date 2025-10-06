@@ -74,19 +74,35 @@
               </div>
             </Link>
 
-            <!-- 面接時の通話先電話番号 -->
+            <!-- スタッフメンバー管理 -->
             <Link 
-              :href="route('admin.interview-phones.index')"
+              :href="route('admin.staff-members.index')"
               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-green-500"
             >
               <div class="p-6">
                 <div class="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
                   <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
                 </div>
-                <h4 class="text-lg font-semibold text-gray-900 mb-2">面接時の通話先電話番号</h4>
-                <p class="text-sm text-gray-600">面接時の連絡先電話番号管理</p>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">スタッフメンバー管理</h4>
+                <p class="text-sm text-gray-600">スタッフメンバーの登録と管理</p>
+              </div>
+            </Link>
+
+            <!-- 通知設定管理 -->
+            <Link 
+              :href="route('admin.notification-settings.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-orange-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">通知設定管理</h4>
+                <p class="text-sm text-gray-600">各種通知の設定と管理</p>
               </div>
             </Link>
 
@@ -103,6 +119,38 @@
                 </div>
                 <h4 class="text-lg font-semibold text-gray-900 mb-2">お知らせ管理</h4>
                 <p class="text-sm text-gray-600">ダッシュボードに表示するお知らせの管理</p>
+              </div>
+            </Link>
+
+            <!-- 納品書・受領書管理 -->
+            <Link 
+              :href="route('admin.deliveries.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-blue-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">納品書・受領書管理</h4>
+                <p class="text-sm text-gray-600">納品書・受領書の確認と電子印管理</p>
+              </div>
+            </Link>
+
+            <!-- 集荷伝票管理 -->
+            <Link 
+              :href="route('admin.pickups.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-purple-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">集荷伝票管理</h4>
+                <p class="text-sm text-gray-600">集荷伝票の確認と電子印管理</p>
               </div>
             </Link>
           </div>

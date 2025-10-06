@@ -3,7 +3,8 @@
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\InterviewPhoneController;
+use App\Http\Controllers\Admin\NotificationSettingController;
+use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DeliveryPickupController;
@@ -33,11 +34,23 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // 事前アポイント管理
     Route::resource('appointments', AdminAppointmentController::class);
     
-    // 面接時の通話先電話番号管理
-    Route::resource('interview-phones', InterviewPhoneController::class);
+    // 通知設定管理
+    Route::resource('staff-members', StaffMemberController::class);
+    Route::resource('notification-settings', NotificationSettingController::class);
+    Route::post('notification-settings/{notification_setting}/toggle', [NotificationSettingController::class, 'toggle'])->name('notification-settings.toggle');
     
     // お知らせ管理
     Route::resource('announcements', AdminAnnouncementController::class);
+    
+    // 納品書・受領書管理
+    Route::get('/deliveries', [DeliveryController::class, 'adminIndex'])->name('deliveries.index');
+    Route::get('/deliveries/{delivery}', [DeliveryController::class, 'adminShow'])->name('deliveries.show');
+    Route::post('/deliveries/{delivery}/apply-seal', [DeliveryController::class, 'applyDigitalSeal'])->name('deliveries.apply-seal');
+    
+    // 集荷伝票管理
+    Route::get('/pickups', [PickupController::class, 'adminIndex'])->name('pickups.index');
+    Route::get('/pickups/{pickup}', [PickupController::class, 'adminShow'])->name('pickups.show');
+    Route::post('/pickups/{pickup}/apply-seal', [PickupController::class, 'applyDigitalSeal'])->name('pickups.apply-seal');
 });
 
 // アポイントアリの方
@@ -78,6 +91,8 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
     Route::get('/create', [DeliveryController::class, 'create'])->name('create');
     Route::get('/capture', [DeliveryController::class, 'capture'])->name('capture');
     Route::post('/store', [DeliveryController::class, 'store'])->name('store');
+    Route::get('/{delivery}/qr', [DeliveryController::class, 'qrCode'])->name('qr');
+    Route::post('/{delivery}/print', [DeliveryController::class, 'print'])->name('print');
     Route::get('/{delivery}', [DeliveryController::class, 'show'])->name('show');
 });
 
@@ -85,6 +100,8 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
 Route::prefix('pickup')->name('pickup.')->group(function () {
     Route::get('/create', [PickupController::class, 'create'])->name('create');
     Route::post('/store', [PickupController::class, 'store'])->name('store');
+    Route::get('/{pickup}/qr', [PickupController::class, 'qrCode'])->name('qr');
+    Route::post('/{pickup}/print', [PickupController::class, 'print'])->name('print');
     Route::get('/{pickup}', [PickupController::class, 'show'])->name('show');
 });
 

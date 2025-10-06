@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Delivery extends Model
 {
     protected $fillable = [
-        'company_name',
         'delivery_type',
         'document_image',
         'sealed_document_image',
         'qr_code_url',
+        'qr_code_file_path',
         'staff_member_id',
         'received_at',
     ];

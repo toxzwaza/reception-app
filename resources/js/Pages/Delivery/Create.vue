@@ -59,6 +59,16 @@
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="border-4 border-indigo-500 border-dashed rounded-xl" style="width: 85%; height: 85%;"></div>
               </div>
+              
+              <!-- カウントダウン表示 -->
+              <div v-if="isCountingDown" class="absolute top-4 right-4 pointer-events-none z-10">
+                <div class="text-center bg-black bg-opacity-80 rounded-full p-6">
+                  <div class="text-6xl font-bold text-white mb-2 animate-pulse">
+                    {{ countdown }}
+                  </div>
+                  <div class="text-sm text-white">撮影中...</div>
+                </div>
+              </div>
             </div>
             
             <!-- ヒント -->
@@ -82,29 +92,49 @@
               <button
                 type="button"
                 @click="handleCancel"
-                class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-lg"
+                :disabled="isCountingDown"
+                class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
               >
                 キャンセル
               </button>
               <button
                 type="button"
-                @click="captureDocument"
-                class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 text-lg"
+                @click="startCountdown"
+                :disabled="isCountingDown"
+                class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
               >
-                撮影
+                {{ isCountingDown ? '撮影中...' : '撮影開始' }}
               </button>
             </div>
           </div>
 
           <!-- プレビュー -->
           <div v-else-if="form.document_preview">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">撮影内容の確認</h3>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">こちらの画像でよろしいですか？</h3>
             <div class="relative mb-6">
               <img
                 :src="form.document_preview"
                 :alt="form.delivery_type"
                 class="w-full rounded-lg shadow-lg"
               />
+            </div>
+            
+            <!-- 注意文 -->
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div class="flex">
+                <svg class="h-5 w-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-red-800">撮影内容の確認</h3>
+                  <ul class="mt-2 text-sm text-red-700 list-disc pl-5 space-y-1">
+                    <li>テキストがきちんと可読可能か確認してください</li>
+                    <li>手や指で隠れていないか確認してください</li>
+                    <li>書類全体が写っているか確認してください</li>
+                    <li>明るさが適切か確認してください</li>
+                  </ul>
+                </div>
+              </div>
             </div>
             
             <div class="flex gap-4">
@@ -120,7 +150,7 @@
                 :disabled="processing"
                 class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
               >
-                {{ processing ? '処理中...' : '電子印を押す' }}
+                {{ processing ? '処理中...' : '確定' }}
               </button>
             </div>
           </div>
@@ -147,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue';
+import { ref, onUnmounted, nextTick } from 'vue';
 import { router } from '@inertiajs/vue3';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 
@@ -170,10 +200,16 @@ const processing = ref(false);
 const showCamera = ref(false);
 const cameraError = ref('');
 const videoElement = ref(null);
+const countdown = ref(0);
+const isCountingDown = ref(false);
 let stream = null;
+let countdownTimer = null;
 
 onUnmounted(() => {
   stopCamera();
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
 });
 
 // 書類種類の選択
@@ -189,22 +225,120 @@ const startCamera = async () => {
   }
   
   try {
+    // 既存のストリームを停止
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    
+    console.log('カメラを開始しています...');
+    
+    // シンプルなカメラ設定
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
+      video: { 
+        facingMode: 'user'
+      },
+      audio: false
     });
+    
+    console.log('カメラストリームを取得しました():', stream);
     
     showCamera.value = true;
     cameraError.value = '';
     
+    // DOMの更新を待ってからビデオ要素にアクセス
+    await nextTick();
+    
+    // ビデオ要素の存在を確認
+    if (!videoElement.value) {
+      console.error('ビデオ要素が見つかりません');
+      cameraError.value = 'ビデオ要素の初期化に失敗しました';
+      return;
+    }
+    
+    console.log('ビデオ要素を確認しました:', videoElement.value);
+    
+    // ストリームを設定
+    videoElement.value.srcObject = stream;
+    console.log('ビデオ要素にストリームを設定しました');
+    
+    // ビデオの再生を開始
+    videoElement.value.play()
+      .then(() => {
+        console.log('ビデオの再生を開始しました');
+        // ビデオが準備できてからカウントダウン開始
+        waitForVideoReady();
+      })
+      .catch(error => {
+        console.error('ビデオの再生に失敗しました:', error);
+        // 再生に失敗しても準備チェックを開始
+        waitForVideoReady();
+      });
+    
+    // フォールバック: 一定時間後に強制的にチェック開始
     setTimeout(() => {
-      if (videoElement.value) {
-        videoElement.value.srcObject = stream;
-      }
-    }, 100);
+      console.log('フォールバック: 強制的にビデオ準備チェックを開始');
+      waitForVideoReady();
+    }, 2000);
   } catch (error) {
     console.error('カメラの起動に失敗しました:', error);
-    cameraError.value = 'カメラの起動に失敗しました';
+    cameraError.value = `カメラの起動に失敗しました: ${error.message}`;
   }
+};
+
+// ビデオの準備完了を待機
+const waitForVideoReady = () => {
+  let checkCount = 0;
+  const maxChecks = 100; // 最大10秒間チェック
+  
+  const checkVideo = () => {
+    checkCount++;
+    const video = videoElement.value;
+    
+    console.log(`ビデオ準備チェック ${checkCount}/${maxChecks}:`, {
+      videoExists: !!video,
+      videoWidth: video?.videoWidth || 0,
+      videoHeight: video?.videoHeight || 0,
+      readyState: video?.readyState || 0,
+      paused: video?.paused,
+      ended: video?.ended
+    });
+    
+    if (video && video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+      console.log('ビデオが準備完了しました:', {
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+        readyState: video.readyState
+      });
+      // 2秒後にカウントダウン開始
+      setTimeout(() => {
+        startCountdown();
+      }, 2000);
+    } else if (checkCount >= maxChecks) {
+      console.error('ビデオの準備がタイムアウトしました');
+      cameraError.value = 'カメラの準備に時間がかかりすぎています。ページを再読み込みしてください。';
+    } else {
+      // 100ms後に再チェック
+      setTimeout(checkVideo, 100);
+    }
+  };
+  
+  checkVideo();
+};
+
+// カウントダウン開始
+const startCountdown = () => {
+  countdown.value = 3;
+  isCountingDown.value = true;
+  
+  countdownTimer = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer);
+      isCountingDown.value = false;
+      captureDocument();
+    }
+  }, 1000);
 };
 
 // カメラ停止
@@ -218,24 +352,85 @@ const stopCamera = () => {
 // 書類を撮影
 const captureDocument = () => {
   const video = videoElement.value;
-  if (!video) return;
+  if (!video) {
+    console.error('ビデオ要素が見つかりません');
+    return;
+  }
 
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const context = canvas.getContext('2d');
-  context.drawImage(video, 0, 0);
+  try {
+    // ビデオの準備状態を確認
+    console.log('ビデオの状態:', {
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      readyState: video.readyState,
+      paused: video.paused,
+      ended: video.ended
+    });
+    
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      throw new Error('ビデオがまだ準備できていません。しばらく待ってから再度お試しください。');
+    }
+    
+    if (video.readyState < 2) {
+      throw new Error('ビデオの読み込みが完了していません。しばらく待ってから再度お試しください。');
+    }
 
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-  form.value.document_preview = dataUrl;
-  form.value.document_image = dataURLtoFile(dataUrl, 'document.jpg');
-  
-  stopCamera();
-  showCamera.value = false;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
+      throw new Error('キャンバスコンテキストの取得に失敗しました');
+    }
+    
+    // ビデオをキャンバスに描画
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // キャンバスの内容を確認
+    const imageData = context.getImageData(0, 0, Math.min(10, canvas.width), Math.min(10, canvas.height));
+    const hasContent = imageData.data.some(value => value !== 0);
+    console.log('キャンバスに内容があるか:', hasContent);
+    
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    console.log('データURLを生成しました:', dataUrl ? '成功' : '失敗');
+    console.log('データURLの長さ:', dataUrl ? dataUrl.length : 0);
+    console.log('データURLの先頭:', dataUrl ? dataUrl.substring(0, 50) : 'null');
+    
+    if (!dataUrl || dataUrl === 'data:,') {
+      throw new Error('画像データの生成に失敗しました。カメラ映像が正しく表示されていない可能性があります。');
+    }
+    
+    form.value.document_preview = dataUrl;
+    
+    // タイムスタンプ付きファイル名を生成
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `document_${timestamp}.jpg`;
+    
+    try {
+      form.value.document_image = dataURLtoFile(dataUrl, filename);
+      console.log('ファイル変換成功:', filename);
+    } catch (fileError) {
+      console.error('ファイル変換エラー:', fileError);
+      throw fileError;
+    }
+    
+    stopCamera();
+    showCamera.value = false;
+  } catch (error) {
+    console.error('撮影エラー:', error);
+    cameraError.value = `撮影に失敗しました: ${error.message}`;
+  }
 };
 
 // キャンセル
 const handleCancel = () => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  isCountingDown.value = false;
+  countdown.value = 0;
   stopCamera();
   showCamera.value = false;
 };
@@ -244,6 +439,12 @@ const handleCancel = () => {
 const retakeImage = () => {
   form.value.document_preview = null;
   form.value.document_image = null;
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  isCountingDown.value = false;
+  countdown.value = 0;
   startCamera();
 };
 
@@ -269,8 +470,21 @@ const submitForm = () => {
 // Data URL を File オブジェクトに変換
 const dataURLtoFile = (dataurl, filename) => {
   try {
+    if (!dataurl || typeof dataurl !== 'string') {
+      throw new Error('無効なデータURLです');
+    }
+    
     const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
+    if (arr.length !== 2) {
+      throw new Error('データURLの形式が正しくありません');
+    }
+    
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) {
+      throw new Error('MIMEタイプの取得に失敗しました');
+    }
+    
+    const mime = mimeMatch[1];
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -280,7 +494,8 @@ const dataURLtoFile = (dataurl, filename) => {
     return new File([u8arr], filename, { type: mime });
   } catch (error) {
     console.error('ファイル変換エラー:', error);
-    throw new Error('画像の処理に失敗しました');
+    console.error('データURL:', dataurl);
+    throw new Error(`画像の処理に失敗しました: ${error.message}`);
   }
 };
 </script>

@@ -11,8 +11,8 @@
               <div class="bg-gray-50 px-4 py-3 rounded-lg">
                 <dl class="grid grid-cols-1 gap-2">
                   <div class="flex justify-between">
-                    <dt class="text-gray-600">会社名</dt>
-                    <dd class="font-medium">{{ delivery.company_name }}</dd>
+                    <dt class="text-gray-600">書類種類</dt>
+                    <dd class="font-medium">{{ delivery.delivery_type }}</dd>
                   </div>
                   <div class="flex justify-between">
                     <dt class="text-gray-600">受付日時</dt>
@@ -97,7 +97,6 @@ const printDocument = () => {
       '<body>' +
         '<div class="document-info">' +
           '<h2>' + props.delivery.delivery_type + '</h2>' +
-          '<p>会社名: ' + props.delivery.company_name + '</p>' +
           '<p>受付日時: ' + formatDate(props.delivery.received_at) + '</p>' +
         '</div>' +
         '<img src="' + props.sealedDocumentUrl + '" class="document-image" />' +

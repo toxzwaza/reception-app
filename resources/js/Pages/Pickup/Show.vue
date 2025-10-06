@@ -11,8 +11,8 @@
               <div class="bg-gray-50 px-4 py-3 rounded-lg">
                 <dl class="grid grid-cols-1 gap-2">
                   <div class="flex justify-between">
-                    <dt class="text-gray-600">会社名</dt>
-                    <dd class="font-medium">{{ pickup.company_name }}</dd>
+                    <dt class="text-gray-600">伝票種類</dt>
+                    <dd class="font-medium">集荷伝票</dd>
                   </div>
                   <div class="flex justify-between">
                     <dt class="text-gray-600">受付日時</dt>
@@ -97,7 +97,6 @@ const printDocument = () => {
       '<body>' +
         '<div class="document-info">' +
           '<h2>集荷伝票</h2>' +
-          '<p>会社名: ' + props.pickup.company_name + '</p>' +
           '<p>受付日時: ' + formatDate(props.pickup.picked_up_at) + '</p>' +
         '</div>' +
         '<img src="' + props.sealedSlipUrl + '" class="document-image" />' +

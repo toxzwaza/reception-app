@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Pickup extends Model
 {
     protected $fillable = [
-        'company_name',
         'slip_image',
         'sealed_slip_image',
         'qr_code_url',
+        'qr_code_file_path',
         'staff_member_id',
         'picked_up_at',
     ];
