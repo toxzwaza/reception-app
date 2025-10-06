@@ -94,7 +94,7 @@ Route::prefix('twilio-test')->name('twilio-test.')->group(function () {
     Route::post('/make-call', [TwilioTestController::class, 'makeCall'])->name('make-call');
     Route::post('/check-status', [TwilioTestController::class, 'checkCallStatus'])->name('check-status');
     Route::post('/send-sms', [TwilioTestController::class, 'sendSms'])->name('send-sms');
-})->middleware('web');
+});
 
 // Twilioリアルタイム音声通話
 Route::prefix('twilio-voice')->name('twilio-voice.')->group(function () {

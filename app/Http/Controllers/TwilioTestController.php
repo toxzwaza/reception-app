@@ -50,7 +50,17 @@ class TwilioTestController extends Controller
             }
 
             // Twilio SDKを使用して電話を発信
-            $client = new \Twilio\Rest\Client($accountSid, $authToken);
+            // 開発環境でのSSL検証を無効化
+            $guzzleClient = new \GuzzleHttp\Client([
+                'verify' => false,
+                'curl' => [
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => false,
+                ]
+            ]);
+            $httpClient = new \Twilio\Http\GuzzleClient($guzzleClient);
+            
+            $client = new \Twilio\Rest\Client($accountSid, $authToken, null, null, $httpClient);
 
             // TwiMLを使用してメッセージを再生
             $twiml = '<Response><Say language="ja-JP">' . 
@@ -107,7 +117,21 @@ class TwilioTestController extends Controller
             $accountSid = env('TWILIO_ACCOUNT_SID');
             $authToken = env('TWILIO_AUTH_TOKEN');
 
-            $client = new \Twilio\Rest\Client($accountSid, $authToken);
+            // 開発環境でのSSL検証を無効化
+            $guzzleClient = new \GuzzleHttp\Client([
+                'verify' => false,
+                'curl' => [
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_CAINFO => false,
+                    CURLOPT_CAPATH => false,
+                ],
+                'timeout' => 30,
+                'connect_timeout' => 10,
+            ]);
+            $httpClient = new \Twilio\Http\GuzzleClient($guzzleClient);
+            
+            $client = new \Twilio\Rest\Client($accountSid, $authToken, null, null, $httpClient);
             $call = $client->calls($validated['call_sid'])->fetch();
 
             return response()->json([
@@ -156,7 +180,21 @@ class TwilioTestController extends Controller
                 ], 500);
             }
 
-            $client = new \Twilio\Rest\Client($accountSid, $authToken);
+            // 開発環境でのSSL検証を無効化
+            $guzzleClient = new \GuzzleHttp\Client([
+                'verify' => false,
+                'curl' => [
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_CAINFO => false,
+                    CURLOPT_CAPATH => false,
+                ],
+                'timeout' => 30,
+                'connect_timeout' => 10,
+            ]);
+            $httpClient = new \Twilio\Http\GuzzleClient($guzzleClient);
+            
+            $client = new \Twilio\Rest\Client($accountSid, $authToken, null, null, $httpClient);
 
             $message = $client->messages->create(
                 $validated['to_number'],

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\Group;
 
 class TeamsNotificationService
 {
@@ -312,60 +314,81 @@ class TeamsNotificationService
         return $this->sendMessage($message);
     }
 
+
     /**
-     * 部署別訪問者通知を送信
+     * 部署選択後の訪問者通知（メンション付き）
      *
-     * @param \App\Models\Visitor $visitor
+     * @param array $visitorData
      * @param int $groupId
      * @return bool
      */
-    public function notifyDepartmentVisitor($visitor, int $groupId): bool
+    public function notifyDepartmentVisitor(array $visitorData, int $groupId): bool
     {
         if (!$this->webhookUrl) {
             Log::warning('Teams webhook URL not configured');
             return false;
         }
 
-        $departmentNames = [
-            1 => '営業部',
-            2 => '総務部',
-            3 => '経理部',
-            4 => '人事部',
-            5 => '開発部',
-            6 => 'マーケティング部',
-        ];
+        // 部署情報を取得
+        $group = Group::find($groupId);
+        $departmentName = $group ? $group->name : '不明な部署';
 
-        $departmentName = $departmentNames[$groupId] ?? '不明な部署';
+        // 部署のユーザー一覧を取得してメンション用のユーザー情報を作成
+        $users = User::where('group_id', $groupId)
+            ->where('del_flg', 0)
+            ->get();
+
+        $mentions = [];
+        foreach ($users as $user) {
+            if ($user->email) {
+                $mentions[] = [
+                    "type" => "mention",
+                    "text" => "<at>{$user->name}</at>",
+                    "mentioned" => [
+                        "id" => $user->email,
+                        "name" => $user->name
+                    ]
+                ];
+            }
+        }
 
         $message = [
-            "@type" => "MessageCard",
-            "@context" => "https://schema.org/extensions",
-            "themeColor" => "6F42C1",
-            "summary" => "{$departmentName}への訪問者が到着しました",
-            "sections" => [
+            "type" => "message",
+            "attachments" => [
                 [
-                    "activityTitle" => "🏢 {$departmentName}訪問者到着",
-                    "activitySubtitle" => "受付番号: {$visitor->reception_number}",
-                    "activityImage" => "https://img.icons8.com/color/48/000000/office-building.png",
-                    "facts" => [
-                        [
-                            "name" => "会社名",
-                            "value" => $visitor->company_name
+                    "contentType" => "application/vnd.microsoft.card.adaptive",
+                    "content" => [
+                        "type" => "AdaptiveCard",
+                        "body" => [
+                            [
+                                "type" => "TextBlock",
+                                "text" => "新しい訪問者が到着しました",
+                                "color" => "attention",
+                                "size" => "large",
+                                "wrap" => true
+                            ],
+                            [
+                                "type" => "TextBlock",
+                                "text" => "新しい訪問者が到着しました
+
+" . (isset($visitorData['reception_number']) && $visitorData['reception_number'] ? "受付番号: {$visitorData['reception_number']}\n" : "") . "会社名: {$visitorData['company_name']}
+訪問者: {$visitorData['visitor_name']}
+人数: {$visitorData['number_of_people']}名
+訪問目的: {$visitorData['purpose']}
+チェックイン時刻: " . now()->format('Y年m月d日 H:i') . "
+
+訪問先部署: {$departmentName}",
+                                "color" => "good",
+                                "size" => "medium",
+                                "wrap" => true
+                            ]
                         ],
-                        [
-                            "name" => "訪問者名",
-                            "value" => $visitor->visitor_name
-                        ],
-                        [
-                            "name" => "訪問先部署",
-                            "value" => $departmentName
-                        ],
-                        [
-                            "name" => "チェックイン時刻",
-                            "value" => now()->format('Y年m月d日 H:i')
+                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version" => "1.0",
+                        "msteams" => [
+                            "entities" => $mentions
                         ]
-                    ],
-                    "markdown" => true
+                    ]
                 ]
             ]
         ];

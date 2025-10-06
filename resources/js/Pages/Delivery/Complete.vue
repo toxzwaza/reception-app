@@ -88,60 +88,59 @@ const formatDate = (dateString) => {
 // QRコード印刷
 const printQR = () => {
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>QRコード印刷</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 20px;
-            font-family: sans-serif;
-          }
-          .container {
-            max-width: 400px;
-            margin: 0 auto;
-            text-align: center;
-          }
-          .qr-code {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          }
-          .info {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-          }
-          .company {
-            font-weight: bold;
-            font-size: 16px;
-            color: #333;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="qr-code">
-            ${props.qrCode}
-          </div>
-          <div class="info">
-            <div class="company">${props.delivery.company_name}</div>
-            <div>${props.delivery.delivery_type}</div>
-            <div>${formatDate(props.delivery.received_at)}</div>
-          </div>
-        </div>
-        <script>
-          window.onload = () => {
-            window.print();
-            window.close();
-          };
-        </script>
-      </body>
-    </html>
-  `);
+  printWindow.document.write('<!DOCTYPE html>' +
+    '<html>' +
+      '<head>' +
+        '<title>QRコード印刷</title>' +
+        '<style>' +
+          'body {' +
+            'margin: 0;' +
+            'padding: 20px;' +
+            'font-family: sans-serif;' +
+          '}' +
+          '.container {' +
+            'max-width: 400px;' +
+            'margin: 0 auto;' +
+            'text-align: center;' +
+          '}' +
+          '.qr-code {' +
+            'margin-bottom: 20px;' +
+            'padding: 20px;' +
+            'background: white;' +
+            'border-radius: 8px;' +
+            'box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);' +
+          '}' +
+          '.info {' +
+            'margin-top: 20px;' +
+            'font-size: 14px;' +
+            'color: #666;' +
+          '}' +
+          '.company {' +
+            'font-weight: bold;' +
+            'font-size: 16px;' +
+            'color: #333;' +
+          '}' +
+        '</style>' +
+      '</head>' +
+      '<body>' +
+        '<div class="container">' +
+          '<div class="qr-code">' +
+            props.qrCode +
+          '</div>' +
+          '<div class="info">' +
+            '<div class="company">' + props.delivery.company_name + '</div>' +
+            '<div>' + props.delivery.delivery_type + '</div>' +
+            '<div>' + formatDate(props.delivery.received_at) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<script>' +
+          'window.onload = function() {' +
+            'window.print();' +
+            'window.close();' +
+          '};' +
+        '</' + 'script>' +
+      '</body>' +
+    '</html>');
   printWindow.document.close();
 };
 </script>

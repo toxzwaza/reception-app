@@ -75,41 +75,40 @@ const formatDate = (dateString) => {
 // 伝票印刷
 const printDocument = () => {
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>集荷伝票印刷</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 20px;
-          }
-          .document-info {
-            margin-bottom: 20px;
-            font-family: sans-serif;
-          }
-          .document-image {
-            width: 100%;
-            height: auto;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="document-info">
-          <h2>集荷伝票</h2>
-          <p>会社名: ${props.pickup.company_name}</p>
-          <p>受付日時: ${formatDate(props.pickup.picked_up_at)}</p>
-        </div>
-        <img src="${props.sealedSlipUrl}" class="document-image" />
-        <script>
-          window.onload = () => {
-            window.print();
-            window.close();
-          };
-        </script>
-      </body>
-    </html>
-  `);
+  printWindow.document.write('<!DOCTYPE html>' +
+    '<html>' +
+      '<head>' +
+        '<title>集荷伝票印刷</title>' +
+        '<style>' +
+          'body {' +
+            'margin: 0;' +
+            'padding: 20px;' +
+          '}' +
+          '.document-info {' +
+            'margin-bottom: 20px;' +
+            'font-family: sans-serif;' +
+          '}' +
+          '.document-image {' +
+            'width: 100%;' +
+            'height: auto;' +
+          '}' +
+        '</style>' +
+      '</head>' +
+      '<body>' +
+        '<div class="document-info">' +
+          '<h2>集荷伝票</h2>' +
+          '<p>会社名: ' + props.pickup.company_name + '</p>' +
+          '<p>受付日時: ' + formatDate(props.pickup.picked_up_at) + '</p>' +
+        '</div>' +
+        '<img src="' + props.sealedSlipUrl + '" class="document-image" />' +
+        '<script>' +
+          'window.onload = function() {' +
+            'window.print();' +
+            'window.close();' +
+          '};' +
+        '</' + 'script>' +
+      '</body>' +
+    '</html>');
   printWindow.document.close();
 };
 </script>

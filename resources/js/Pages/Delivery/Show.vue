@@ -75,41 +75,40 @@ const formatDate = (dateString) => {
 // 書類印刷
 const printDocument = () => {
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${props.delivery.delivery_type}印刷</title>
-        <style>
-          body {
-            margin: 0;
-            padding: 20px;
-          }
-          .document-info {
-            margin-bottom: 20px;
-            font-family: sans-serif;
-          }
-          .document-image {
-            width: 100%;
-            height: auto;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="document-info">
-          <h2>${props.delivery.delivery_type}</h2>
-          <p>会社名: ${props.delivery.company_name}</p>
-          <p>受付日時: ${formatDate(props.delivery.received_at)}</p>
-        </div>
-        <img src="${props.sealedDocumentUrl}" class="document-image" />
-        <script>
-          window.onload = () => {
-            window.print();
-            window.close();
-          };
-        </script>
-      </body>
-    </html>
-  `);
+  printWindow.document.write('<!DOCTYPE html>' +
+    '<html>' +
+      '<head>' +
+        '<title>' + props.delivery.delivery_type + '印刷</title>' +
+        '<style>' +
+          'body {' +
+            'margin: 0;' +
+            'padding: 20px;' +
+          '}' +
+          '.document-info {' +
+            'margin-bottom: 20px;' +
+            'font-family: sans-serif;' +
+          '}' +
+          '.document-image {' +
+            'width: 100%;' +
+            'height: auto;' +
+          '}' +
+        '</style>' +
+      '</head>' +
+      '<body>' +
+        '<div class="document-info">' +
+          '<h2>' + props.delivery.delivery_type + '</h2>' +
+          '<p>会社名: ' + props.delivery.company_name + '</p>' +
+          '<p>受付日時: ' + formatDate(props.delivery.received_at) + '</p>' +
+        '</div>' +
+        '<img src="' + props.sealedDocumentUrl + '" class="document-image" />' +
+        '<script>' +
+          'window.onload = function() {' +
+            'window.print();' +
+            'window.close();' +
+          '};' +
+        '</' + 'script>' +
+      '</body>' +
+    '</html>');
   printWindow.document.close();
 };
 </script>

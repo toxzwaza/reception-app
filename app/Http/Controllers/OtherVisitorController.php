@@ -76,10 +76,14 @@ class OtherVisitorController extends Controller
         ]);
 
         // 選択部署へTeams通知を送信
-        $this->teamsNotification->notifyDepartmentVisitor($visitor, $validated['group_id']);
+        $this->teamsNotification->notifyDepartmentVisitor($visitor->toArray(), $validated['group_id']);
+
+        // 選択された部署の情報を取得
+        $group = Group::find($validated['group_id']);
 
         return Inertia::render('OtherVisitor/Complete', [
             'visitorInfo' => $visitor,
+            'groupInfo' => $group,
         ]);
     }
 
