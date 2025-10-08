@@ -118,39 +118,35 @@ const formatDate = (dateString) => {
 // QRコード印刷（プリントサーバーに送信）
 const printQR = async () => {
   try {
-    // プリントサーバーに送信（画像データはサーバー側で処理）
-    const response = await fetch(route('delivery.print', props.delivery.id), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({
-        document_info: {
-          document_type: props.delivery.delivery_type,
-          timestamp: props.delivery.received_at,
-          id: props.delivery.id
-        }
-      })
+    // プリントサーバーに送信（Flask側でURLを受け取って印刷）
+    const response = await axios.post('https://192.168.210.91/print', {
+      url: qrCodeImageUrl.value, // 送信したいURL
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000, // 10秒でタイムアウト
     });
 
-    const result = await response.json();
+    const result = response.data;
+    console.log('📨 サーバー応答:', result);
 
-    if (result.success) {
-      // 印刷完了ステータスをチェック
-      if (result.status === 'completed') {
-        // 印刷完了ダイアログ
-        alert('✅ 印刷が正常に完了しました！\n\nQRコードが印刷されました。書類と一緒にお渡しください。');
-      } else {
-        // 送信完了ダイアログ
-        alert('📤 プリントサーバーに正常に送信されました。\n\n印刷処理中です。しばらくお待ちください。');
-      }
+    // Flask側の戻り値 { status: "success" | "error", message?, url?, file? }
+    if (result.status === 'success') {
+      alert('✅ 印刷が正常に完了しました！\n\nQRコードが印刷されました。');
     } else {
-      alert('❌ プリントサーバーへの送信に失敗しました: ' + result.message);
+      alert('❌ プリントサーバーへの送信に失敗しました: ' + (result.message || '原因不明'));
     }
+
   } catch (error) {
     console.error('プリントサーバー送信エラー:', error);
-    alert('プリントサーバーへの送信中にエラーが発生しました。');
+
+    if (error.code === 'ECONNABORTED') {
+      alert('⏳ 接続がタイムアウトしました。プリントサーバーが起動中か確認してください。');
+    } else if (error.response) {
+      alert(`⚠️ サーバーエラー: ${error.response.status} - ${error.response.statusText}`);
+    } else {
+      alert('❌ プリントサーバーへの送信中にエラーが発生しました。');
+    }
   }
 };
+
 </script>
