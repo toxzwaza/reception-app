@@ -2,43 +2,82 @@
   <ReceptionLayout
     title="納品業者受付"
     subtitle="書類を撮影してください"
+    :steps="['納品・集荷選択', '情報入力', '完了']"
+    :current-step="1"
   >
-    <div class="p-8">
+    <div class="p-12">
       <form @submit.prevent="submitForm">
-        <!-- 書類種類選択 -->
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">書類の種類を選択してください</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <!-- 書類種類選択（未選択時のみ表示） -->
+        <div v-if="!form.delivery_type" class="mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">書類の種類を選択してください</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             <button
               type="button"
               @click="selectDocumentType('納品書')"
-              :class="[
-                'p-10 text-center rounded-xl border-2 transition-all duration-200',
-                form.delivery_type === '納品書'
-                  ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-200 shadow-lg'
-                  : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-lg'
-              ]"
+              class="bg-white p-12 text-center rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:shadow-2xl transition-all duration-200 cursor-pointer group"
             >
-              <div class="text-3xl font-bold mb-3 text-gray-900">納品書</div>
-              <div class="text-base text-gray-600">納品書の電子印処理を行います</div>
+              <div class="flex flex-col items-center">
+                <div class="w-32 h-32 mb-6 text-indigo-500 group-hover:scale-110 transition-transform duration-200">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div class="text-2xl font-bold mb-3 text-gray-900">納品書</div>
+                <div class="text-gray-600">納品書の電子印処理を行います</div>
+              </div>
             </button>
 
             <button
               type="button"
               @click="selectDocumentType('受領書')"
-              :class="[
-                'p-10 text-center rounded-xl border-2 transition-all duration-200',
-                form.delivery_type === '受領書'
-                  ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-200 shadow-lg'
-                  : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-lg'
-              ]"
+              class="bg-white p-12 text-center rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-2xl transition-all duration-200 cursor-pointer group"
             >
-              <div class="text-3xl font-bold mb-3 text-gray-900">受領書</div>
-              <div class="text-base text-gray-600">受領書の電子印処理を行います</div>
+              <div class="flex flex-col items-center">
+                <div class="w-32 h-32 mb-6 text-green-500 group-hover:scale-110 transition-transform duration-200">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div class="text-2xl font-bold mb-3 text-gray-900">受領書</div>
+                <div class="text-gray-600">受領書の電子印処理を行います</div>
+              </div>
             </button>
           </div>
           <div v-if="errors.delivery_type" class="mt-4 text-center text-sm text-red-600">
             {{ errors.delivery_type }}
+          </div>
+        </div>
+
+        <!-- 選択中の書類種類表示と変更ボタン -->
+        <div v-else class="mb-8 max-w-4xl mx-auto">
+          <div :class="[
+            'bg-white rounded-xl border-2 p-6 flex items-center justify-between shadow-lg',
+            form.delivery_type === '納品書' ? 'border-indigo-500' : 'border-green-500'
+          ]">
+            <div class="flex items-center">
+              <div :class="[
+                'w-12 h-12 mr-4',
+                form.delivery_type === '納品書' ? 'text-indigo-600' : 'text-green-600'
+              ]">
+                <svg v-if="form.delivery_type === '納品書'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <svg v-else fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm text-gray-500">書類種類</div>
+                <div class="text-xl font-bold text-gray-900">{{ form.delivery_type }}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              @click="changeDocumentType"
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition-colors duration-200"
+            >
+              変更
+            </button>
           </div>
         </div>
 
@@ -217,6 +256,25 @@ const selectDocumentType = (type) => {
   form.value.delivery_type = type;
 };
 
+// 書類種類の変更
+const changeDocumentType = () => {
+  // カメラを停止
+  stopCamera();
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  isCountingDown.value = false;
+  countdown.value = 0;
+  showCamera.value = false;
+  
+  // フォームをリセット
+  form.value.delivery_type = '';
+  form.value.document_image = null;
+  form.value.document_preview = null;
+  cameraError.value = '';
+};
+
 // カメラ開始
 const startCamera = async () => {
   if (!form.value.delivery_type) {
@@ -263,23 +321,15 @@ const startCamera = async () => {
     console.log('ビデオ要素にストリームを設定しました');
     
     // ビデオの再生を開始
-    videoElement.value.play()
-      .then(() => {
-        console.log('ビデオの再生を開始しました');
-        // ビデオが準備できてからカウントダウン開始
-        waitForVideoReady();
-      })
-      .catch(error => {
-        console.error('ビデオの再生に失敗しました:', error);
-        // 再生に失敗しても準備チェックを開始
-        waitForVideoReady();
-      });
+    try {
+      await videoElement.value.play();
+      console.log('ビデオの再生を開始しました');
+    } catch (error) {
+      console.error('ビデオの再生に失敗しました:', error);
+    }
     
-    // フォールバック: 一定時間後に強制的にチェック開始
-    setTimeout(() => {
-      console.log('フォールバック: 強制的にビデオ準備チェックを開始');
-      waitForVideoReady();
-    }, 2000);
+    // ビデオの準備完了を待ってからカウントダウン開始
+    waitForVideoReady();
   } catch (error) {
     console.error('カメラの起動に失敗しました:', error);
     cameraError.value = `カメラの起動に失敗しました: ${error.message}`;
@@ -290,6 +340,7 @@ const startCamera = async () => {
 const waitForVideoReady = () => {
   let checkCount = 0;
   const maxChecks = 100; // 最大10秒間チェック
+  let countdownStarted = false; // カウントダウンが既に開始されたかを追跡
   
   const checkVideo = () => {
     checkCount++;
@@ -304,15 +355,19 @@ const waitForVideoReady = () => {
       ended: video?.ended
     });
     
-    if (video && video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+    if (video && video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2 && !countdownStarted) {
       console.log('ビデオが準備完了しました:', {
         videoWidth: video.videoWidth,
         videoHeight: video.videoHeight,
         readyState: video.readyState
       });
+      countdownStarted = true;
       // 2秒後にカウントダウン開始
       setTimeout(() => {
-        startCountdown();
+        if (!isCountingDown.value) {
+          console.log('カウントダウンを開始します');
+          startCountdown();
+        }
       }, 2000);
     } else if (checkCount >= maxChecks) {
       console.error('ビデオの準備がタイムアウトしました');
@@ -328,14 +383,25 @@ const waitForVideoReady = () => {
 
 // カウントダウン開始
 const startCountdown = () => {
+  // 既存のタイマーをクリア
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  
   countdown.value = 3;
   isCountingDown.value = true;
   
+  console.log('カウントダウンを3から開始します');
+  
   countdownTimer = setInterval(() => {
     countdown.value--;
+    console.log('カウントダウン:', countdown.value);
     if (countdown.value <= 0) {
       clearInterval(countdownTimer);
+      countdownTimer = null;
       isCountingDown.value = false;
+      console.log('カウントダウン終了、撮影を開始します');
       captureDocument();
     }
   }, 1000);

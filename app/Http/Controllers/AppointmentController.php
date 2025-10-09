@@ -12,7 +12,7 @@ use Inertia\Response;
 
 class AppointmentController extends Controller
 {
-    // アポイントアリ受付画面
+    // アポイントあり受付画面
     public function index(): Response
     {
         return Inertia::render('Appointment/Index');

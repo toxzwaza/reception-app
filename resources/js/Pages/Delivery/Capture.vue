@@ -1,12 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-          <div class="p-6">
-            <h1 class="text-2xl font-bold text-center mb-8">
-              {{ delivery_type }}の撮影
-            </h1>
+  <ReceptionLayout
+    title="納品業者受付"
+    :subtitle="delivery_type + 'を撮影してください'"
+    :steps="['納品・集荷選択', '情報入力', '完了']"
+    :current-step="1"
+  >
+    <div class="p-12">
+      <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">
+        {{ delivery_type }}を撮影してください
+      </h2>
 
             <!-- カメラビュー -->
             <div class="mb-8">
@@ -137,26 +139,24 @@
               </button>
             </div>
 
-            <!-- 戻るボタン -->
-            <div class="text-center mt-4">
-              <Link
-                :href="route('delivery.create')"
-                class="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                preserve-scroll
-              >
-                戻る
-              </Link>
-            </div>
-          </div>
-        </div>
+      <!-- 戻るボタン -->
+      <div class="text-center mt-8">
+        <Link
+          :href="route('delivery.create')"
+          class="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-lg"
+          preserve-scroll
+        >
+          戻る
+        </Link>
       </div>
     </div>
-  </div>
+  </ReceptionLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
+import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 
 const props = defineProps({
   delivery_type: {

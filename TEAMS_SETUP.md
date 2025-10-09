@@ -67,7 +67,7 @@ private function sendToWebhook(string $webhookUrl, array $message): void
 
 ## 通知の種類
 
-### 1. アポイントアリの来訪者通知
+### 1. アポイントありの来訪者通知
 - QRコードまたは受付番号で受付された訪問者の情報を担当者へ通知
 - 送信先: 担当者のteams_webhook_url
 

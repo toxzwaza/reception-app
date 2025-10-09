@@ -1,9 +1,11 @@
 <IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    AddType image/png .png
+    AddType image/webp .webp
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
-
-    RewriteEngine On
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

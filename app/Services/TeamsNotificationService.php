@@ -284,7 +284,7 @@ class TeamsNotificationService
     }
 
     /**
-     * 面接受付通知を送信
+     * 面接受付通知を送信（メンション付き）
      *
      * @return bool
      */
@@ -295,23 +295,145 @@ class TeamsNotificationService
             return false;
         }
 
-        $message = [
-            "@type" => "MessageCard",
-            "@context" => "https://schema.org/extensions",
-            "themeColor" => "FFC107",
-            "summary" => "面接受付者が到着しました",
-            "sections" => [
+        // visitor_checkin トリガーのメール通知受信者を取得
+        $mentionIds = $this->getInterviewMentionIds();
+
+        if ($mentionIds->isEmpty()) {
+            Log::warning('No interview mention IDs found for visitor_checkin trigger');
+            // メンションIDが見つからない場合でも、通知は送信する
+        }
+
+        // メンションテキストとエンティティを生成（Adaptive Card形式）
+        $mentionText = '';
+        $mentions = [];
+        
+        foreach ($mentionIds as $index => $mentionId) {
+            $mentionText .= "<at>{$mentionId}</at> ";
+            $mentions[] = [
+                "type" => "mention",
+                "text" => "<at>{$mentionId}</at>",
+                "mentioned" => [
+                    "id" => $mentionId,
+                    "name" => $mentionId
+                ]
+            ];
+        }
+
+        // Adaptive Card形式のボディを構築
+        $body = [];
+        
+        // メンションがある場合は最初に追加
+        if ($mentionText) {
+            $body[] = [
+                "type" => "TextBlock",
+                "text" => $mentionText,
+                "color" => "attention",
+                "size" => "large",
+                "weight" => "bolder",
+                "wrap" => true
+            ];
+        }
+
+        // タイトル
+        $body[] = [
+            "type" => "TextBlock",
+            "text" => "👥 面接受付者到着",
+            "color" => "warning",
+            "size" => "large",
+            "weight" => "bolder",
+            "wrap" => true
+        ];
+
+        // メッセージ本文
+        $body[] = [
+            "type" => "TextBlock",
+            "text" => "面接受付者が受付に到着しました。担当者に連絡をお願いします。\n\nチェックイン時刻: " . now()->format('Y年m月d日 H:i'),
+            "color" => "good",
+            "size" => "medium",
+            "wrap" => true
+        ];
+
+        // Adaptive Card形式のペイロード
+        $payload = [
+            "type" => "message",
+            "attachments" => [
                 [
-                    "activityTitle" => "👥 面接受付者到着",
-                    "activitySubtitle" => "面接担当者への連絡が必要です",
-                    "activityImage" => "https://img.icons8.com/color/48/000000/meeting.png",
-                    "text" => "面接受付者が受付に到着しました。担当者に連絡をお願いします。",
-                    "markdown" => true
+                    "contentType" => "application/vnd.microsoft.card.adaptive",
+                    "content" => [
+                        "type" => "AdaptiveCard",
+                        "body" => $body,
+                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "version" => "1.4",
+                        "msteams" => [
+                            "width" => "Full",
+                            "entities" => $mentions
+                        ]
+                    ]
                 ]
             ]
         ];
 
-        return $this->sendMessage($message);
+        try {
+            $response = Http::timeout(10)
+                ->withOptions(['verify' => false])
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ])
+                ->post($this->webhookUrl, $payload);
+
+            Log::info('Teams interview notification sent', [
+                'mention_ids' => $mentionIds->toArray(),
+                'status' => $response->status(),
+                'response_body' => $response->body()
+            ]);
+
+            if ($response->successful()) {
+                Log::info('Teams interview notification sent successfully');
+                return true;
+            } else {
+                Log::error('Teams interview notification failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Teams interview notification exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * 面接用のメンションIDを取得
+     * 
+     * @return \Illuminate\Support\Collection
+     */
+    private function getInterviewMentionIds()
+    {
+        // visitor_checkin トリガーの有効な通知設定を取得
+        $notificationSettings = \App\Models\NotificationSetting::where('trigger_event', 'visitor_checkin')
+            ->where('is_active', true)
+            ->get();
+
+        $mentionIds = collect();
+
+        foreach ($notificationSettings as $setting) {
+            // メール通知の受信者を取得（notification_dataがメンションID）
+            $emailRecipients = $setting->activeRecipients()
+                ->where('notification_type', 'email')
+                ->get();
+
+            foreach ($emailRecipients as $recipient) {
+                // notification_dataをメンションIDとして使用
+                $mentionIds->push($recipient->notification_data);
+            }
+        }
+
+        return $mentionIds;
     }
 
 

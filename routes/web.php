@@ -53,7 +53,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::post('/pickups/{pickup}/apply-seal', [PickupController::class, 'applyDigitalSeal'])->name('pickups.apply-seal');
 });
 
-// アポイントアリの方
+// アポイントありの方
 Route::prefix('appointment')->name('appointment.')->group(function () {
     Route::get('/', [AppointmentController::class, 'index'])->name('index');
     Route::post('/check-in-qr', [AppointmentController::class, 'checkInQr'])->name('check-in-qr');
@@ -70,7 +70,7 @@ Route::prefix('interview')->name('interview.')->group(function () {
     Route::get('/', [InterviewController::class, 'index'])->name('index');
 });
 
-// その他の方
+// アポイントなしの方
 Route::prefix('other-visitor')->name('other-visitor.')->group(function () {
     Route::get('/create', [OtherVisitorController::class, 'create'])->name('create');
     Route::post('/select-department', [OtherVisitorController::class, 'selectDepartment'])->name('select-department');

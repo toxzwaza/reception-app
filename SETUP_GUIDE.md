@@ -4,7 +4,7 @@
 
 このシステムは以下の4つの受付タイプに対応しています：
 
-1. **アポイントアリの方**
+1. **アポイントありの方**
    - QRコード読み取りまたは受付番号（4桁）入力
    - 担当者へTeams通知を送信
 
@@ -14,7 +14,7 @@
 3. **面接の方**
    - 自動で面接担当者へTeams通知を送信
 
-4. **その他の方**
+4. **アポイントなしの方**
    - 訪問者情報入力（名刺撮影機能付き）
    - 部署選択後、該当部署へTeams通知を送信
 
@@ -93,7 +93,7 @@ php artisan serve
 ### visitors テーブルの新しいフィールド
 
 - `department_id` - 部署ID（その他の訪問者用）
-- `reception_number` - 受付番号（4桁、アポイントアリ用）
+- `reception_number` - 受付番号（4桁、アポイントあり用）
 - `visitor_type` - 訪問者タイプ（appointment, interview, other）
 - `number_of_people` - 人数
 - `purpose` - 要件
@@ -113,7 +113,7 @@ $response = Http::post($webhookUrl, $message);
 
 ## 機能詳細
 
-### 1. アポイントアリの方（/appointment）
+### 1. アポイントありの方（/appointment）
 
 **左側: QRコード読み取り**
 - カメラを使用してQRコードをスキャン
@@ -137,7 +137,7 @@ $response = Http::post($webhookUrl, $message);
 - 自動で面接担当者へTeams通知を送信
 - 待機メッセージを表示
 
-### 4. その他の方（/other-visitor/create）
+### 4. アポイントなしの方（/other-visitor/create）
 
 **訪問者情報入力:**
 - 社名（名刺撮影可能）

@@ -1,6 +1,6 @@
 <template>
   <ReceptionLayout 
-    title="その他の方" 
+    title="アポイントなしの方" 
     subtitle="訪問先部署を選択してください"
     :steps="['訪問者情報入力', '部署選択', '完了']"
     :current-step="1"

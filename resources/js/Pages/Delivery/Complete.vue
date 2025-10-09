@@ -2,7 +2,7 @@
   <ReceptionLayout
     title="処理完了"
     :showBackButton="false"
-    :steps="['情報入力', '書類撮影', '完了']"
+    :steps="['納品・集荷選択', '情報入力', '完了']"
     :currentStep="2"
   >
     <CompleteSection title="電子印の処理が完了しました">
