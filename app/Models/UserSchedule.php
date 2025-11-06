@@ -5,21 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class ScheduleEvent extends Model
+class UserSchedule extends Model
 {
     use HasFactory;
+
     /**
      * 使用するデータベース接続名
      *
      * @var string
      */
-
     protected $connection = 'akioka_db';
 
     protected $fillable = [
-        'facility_id',
+        'user_id',
         'date',
         'title',
         'start_datetime',
@@ -35,19 +34,10 @@ class ScheduleEvent extends Model
     // ];
 
     /**
-     * この予定が属する施設を取得
+     * この予定が属するユーザーを取得
      */
-    public function facility(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Facility::class);
-    }
-
-    /**
-     * この予定の参加者を取得
-     */
-    public function participants(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'schedule_participants')
-            ->withTimestamps();
+        return $this->belongsTo(User::class);
     }
 }

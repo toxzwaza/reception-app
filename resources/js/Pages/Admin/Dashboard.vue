@@ -45,12 +45,6 @@
                 <div class="mt-2 text-3xl font-bold text-gray-900">{{ stats.pendingAppointments }}</div>
               </div>
             </div>
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6">
-                <div class="text-sm font-medium text-gray-500">有効な面接用電話番号</div>
-                <div class="mt-2 text-3xl font-bold text-gray-900">{{ stats.activePhones }}</div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -71,6 +65,22 @@
                 </div>
                 <h4 class="text-lg font-semibold text-gray-900 mb-2">事前アポイント登録</h4>
                 <p class="text-sm text-gray-600">訪問者の事前登録とアポイント管理</p>
+              </div>
+            </Link>
+
+            <!-- 施設予約管理 -->
+            <Link 
+              :href="route('admin.facility-reservations.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-purple-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">施設予約管理</h4>
+                <p class="text-sm text-gray-600">会議室など施設の予約管理</p>
               </div>
             </Link>
 
@@ -151,6 +161,22 @@
                 </div>
                 <h4 class="text-lg font-semibold text-gray-900 mb-2">集荷伝票管理</h4>
                 <p class="text-sm text-gray-600">集荷伝票の確認と電子印管理</p>
+              </div>
+            </Link>
+
+            <!-- プロジェクトグループ管理 -->
+            <Link 
+              :href="route('admin.project-groups.index')"
+              class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-2 border-transparent hover:border-teal-500"
+            >
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-teal-100 rounded-lg mb-4">
+                  <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-2">プロジェクトグループ管理</h4>
+                <p class="text-sm text-gray-600">プロジェクトチームの登録と管理</p>
               </div>
             </Link>
           </div>

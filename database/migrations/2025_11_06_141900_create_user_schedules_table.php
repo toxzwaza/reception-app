@@ -12,9 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedule_events', function (Blueprint $table) {
+        // akioka_dbに接続してテーブルを作成
+        Schema::connection('akioka_db')->create('user_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('facility_id')->constrained('facilities')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->date('date');
             $table->string('title', 500);
             $table->string('start_datetime', 10);
@@ -25,12 +26,12 @@ return new class extends Migration
             $table->timestamps();
             
             // インデックス
-            $table->index(['facility_id', 'date']);
+            $table->index(['user_id', 'date']);
             $table->index('date');
         });
         
         // TEXT型のカラムを含むユニーク制約は手動で作成
-        DB::statement('ALTER TABLE schedule_events ADD UNIQUE KEY unique_event (facility_id, date, description_url(255))');
+        DB::connection('akioka_db')->statement('ALTER TABLE user_schedules ADD UNIQUE KEY unique_user_event (user_id, date, description_url(255))');
     }
 
     /**
@@ -38,7 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedule_events');
+        Schema::connection('akioka_db')->dropIfExists('user_schedules');
     }
 };
-

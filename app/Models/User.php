@@ -106,4 +106,29 @@ class User extends Authenticatable
     {
         return $this->gender_flg == 1 ? '女性' : '男性';
     }
+
+    /**
+     * このユーザーが属する部署を取得
+     */
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
+    }
+
+    /**
+     * このユーザーの予定を取得
+     */
+    public function userSchedules()
+    {
+        return $this->hasMany(UserSchedule::class);
+    }
+
+    /**
+     * このユーザーが所属するプロジェクトグループ
+     */
+    public function projectGroups()
+    {
+        return $this->belongsToMany(ProjectGroup::class, 'project_group_user', 'user_id', 'project_group_id')
+            ->withTimestamps();
+    }
 }

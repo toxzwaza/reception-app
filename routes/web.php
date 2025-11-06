@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityReservationController;
 use App\Http\Controllers\Admin\NotificationSettingController;
+use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
 use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
@@ -33,6 +35,21 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // 事前アポイント管理
     Route::resource('appointments', AdminAppointmentController::class);
+    
+    // 施設予約管理
+    Route::resource('facility-reservations', AdminFacilityReservationController::class);
+    
+    // プロジェクトグループ管理
+    Route::resource('project-groups', AdminProjectGroupController::class);
+    
+    // 施設予約取得API
+    Route::get('/facilities/{facility}/schedule', [AdminAppointmentController::class, 'getFacilitySchedule'])->name('facilities.schedule');
+    
+    // 部署のユーザー取得API
+    Route::get('/groups/{group}/users', [AdminAppointmentController::class, 'getUsersByGroup'])->name('groups.users');
+    
+    // ユーザー予定取得API
+    Route::post('/user-schedules', [AdminAppointmentController::class, 'getUserSchedules'])->name('user-schedules.get');
     
     // 通知設定管理
     Route::resource('staff-members', StaffMemberController::class);

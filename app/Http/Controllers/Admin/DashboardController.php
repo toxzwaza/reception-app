@@ -31,14 +31,13 @@ class DashboardController extends Controller
             ->count();
 
         // 面接用電話番号の登録数
-        $activePhones = InterviewPhone::active()->count();
+        // $activePhones = InterviewPhone::active()->count();
 
         return Inertia::render('Admin/Dashboard', [
             'announcements' => $announcements,
             'stats' => [
                 'todayAppointments' => $todayAppointments,
-                'pendingAppointments' => $pendingAppointments,
-                'activePhones' => $activePhones,
+                'pendingAppointments' => $pendingAppointments
             ],
         ]);
     }
