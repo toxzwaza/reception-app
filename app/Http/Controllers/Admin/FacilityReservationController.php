@@ -77,7 +77,7 @@ class FacilityReservationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'facility_id' => 'required|exists:facilities,id',
+            'facility_id' => 'required|exists:akioka_db.facilities,id',
             'title' => 'required|string|max:500',
             'start_datetime' => 'required|date_format:Y-m-d H:i',
             'end_datetime' => 'required|date_format:Y-m-d H:i|after:start_datetime',
