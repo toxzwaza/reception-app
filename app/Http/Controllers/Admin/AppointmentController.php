@@ -365,7 +365,6 @@ class AppointmentController extends Controller
 
         $schedules = UserSchedule::whereIn('user_id', $userIds)
             ->whereBetween('date', [$startDate, $endDate])
-            ->where('status', 1) // アクティブな予定のみ
             ->with(['user' => function ($query) {
                 $query->select('id', 'name', 'email')
                     ->where('del_flg', 0);
