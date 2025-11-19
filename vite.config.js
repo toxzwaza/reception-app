@@ -6,8 +6,8 @@ import path from 'path';
 
 export default defineConfig({
     server: {
-        https: false,
-        host: '127.0.0.1',
+        https: true,
+        host: true,
         port: 5173,
     },
     plugins: [

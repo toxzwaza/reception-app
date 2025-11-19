@@ -1,7 +1,7 @@
 <template>
   <ReceptionLayout
     title="納品業者受付"
-    subtitle="書類を撮影してください"
+    subtitle="書類をスキャンしてください"
     :steps="['納品・集荷選択', '情報入力', '完了']"
     :current-step="1"
   >
@@ -83,30 +83,26 @@
 
         <!-- カメラ表示またはプレビュー -->
         <div v-if="form.delivery_type" class="max-w-4xl mx-auto">
-          <!-- カメラ表示 -->
+          <!-- スキャン中表示 -->
           <div v-if="showCamera">
             <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">
-              {{ form.delivery_type }}を撮影してください
+              {{ form.delivery_type }}をスキャン中...
             </h3>
-            <div class="relative bg-black rounded-2xl overflow-hidden mb-6" style="height: 500px;">
-              <video
-                ref="videoElement"
-                autoplay
-                playsinline
-                class="w-full h-full object-cover"
-              ></video>
+            <div class="relative bg-gray-100 rounded-2xl overflow-hidden mb-6" style="height: 500px;">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="mb-4">
+                    <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <div class="text-2xl font-semibold text-gray-700">スキャン中...</div>
+                  <div class="text-sm text-gray-500 mt-2">書類をスキャナーにセットしてください</div>
+                </div>
+              </div>
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="border-4 border-indigo-500 border-dashed rounded-xl" style="width: 85%; height: 85%;"></div>
-              </div>
-              
-              <!-- カウントダウン表示 -->
-              <div v-if="isCountingDown" class="absolute top-4 right-4 pointer-events-none z-10">
-                <div class="text-center bg-black bg-opacity-80 rounded-full p-6">
-                  <div class="text-6xl font-bold text-white mb-2 animate-pulse">
-                    {{ countdown }}
-                  </div>
-                  <div class="text-sm text-white">撮影中...</div>
-                </div>
               </div>
             </div>
             
@@ -117,11 +113,11 @@
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                 </svg>
                 <div class="ml-3">
-                  <h3 class="text-sm font-medium text-blue-800">撮影のヒント</h3>
+                  <h3 class="text-sm font-medium text-blue-800">スキャンのヒント</h3>
                   <ul class="mt-2 text-sm text-blue-700 list-disc pl-5 space-y-1">
-                    <li>書類全体が枠内に収まるようにしてください</li>
-                    <li>明るい場所で撮影してください</li>
-                    <li>できるだけ真上から撮影してください</li>
+                    <li>書類をスキャナーに正しくセットしてください</li>
+                    <li>書類が曲がっていないか確認してください</li>
+                    <li>スキャン完了までお待ちください</li>
                   </ul>
                 </div>
               </div>
@@ -131,18 +127,10 @@
               <button
                 type="button"
                 @click="handleCancel"
-                :disabled="isCountingDown"
+                :disabled="isScanning"
                 class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
               >
                 キャンセル
-              </button>
-              <button
-                type="button"
-                @click="startCountdown"
-                :disabled="isCountingDown"
-                class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
-              >
-                {{ isCountingDown ? '撮影中...' : '撮影開始' }}
               </button>
             </div>
           </div>
@@ -194,14 +182,14 @@
             </div>
           </div>
 
-          <!-- 撮影開始ボタン -->
+          <!-- スキャン開始ボタン -->
           <div v-else class="text-center">
             <button
               type="button"
               @click="startCamera"
               class="px-12 py-6 bg-indigo-600 text-white text-xl rounded-lg font-semibold hover:bg-indigo-700 shadow-lg"
             >
-              撮影を開始
+              スキャンを開始
             </button>
           </div>
         </div>
@@ -216,8 +204,10 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, nextTick } from 'vue';
+import { ref, onUnmounted, nextTick, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { io } from 'socket.io-client';
+import axios from 'axios';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 
 const props = defineProps({
@@ -225,6 +215,44 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+});
+
+// ====== スキャンツール設定 ======
+// 環境変数から設定を取得（VITE_プレフィックスが必要）
+// または、windowオブジェクトから取得（Laravelの環境変数から設定）
+const RASPI_IP = import.meta.env.VITE_SCAN_TOOL_IP || window.SCAN_TOOL_IP || "192.168.210.90";
+const PORT = import.meta.env.VITE_SCAN_TOOL_PORT || window.SCAN_TOOL_PORT || 5001;
+
+// プロトコルを環境に応じて切り替え
+// 開発環境: http, 本番環境: https
+// VITE_SCAN_TOOL_PROTOCOL または SCAN_TOOL_PROTOCOL が設定されていない場合は、
+// APP_ENV が 'local' または 'development' の場合は http、それ以外は https
+const getProtocol = () => {
+  // 明示的にプロトコルが指定されている場合
+  const explicitProtocol = import.meta.env.VITE_SCAN_TOOL_PROTOCOL || window.SCAN_TOOL_PROTOCOL;
+  if (explicitProtocol) {
+    return explicitProtocol;
+  }
+  
+  // 環境に応じて自動判定
+  const appEnv = import.meta.env.MODE || window.APP_ENV || 'production';
+  if (appEnv === 'development' || appEnv === 'local') {
+    return 'http';
+  }
+  return 'https';
+};
+
+const PROTOCOL = getProtocol();
+const START_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/start_scan`;
+const GET_IMAGE_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/get_scan_image`;
+const WS_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}`;
+
+console.log('📡 スキャンツール設定:', {
+  protocol: PROTOCOL,
+  ip: RASPI_IP,
+  port: PORT,
+  startUrl: START_URL,
+  wsUrl: WS_URL,
 });
 
 // フォームデータ
@@ -241,11 +269,19 @@ const cameraError = ref('');
 const videoElement = ref(null);
 const countdown = ref(0);
 const isCountingDown = ref(false);
+const isScanning = ref(false);  // スキャン中フラグ
 let stream = null;
 let countdownTimer = null;
+let socket = null;  // Socket.IO接続
+
+onMounted(() => {
+  // Socket.IO接続を初期化
+  initializeSocket();
+});
 
 onUnmounted(() => {
   stopCamera();
+  disconnectSocket();
   if (countdownTimer) {
     clearInterval(countdownTimer);
   }
@@ -254,6 +290,140 @@ onUnmounted(() => {
 // 書類種類の選択
 const selectDocumentType = (type) => {
   form.value.delivery_type = type;
+};
+
+// Socket.IO接続の初期化
+const initializeSocket = () => {
+  try {
+    // 既存の接続があれば切断
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+    
+    console.log('🔌 Socket.IO に接続します...', WS_URL);
+    console.log('使用プロトコル:', PROTOCOL);
+    
+    socket = io(WS_URL, {
+      // pollingを最初に試行し、その後websocketにアップグレード
+      // これにより、WebSocketが失敗してもpollingで接続できる
+      transports: ['polling', 'websocket'],
+      // 接続タイムアウト（ミリ秒）
+      timeout: 15000,
+      // 再接続の試行回数
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      // 自動再接続の最大遅延
+      reconnectionDelayMax: 5000,
+      // 強制的にpollingのみを使用する場合（デバッグ用）
+      // forceNew: true,
+    });
+
+    // 接続成功
+    socket.on('connect', () => {
+      console.log('🔗 Socket.IO 接続成功');
+      console.log('接続ID:', socket.id);
+      console.log('使用中のトランスポート:', socket.io.engine.transport.name);
+      cameraError.value = '';
+    });
+
+    // 接続失敗
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket.IO接続エラー:', error);
+      console.error('エラー詳細:', {
+        message: error.message,
+        type: error.type,
+        description: error.description,
+        data: error.data,
+      });
+      
+      // エラーの種類に応じてメッセージを変更
+      let errorMessage = 'スキャンツールへの接続に失敗しました。';
+      let detailedMessage = '';
+      
+      if (error.message.includes('certificate') || error.message.includes('SSL') || error.message.includes('TLS')) {
+        errorMessage = 'SSL証明書の検証に失敗しました。';
+        detailedMessage = 'サーバーの証明書を確認してください。';
+      } else if (error.message.includes('timeout') || error.message.includes('timed out')) {
+        errorMessage = '接続がタイムアウトしました。';
+        detailedMessage = 'サーバーが起動しているか、ネットワーク接続を確認してください。';
+      } else if (error.message.includes('ECONNREFUSED') || error.message.includes('refused') || error.message.includes('Failed to fetch')) {
+        errorMessage = '接続が拒否されました。';
+        detailedMessage = `サーバー(${RASPI_IP}:${PORT})が起動しているか、ポートが正しいか確認してください。`;
+      } else if (error.message.includes('network') || error.message.includes('Network') || error.message.includes('ERR_NETWORK')) {
+        errorMessage = 'ネットワークエラーが発生しました。';
+        detailedMessage = 'サーバーに到達できるか、ファイアウォール設定を確認してください。';
+      } else if (error.message.includes('websocket error') || error.type === 'TransportError') {
+        errorMessage = 'WebSocket接続に失敗しました。';
+        detailedMessage = 'サーバーがSocket.IOをサポートしているか、CORS設定を確認してください。Pollingに自動的にフォールバックします。';
+      } else {
+        detailedMessage = `エラー: ${error.message || '不明なエラー'}`;
+      }
+      
+      cameraError.value = `${errorMessage} ${detailedMessage}`;
+    });
+
+    // 切断
+    socket.on('disconnect', (reason) => {
+      console.log('❌ Socket.IO 切断:', reason);
+      if (reason === 'io server disconnect') {
+        // サーバー側で切断された場合、手動で再接続
+        console.log('サーバー側で切断されました。再接続を試みます...');
+        socket.connect();
+      }
+    });
+
+    // 再接続試行
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 再接続試行中... (${attemptNumber}回目)`);
+      cameraError.value = `再接続を試みています... (${attemptNumber}回目)`;
+    });
+
+    // 再接続成功
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`✅ 再接続成功 (${attemptNumber}回目の試行)`);
+      console.log('使用中のトランスポート:', socket.io.engine.transport.name);
+      cameraError.value = '';
+    });
+
+    // 再接続エラー
+    socket.on('reconnect_error', (error) => {
+      console.error('再接続エラー:', error);
+    });
+
+    // 再接続失敗
+    socket.on('reconnect_failed', () => {
+      console.error('❌ 再接続に失敗しました。サーバーに接続できません。');
+      cameraError.value = `スキャンツール(${RASPI_IP}:${PORT})への接続に失敗しました。サーバーの状態を確認してください。`;
+    });
+
+    // スキャン完了イベント
+    socket.on('scan_completed', async (data) => {
+      console.log('📩 スキャン完了通知を受信:', data);
+      await handleScanCompleted();
+    });
+
+    // トランスポートの変更を監視
+    socket.io.on('upgrade', () => {
+      console.log('⬆️ トランスポートがアップグレードされました:', socket.io.engine.transport.name);
+    });
+
+    socket.io.on('upgradeError', (error) => {
+      console.warn('⚠️ トランスポートのアップグレードに失敗しました。Pollingを継続使用します:', error);
+    });
+  } catch (error) {
+    console.error('Socket.IO初期化エラー:', error);
+    cameraError.value = `スキャンツールの初期化に失敗しました: ${error.message}`;
+  }
+};
+
+// Socket.IO接続の切断
+const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
 };
 
 // 書類種類の変更
@@ -266,6 +436,7 @@ const changeDocumentType = () => {
   }
   isCountingDown.value = false;
   countdown.value = 0;
+  isScanning.value = false;
   showCamera.value = false;
   
   // フォームをリセット
@@ -275,7 +446,7 @@ const changeDocumentType = () => {
   cameraError.value = '';
 };
 
-// カメラ開始
+// スキャン開始（外部スキャンツールを使用）
 const startCamera = async () => {
   if (!form.value.delivery_type) {
     cameraError.value = '書類の種類を選択してください';
@@ -283,209 +454,150 @@ const startCamera = async () => {
   }
   
   try {
-    // 既存のストリームを停止
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
+    // Socket.IO接続を確認
+    if (!socket || !socket.connected) {
+      console.log('Socket.IO接続を再初期化します...');
+      initializeSocket();
+      
+      // 接続を待つ（最大10秒）
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('接続タイムアウト: 10秒以内に接続できませんでした'));
+        }, 10000);
+        
+        const cleanup = () => {
+          clearTimeout(timeout);
+          socket.off('connect', onConnect);
+          socket.off('connect_error', onError);
+        };
+        
+        const onConnect = () => {
+          cleanup();
+          console.log('✅ Socket.IO接続が確立されました');
+          resolve();
+        };
+        
+        const onError = (error) => {
+          cleanup();
+          console.error('❌ Socket.IO接続エラー:', error);
+          reject(error);
+        };
+        
+        socket.once('connect', onConnect);
+        socket.once('connect_error', onError);
+      });
+    } else {
+      console.log('✅ Socket.IO接続済み:', socket.id);
     }
     
-    console.log('カメラを開始しています...');
-    
-    // シンプルなカメラ設定
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { 
-        facingMode: 'user'
-      },
-      audio: false
-    });
-    
-    console.log('カメラストリームを取得しました():', stream);
-    
-    showCamera.value = true;
+    console.log('▶ /start_scan を送信してスキャンを開始');
+    isScanning.value = true;
     cameraError.value = '';
     
-    // DOMの更新を待ってからビデオ要素にアクセス
-    await nextTick();
+    // /start_scan にPOSTリクエストを送信
+    // ブラウザ環境ではSSL検証の無効化はできないため、サーバー側でCORSとSSL証明書の設定が必要
+    const response = await axios.post(START_URL, {}, {
+      timeout: 10000,
+      validateStatus: (status) => status < 500, // 500未満のステータスコードを許可
+    });
     
-    // ビデオ要素の存在を確認
-    if (!videoElement.value) {
-      console.error('ビデオ要素が見つかりません');
-      cameraError.value = 'ビデオ要素の初期化に失敗しました';
-      return;
-    }
+    console.log('レスポンス:', response.data);
+    showCamera.value = true;
     
-    console.log('ビデオ要素を確認しました:', videoElement.value);
-    
-    // ストリームを設定
-    videoElement.value.srcObject = stream;
-    console.log('ビデオ要素にストリームを設定しました');
-    
-    // ビデオの再生を開始
-    try {
-      await videoElement.value.play();
-      console.log('ビデオの再生を開始しました');
-    } catch (error) {
-      console.error('ビデオの再生に失敗しました:', error);
-    }
-    
-    // ビデオの準備完了を待ってからカウントダウン開始
-    waitForVideoReady();
+    // スキャン完了通知を待機（scan_completedイベントで処理）
   } catch (error) {
-    console.error('カメラの起動に失敗しました:', error);
-    cameraError.value = `カメラの起動に失敗しました: ${error.message}`;
-  }
-};
-
-// ビデオの準備完了を待機
-const waitForVideoReady = () => {
-  let checkCount = 0;
-  const maxChecks = 100; // 最大10秒間チェック
-  let countdownStarted = false; // カウントダウンが既に開始されたかを追跡
-  
-  const checkVideo = () => {
-    checkCount++;
-    const video = videoElement.value;
+    console.error('スキャン開始エラー:', error);
+    isScanning.value = false;
+    showCamera.value = false;
     
-    console.log(`ビデオ準備チェック ${checkCount}/${maxChecks}:`, {
-      videoExists: !!video,
-      videoWidth: video?.videoWidth || 0,
-      videoHeight: video?.videoHeight || 0,
-      readyState: video?.readyState || 0,
-      paused: video?.paused,
-      ended: video?.ended
-    });
-    
-    if (video && video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2 && !countdownStarted) {
-      console.log('ビデオが準備完了しました:', {
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-        readyState: video.readyState
-      });
-      countdownStarted = true;
-      // 2秒後にカウントダウン開始
-      setTimeout(() => {
-        if (!isCountingDown.value) {
-          console.log('カウントダウンを開始します');
-          startCountdown();
-        }
-      }, 2000);
-    } else if (checkCount >= maxChecks) {
-      console.error('ビデオの準備がタイムアウトしました');
-      cameraError.value = 'カメラの準備に時間がかかりすぎています。ページを再読み込みしてください。';
+    if (error.message && error.message.includes('タイムアウト')) {
+      cameraError.value = 'スキャンツールへの接続がタイムアウトしました。サーバーが起動しているか確認してください。';
+    } else if (error.code === 'ECONNABORTED') {
+      cameraError.value = 'リクエストがタイムアウトしました。';
+    } else if (error.response) {
+      cameraError.value = `スキャン開始に失敗しました: ${error.response.status} - ${error.response.statusText}`;
+    } else if (error.message) {
+      cameraError.value = `スキャン開始に失敗しました: ${error.message}`;
     } else {
-      // 100ms後に再チェック
-      setTimeout(checkVideo, 100);
+      cameraError.value = 'スキャン開始に失敗しました。サーバーの状態を確認してください。';
     }
-  };
-  
-  checkVideo();
-};
-
-// カウントダウン開始
-const startCountdown = () => {
-  // 既存のタイマーをクリア
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
-  
-  countdown.value = 3;
-  isCountingDown.value = true;
-  
-  console.log('カウントダウンを3から開始します');
-  
-  countdownTimer = setInterval(() => {
-    countdown.value--;
-    console.log('カウントダウン:', countdown.value);
-    if (countdown.value <= 0) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
-      isCountingDown.value = false;
-      console.log('カウントダウン終了、撮影を開始します');
-      captureDocument();
-    }
-  }, 1000);
-};
-
-// カメラ停止
-const stopCamera = () => {
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    stream = null;
   }
 };
 
-// 書類を撮影
-const captureDocument = () => {
-  const video = videoElement.value;
-  if (!video) {
-    console.error('ビデオ要素が見つかりません');
-    return;
-  }
-
+// スキャン完了時の処理
+const handleScanCompleted = async () => {
   try {
-    // ビデオの準備状態を確認
-    console.log('ビデオの状態:', {
-      videoWidth: video.videoWidth,
-      videoHeight: video.videoHeight,
-      readyState: video.readyState,
-      paused: video.paused,
-      ended: video.ended
+    console.log('📡 /get_scan_image を取得中...');
+    
+    // /get_scan_image から画像を取得
+    // ブラウザ環境ではSSL検証の無効化はできないため、サーバー側でCORSとSSL証明書の設定が必要
+    const response = await axios.get(GET_IMAGE_URL, {
+      timeout: 10000,
+      validateStatus: (status) => status < 500, // 500未満のステータスコードを許可
     });
     
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      throw new Error('ビデオがまだ準備できていません。しばらく待ってから再度お試しください。');
+    if (response.status !== 200) {
+      throw new Error(`画像取得エラー: ${response.status}`);
     }
     
-    if (video.readyState < 2) {
-      throw new Error('ビデオの読み込みが完了していません。しばらく待ってから再度お試しください。');
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
+    const jsonData = response.data;
+    const imgBase64 = jsonData.image;
     
-    if (!context) {
-      throw new Error('キャンバスコンテキストの取得に失敗しました');
+    if (!imgBase64) {
+      throw new Error('画像データが取得できませんでした');
     }
     
-    // ビデオをキャンバスに描画
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    console.log('💾 画像データを取得しました');
     
-    // キャンバスの内容を確認
-    const imageData = context.getImageData(0, 0, Math.min(10, canvas.width), Math.min(10, canvas.height));
-    const hasContent = imageData.data.some(value => value !== 0);
-    console.log('キャンバスに内容があるか:', hasContent);
+    // Base64データをData URLに変換
+    const dataUrl = `data:image/jpeg;base64,${imgBase64}`;
     
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    console.log('データURLを生成しました:', dataUrl ? '成功' : '失敗');
-    console.log('データURLの長さ:', dataUrl ? dataUrl.length : 0);
-    console.log('データURLの先頭:', dataUrl ? dataUrl.substring(0, 50) : 'null');
-    
-    if (!dataUrl || dataUrl === 'data:,') {
-      throw new Error('画像データの生成に失敗しました。カメラ映像が正しく表示されていない可能性があります。');
-    }
-    
+    // プレビューに表示
     form.value.document_preview = dataUrl;
     
     // タイムスタンプ付きファイル名を生成
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const filename = `document_${timestamp}.jpg`;
     
-    try {
-      form.value.document_image = dataURLtoFile(dataUrl, filename);
-      console.log('ファイル変換成功:', filename);
-    } catch (fileError) {
-      console.error('ファイル変換エラー:', fileError);
-      throw fileError;
+    // Base64をFileオブジェクトに変換
+    form.value.document_image = base64ToFile(imgBase64, filename);
+    
+    console.log('✅ 画像の処理が完了しました:', filename);
+    
+    // スキャン完了
+    isScanning.value = false;
+    showCamera.value = false;
+    
+  } catch (error) {
+    console.error('画像取得エラー:', error);
+    isScanning.value = false;
+    cameraError.value = `画像の取得に失敗しました: ${error.message}`;
+  }
+};
+
+// Base64文字列をFileオブジェクトに変換
+const base64ToFile = (base64String, filename) => {
+  try {
+    // Base64文字列をバイナリに変換
+    const binaryString = atob(base64String);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
     
-    stopCamera();
-    showCamera.value = false;
+    return new File([bytes], filename, { type: 'image/jpeg' });
   } catch (error) {
-    console.error('撮影エラー:', error);
-    cameraError.value = `撮影に失敗しました: ${error.message}`;
+    console.error('ファイル変換エラー:', error);
+    throw new Error(`画像の処理に失敗しました: ${error.message}`);
+  }
+};
+
+// カメラ停止（互換性のため残す）
+const stopCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
   }
 };
 
@@ -497,6 +609,7 @@ const handleCancel = () => {
   }
   isCountingDown.value = false;
   countdown.value = 0;
+  isScanning.value = false;
   stopCamera();
   showCamera.value = false;
 };
@@ -511,13 +624,14 @@ const retakeImage = () => {
   }
   isCountingDown.value = false;
   countdown.value = 0;
+  isScanning.value = false;
   startCamera();
 };
 
 // フォーム送信
 const submitForm = () => {
   if (!form.value.document_image) {
-    cameraError.value = '書類を撮影してください';
+    cameraError.value = '書類をスキャンしてください';
     return;
   }
 
@@ -533,35 +647,4 @@ const submitForm = () => {
   });
 };
 
-// Data URL を File オブジェクトに変換
-const dataURLtoFile = (dataurl, filename) => {
-  try {
-    if (!dataurl || typeof dataurl !== 'string') {
-      throw new Error('無効なデータURLです');
-    }
-    
-    const arr = dataurl.split(',');
-    if (arr.length !== 2) {
-      throw new Error('データURLの形式が正しくありません');
-    }
-    
-    const mimeMatch = arr[0].match(/:(.*?);/);
-    if (!mimeMatch) {
-      throw new Error('MIMEタイプの取得に失敗しました');
-    }
-    
-    const mime = mimeMatch[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
-  } catch (error) {
-    console.error('ファイル変換エラー:', error);
-    console.error('データURL:', dataurl);
-    throw new Error(`画像の処理に失敗しました: ${error.message}`);
-  }
-};
 </script>

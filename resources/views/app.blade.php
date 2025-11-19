@@ -22,6 +22,12 @@
                     .catch(err => console.log('SW registration failed:', err));
             });
         }
+        
+        // スキャンツール設定をLaravelの環境変数から取得
+        window.SCAN_TOOL_IP = @json(env('SCAN_TOOL_IP', '192.168.210.90'));
+        window.SCAN_TOOL_PORT = @json(env('SCAN_TOOL_PORT', 5001));
+        window.SCAN_TOOL_PROTOCOL = @json(env('SCAN_TOOL_PROTOCOL', null));
+        window.APP_ENV = @json(config('app.env', 'production'));
     </script>
     
 
