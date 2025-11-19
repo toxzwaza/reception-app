@@ -119,7 +119,7 @@ const formatDate = (dateString) => {
 const printQR = async () => {
   try {
     // プリントサーバーに送信（Flask側でURLを受け取って印刷）
-    const response = await axios.post('https://192.168.210.91/print', {
+    const response = await axios.post('https://192.168.210.91:5000/print', {
       url: qrCodeImageUrl.value, // 送信したいURL
     }, {
       headers: { 'Content-Type': 'application/json' },
