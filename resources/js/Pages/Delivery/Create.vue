@@ -29,7 +29,7 @@
 
             <button
               type="button"
-              @click="selectDocumentType('受領書')"
+              @click="selectDocumentType('その他書類')"
               class="bg-white p-12 text-center rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-2xl transition-all duration-200 cursor-pointer group"
             >
               <div class="flex flex-col items-center">
@@ -38,8 +38,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                 </div>
-                <div class="text-2xl font-bold mb-3 text-gray-900">受領書</div>
-                <div class="text-gray-600">受領書の電子印処理を行います</div>
+                <div class="text-2xl font-bold mb-3 text-gray-900">その他書類</div>
+                <div class="text-gray-600">その他書類の電子印処理を行います</div>
               </div>
             </button>
           </div>
