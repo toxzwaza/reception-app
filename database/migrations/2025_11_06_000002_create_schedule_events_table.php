@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedule_events', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('schedule_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('facility_id')->constrained('facilities')->onDelete('cascade');
             $table->date('date');
@@ -30,7 +30,7 @@ return new class extends Migration
         });
         
         // TEXT型のカラムを含むユニーク制約は手動で作成
-        DB::statement('ALTER TABLE schedule_events ADD UNIQUE KEY unique_event (facility_id, date, description_url(255))');
+        DB::connection('akioka_db')->statement('ALTER TABLE schedule_events ADD UNIQUE KEY unique_event (facility_id, date, description_url(255))');
     }
 
     /**
@@ -38,7 +38,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedule_events');
+        Schema::connection('akioka_db')->dropIfExists('schedule_events');
     }
 };
 

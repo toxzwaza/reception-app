@@ -16,7 +16,7 @@ class ScheduleEvent extends Model
      * @var string
      */
 
-    protected $connection = 'akioka_db';
+
 
     protected $fillable = [
         'facility_id',

@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pickup extends Model
 {
+    /**
+     * 使用するデータベース接続名
+     *
+     * @var string
+     */
+
+
     protected $fillable = [
         'slip_image',
         'sealed_slip_image',

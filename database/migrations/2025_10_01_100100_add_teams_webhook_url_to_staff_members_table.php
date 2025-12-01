@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             // Teams Webhook URL
             $table->string('teams_webhook_url')->nullable()->after('teams_id');
         });
@@ -16,7 +16,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             $table->dropColumn('teams_webhook_url');
         });
     }

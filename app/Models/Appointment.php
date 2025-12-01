@@ -11,6 +11,13 @@ class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * 使用するデータベース接続名
+     *
+     * @var string
+     */
+
+
     protected $fillable = [
         'reception_number',
         'company_name',

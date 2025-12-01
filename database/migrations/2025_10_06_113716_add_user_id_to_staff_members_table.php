@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             $table->unsignedBigInteger('user_id')->nullable()->after('id')->comment('ユーザーID（akioka_db.usersテーブル参照）');
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             $table->dropColumn('user_id');
         });
     }

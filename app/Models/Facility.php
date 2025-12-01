@@ -15,7 +15,7 @@ class Facility extends Model
      *
      * @var string
      */
-    protected $connection = 'akioka_db';
+
 
     protected $fillable = [
         'name',

@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('appointments', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('appointments', function (Blueprint $table) {
             $table->boolean('send_flg')->default(false)->comment('メール送信済みフラグ');
         });
     }
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('appointments', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('appointments', function (Blueprint $table) {
             $table->dropColumn('send_flg');
         });
     }

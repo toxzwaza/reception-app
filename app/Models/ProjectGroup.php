@@ -10,7 +10,7 @@ class ProjectGroup extends Model
 {
     use HasFactory;
 
-    protected $connection = 'akioka_db';
+
 
     protected $fillable = [
         'name',

@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffMember extends Model
 {
+    /**
+     * 使用するデータベース接続名
+     *
+     * @var string
+     */
+
+
     protected $fillable = [
         'user_id',
     ];

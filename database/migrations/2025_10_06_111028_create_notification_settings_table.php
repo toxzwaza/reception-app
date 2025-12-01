@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('notification_settings', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('notification_settings', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // 通知名
             $table->string('description')->nullable(); // 通知の説明
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('notification_settings');
+        Schema::connection('akioka_db')->dropIfExists('notification_settings');
     }
 };

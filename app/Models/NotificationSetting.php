@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class NotificationSetting extends Model
 {
+    /**
+     * 使用するデータベース接続名
+     *
+     * @var string
+     */
+
+
     protected $fillable = [
         'name',
         'description',

@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Delivery extends Model
 {
+    /**
+     * 使用するデータベース接続名
+     *
+     * @var string
+     */
+
+
     protected $fillable = [
         'delivery_type',
         'document_image',

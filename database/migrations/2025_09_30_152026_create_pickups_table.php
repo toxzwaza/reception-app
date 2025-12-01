@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('pickups', function (Blueprint $table) {
             $table->id();
             $table->string('company_name');
             $table->string('slip_image'); // 撮影した集荷伝票の画像パス
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('pickups');
+        Schema::connection('akioka_db')->dropIfExists('pickups');
     }
 };

@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 既存のテーブルがある場合はスキップ
+        if (Schema::connection('akioka_db')->hasTable('user_schedules')) {
+            return;
+        }
+        
         // akioka_dbに接続してテーブルを作成
         Schema::connection('akioka_db')->create('user_schedules', function (Blueprint $table) {
             $table->id();
@@ -30,8 +35,15 @@ return new class extends Migration
             $table->index('date');
         });
         
-        // TEXT型のカラムを含むユニーク制約は手動で作成
-        DB::connection('akioka_db')->statement('ALTER TABLE user_schedules ADD UNIQUE KEY unique_user_event (user_id, date, description_url(255))');
+        // TEXT型のカラムを含むユニーク制約は手動で作成（既に存在する場合はスキップ）
+        try {
+            DB::connection('akioka_db')->statement('ALTER TABLE user_schedules ADD UNIQUE KEY unique_user_event (user_id, date, description_url(255))');
+        } catch (\Exception $e) {
+            // 既にユニーク制約が存在する場合はスキップ
+            if (strpos($e->getMessage(), 'Duplicate key name') === false) {
+                throw $e;
+            }
+        }
     }
 
     /**

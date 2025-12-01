@@ -14,20 +14,20 @@ return new class extends Migration
     public function up()
     {
         // deliveriesテーブルのsealed_document_imageカラムを削除して再作成
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->dropColumn('sealed_document_image');
         });
         
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->string('sealed_document_image')->nullable()->after('document_image');
         });
         
         // pickupsテーブルのsealed_slip_imageカラムを削除して再作成
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->dropColumn('sealed_slip_image');
         });
         
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->string('sealed_slip_image')->nullable()->after('slip_image');
         });
     }
@@ -40,20 +40,20 @@ return new class extends Migration
     public function down()
     {
         // deliveriesテーブルのsealed_document_imageカラムを削除して再作成（not null）
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->dropColumn('sealed_document_image');
         });
         
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->string('sealed_document_image')->after('document_image');
         });
         
         // pickupsテーブルのsealed_slip_imageカラムを削除して再作成（not null）
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->dropColumn('sealed_slip_image');
         });
         
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->string('sealed_slip_image')->after('slip_image');
         });
     }

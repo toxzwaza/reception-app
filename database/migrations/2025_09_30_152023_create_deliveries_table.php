@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('deliveries', function (Blueprint $table) {
             $table->id();
             $table->string('company_name');
             $table->string('delivery_type'); // 納品書 or 受領書
@@ -23,6 +23,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('deliveries');
+        Schema::connection('akioka_db')->dropIfExists('deliveries');
     }
 };

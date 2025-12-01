@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedule_participants', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('schedule_participants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('schedule_event_id')->constrained('schedule_events')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -31,7 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedule_participants');
+        Schema::connection('akioka_db')->dropIfExists('schedule_participants');
     }
 };
 

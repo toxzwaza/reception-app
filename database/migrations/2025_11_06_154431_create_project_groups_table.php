@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
+        // 既存のテーブルがある場合はスキップ
+        if (Schema::connection('akioka_db')->hasTable('project_groups')) {
+            return;
+        }
+        
         Schema::connection('akioka_db')->create('project_groups', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -28,6 +33,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('project_groups');
+        Schema::connection('akioka_db')->dropIfExists('project_groups');
     }
 };

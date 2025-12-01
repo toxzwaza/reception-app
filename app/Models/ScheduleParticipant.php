@@ -14,7 +14,7 @@ class ScheduleParticipant extends Model
      *
      * @var string
      */
-    protected $connection = 'akioka_db';
+
     protected $table = 'schedule_participants';
 
     protected $fillable = [

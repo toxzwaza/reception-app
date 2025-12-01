@@ -15,7 +15,7 @@ class UserSchedule extends Model
      *
      * @var string
      */
-    protected $connection = 'akioka_db';
+
 
     protected $fillable = [
         'user_id',

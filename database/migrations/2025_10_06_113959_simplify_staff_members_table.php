@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             // 不要なカラムを削除
             $table->dropColumn(['name', 'email', 'department', 'teams_id', 'teams_webhook_url', 'electronic_seal']);
         });
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('staff_members', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('staff_members', function (Blueprint $table) {
             $table->string('name');
             $table->string('email')->unique();
             $table->string('department');

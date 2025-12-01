@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('appointments', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('appointments', function (Blueprint $table) {
             $table->id();
             $table->string('reception_number', 4)->unique()->comment('受付番号（4桁）');
             $table->string('company_name')->comment('会社名');
@@ -39,6 +39,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('appointments');
+        Schema::connection('akioka_db')->dropIfExists('appointments');
     }
 };

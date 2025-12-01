@@ -6,8 +6,8 @@ import path from 'path';
 
 export default defineConfig({
     server: {
-        https: true,
-        host: true,
+        // https: true,
+        // host: '0.0.0.0', // IPv4を明示的に指定（IPv6の[::]を避ける）
         port: 5173,
     },
     plugins: [

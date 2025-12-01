@@ -14,12 +14,12 @@ return new class extends Migration
     public function up()
     {
         // deliveriesテーブルからcompany_nameカラムを削除
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->dropColumn('company_name');
         });
         
         // pickupsテーブルからcompany_nameカラムを削除
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->dropColumn('company_name');
         });
     }
@@ -32,12 +32,12 @@ return new class extends Migration
     public function down()
     {
         // deliveriesテーブルにcompany_nameカラムを復元
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->string('company_name')->after('id');
         });
         
         // pickupsテーブルにcompany_nameカラムを復元
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->string('company_name')->after('id');
         });
     }

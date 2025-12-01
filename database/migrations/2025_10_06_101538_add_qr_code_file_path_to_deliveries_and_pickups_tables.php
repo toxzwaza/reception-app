@@ -14,12 +14,12 @@ return new class extends Migration
     public function up()
     {
         // deliveriesテーブルにqr_code_file_pathカラムを追加
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->string('qr_code_file_path')->nullable()->after('qr_code_url');
         });
         
         // pickupsテーブルにqr_code_file_pathカラムを追加
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->string('qr_code_file_path')->nullable()->after('qr_code_url');
         });
     }
@@ -32,12 +32,12 @@ return new class extends Migration
     public function down()
     {
         // deliveriesテーブルからqr_code_file_pathカラムを削除
-        Schema::table('deliveries', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('deliveries', function (Blueprint $table) {
             $table->dropColumn('qr_code_file_path');
         });
         
         // pickupsテーブルからqr_code_file_pathカラムを削除
-        Schema::table('pickups', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('pickups', function (Blueprint $table) {
             $table->dropColumn('qr_code_file_path');
         });
     }

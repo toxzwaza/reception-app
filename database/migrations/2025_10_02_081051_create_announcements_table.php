@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('announcements', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('announcements', function (Blueprint $table) {
             $table->id();
             $table->string('title')->comment('お知らせタイトル');
             $table->text('content')->comment('お知らせ内容');
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('announcements');
+        Schema::connection('akioka_db')->dropIfExists('announcements');
     }
 };

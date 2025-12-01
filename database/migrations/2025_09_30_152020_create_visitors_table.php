@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('visitors', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('visitors', function (Blueprint $table) {
             $table->id();
             $table->string('company_name');
             $table->string('visitor_name');
@@ -29,6 +29,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('visitors');
+        Schema::connection('akioka_db')->dropIfExists('visitors');
     }
 };

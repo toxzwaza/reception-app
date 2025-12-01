@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('notification_recipients', function (Blueprint $table) {
+        Schema::connection('akioka_db')->create('notification_recipients', function (Blueprint $table) {
             $table->id();
             $table->foreignId('notification_setting_id')->constrained('notification_settings')->onDelete('cascade');
             $table->unsignedBigInteger('user_id')->comment('ユーザーID（akioka_db.usersテーブル参照）');
@@ -25,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('notification_recipients');
+        Schema::connection('akioka_db')->dropIfExists('notification_recipients');
     }
 };

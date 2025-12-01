@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('appointments', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('appointments', function (Blueprint $table) {
             // 既存の外部キー制約を削除
             $table->dropForeign(['staff_member_id']);
             
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('appointments', function (Blueprint $table) {
+        Schema::connection('akioka_db')->table('appointments', function (Blueprint $table) {
             // 外部キー制約を削除
             $table->dropForeign(['staff_member_id']);
             

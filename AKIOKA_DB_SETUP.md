@@ -121,7 +121,7 @@ CREATE TABLE `users` (
 ```php
 class User extends Authenticatable
 {
-    protected $connection = 'akioka_db';
+
     // ...
 }
 ```
