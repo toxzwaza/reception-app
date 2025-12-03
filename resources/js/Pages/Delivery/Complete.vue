@@ -35,6 +35,8 @@
           <div class="mt-4 p-3 bg-gray-50 rounded-lg">
             <div class="text-xs text-gray-500 mb-1">QRコード画像URL:</div>
             <div class="text-xs text-blue-600 break-all">{{ qrCodeImageUrl }}</div>
+            <div class="text-xs text-gray-500 mt-2 mb-1">印刷用URL:</div>
+            <div class="text-xs text-blue-600 break-all">{{ qrCodePrintUrl }}</div>
           </div>
         </div>
 
@@ -76,6 +78,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import axios from 'axios';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 import CompleteSection from '@/Components/UI/CompleteSection.vue';
 import Button from '@/Components/UI/Button.vue';
@@ -91,8 +94,16 @@ const props = defineProps({
   },
 });
 
-// QRコード画像のURLを生成
+// QRコード画像のURLを生成（画像表示用）
 const qrCodeImageUrl = computed(() => {
+  if (!props.delivery?.id) {
+    return '';
+  }
+  return route('delivery.qr', props.delivery.id);
+});
+
+// 印刷用のURL（qr_code_urlを使用）
+const qrCodePrintUrl = computed(() => {
   return props.delivery.qr_code_url || '';
 });
 
@@ -120,7 +131,7 @@ const printQR = async () => {
   try {
     // プリントサーバーに送信（Flask側でURLを受け取って印刷）
     const response = await axios.post('https://192.168.210.91:5000/print', {
-      url: qrCodeImageUrl.value, // 送信したいURL
+      url: qrCodePrintUrl.value, // 印刷用URL（qr_code_url）
     }, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 10000, // 10秒でタイムアウト

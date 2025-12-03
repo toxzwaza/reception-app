@@ -624,9 +624,15 @@ const uniqueOrderUsers = computed(() => {
 
 // 電子印済み書類画像のURL
 const sealedDocumentUrl = computed(() => {
-  return props.delivery.sealed_document_image
-    ? `/storage/${props.delivery.sealed_document_image}`
-    : null;
+  if (!props.delivery.sealed_document_image) {
+    return null;
+  }
+  // 絶対URLの場合はそのまま、相対パスの場合は/storage/を付与
+  const imagePath = props.delivery.sealed_document_image;
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  return `/storage/${imagePath}`;
 });
 
 // 表示する画像URL（電子印済み画像を優先、なければ元の書類画像）

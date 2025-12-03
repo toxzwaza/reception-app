@@ -41,12 +41,15 @@ class DeliveryController extends Controller
 
         // 書類画像の保存
         $documentPath = $request->file('document_image')->store('delivery_documents', 'public');
-        $validated['document_image'] = $documentPath;
+
+        // 外部公開URL（例: https://akioka-reception.cloud/storage/xxx.jpg）をdocument_imageに保存する
+        $publicUrl = config('app.url') . '/storage/' . ltrim($documentPath, '/');
+        $validated['document_image'] = $publicUrl;
 
         // 納品記録の作成
         $delivery = Delivery::create([
             'delivery_type' => $validated['delivery_type'],
-            'document_image' => $documentPath,
+            'document_image' => $publicUrl,
             'received_at' => now(),
         ]);
 
@@ -80,9 +83,19 @@ class DeliveryController extends Controller
     // 納品書類の表示
     public function show(Delivery $delivery): Response
     {
+        // sealed_document_imageが存在する場合はそれを、なければdocument_imageを使用
+        $documentImage = $delivery->sealed_document_image ?? $delivery->document_image;
+        
+        // 絶対URLの場合はそのまま、相対パスの場合はStorage::urlを使用
+        if (strpos($documentImage, 'http://') === 0 || strpos($documentImage, 'https://') === 0) {
+            $sealedDocumentUrl = $documentImage;
+        } else {
+            $sealedDocumentUrl = Storage::url($documentImage);
+        }
+
         return Inertia::render('Delivery/Show', [
             'delivery' => $delivery,
-            'sealedDocumentUrl' => Storage::url($delivery->document_image),
+            'sealedDocumentUrl' => $sealedDocumentUrl,
         ]);
     }
 
@@ -241,9 +254,17 @@ class DeliveryController extends Controller
             }
         }
 
+        // document_imageのURL生成（絶対URLの場合はそのまま、相対パスの場合はStorage::urlを使用）
+        $documentImage = $delivery->document_image;
+        if (strpos($documentImage, 'http://') === 0 || strpos($documentImage, 'https://') === 0) {
+            $documentUrl = $documentImage;
+        } else {
+            $documentUrl = Storage::url($documentImage);
+        }
+
         return Inertia::render('Admin/Deliveries/Show', [
             'delivery' => $delivery,
-            'documentUrl' => Storage::url($delivery->document_image),
+            'documentUrl' => $documentUrl,
             'qrCodeUrl' => $delivery->qr_code_file_path ? route('delivery.qr', $delivery) : null,
             'linkedOrder' => $linkedOrder,
         ]);
@@ -262,9 +283,7 @@ class DeliveryController extends Controller
             $order = InitialOrder::findOrFail($validated['order_id']);
 
             // delifile_pathを設定: https://akioka-reception.cloud/ + delivery.document_image
-            $delifilePath = 'https://akioka-reception.cloud/' . $delivery->document_image;
-
-            $order->delifile_path = $delifilePath;
+            $order->delifile_path = $delivery->document_image;
 
             // 完納の場合はreceive_flgを1に設定
             if ($validated['delivery_type'] === 'complete') {
@@ -348,8 +367,17 @@ class DeliveryController extends Controller
     // 電子印付き画像の作成
     private function createSealedImage(Delivery $delivery, array $sealPositions): string
     {
-        // 元画像のパス
-        $originalImagePath = storage_path('app/public/' . $delivery->document_image);
+        // 元画像のパス取得（絶対URLの場合は相対パスに変換）
+        $documentImage = $delivery->document_image;
+        if (strpos($documentImage, 'http://') === 0 || strpos($documentImage, 'https://') === 0) {
+            // 絶対URLの場合、/storage/以降のパスを抽出
+            $path = parse_url($documentImage, PHP_URL_PATH);
+            $relativePath = str_replace('/storage/', '', $path);
+            $originalImagePath = storage_path('app/public/' . $relativePath);
+        } else {
+            // 相対パスの場合
+            $originalImagePath = storage_path('app/public/' . $documentImage);
+        }
 
         // 電子印画像のパス
         $sealImagePath = storage_path('app/public/stamp/sealed.png');
@@ -407,7 +435,9 @@ class DeliveryController extends Controller
         imagedestroy($originalImage);
         imagedestroy($sealImage);
 
-        return $sealedImagePath;
+        // 絶対URLを生成して返す（document_imageと同じ形式）
+        $publicUrl = config('app.url') . '/storage/' . ltrim($sealedImagePath, '/');
+        return $publicUrl;
     }
 
     // 電子印を画像に配置
