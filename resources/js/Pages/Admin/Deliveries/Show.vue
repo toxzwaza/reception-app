@@ -126,13 +126,81 @@
               {{ displayImageTitle }}
             </h3>
             <div class="text-center">
-              <img
-                :src="displayImageUrl"
-                :alt="displayImageTitle"
-                class="max-w-full h-auto mx-auto rounded-lg shadow-lg"
-                style="max-height: 600px"
-              />
-              <div class="mt-4">
+              <!-- プレビュー表示用の画像コンテナ（回転を考慮したサイズ） -->
+              <div
+                class="inline-block mx-auto"
+                :style="{
+                  width: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : 'auto',
+                  height: (rotationAngle === 90 || rotationAngle === 270) ? 'auto' : '600px',
+                  maxWidth: '100%',
+                  maxHeight: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : '600px',
+                  minHeight: '200px',
+                  minWidth: (rotationAngle === 90 || rotationAngle === 270) ? '600px' : 'auto',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  padding: (rotationAngle === 90 || rotationAngle === 270) ? '50px 0' : '0',
+                  boxSizing: 'border-box',
+                }"
+              >
+                <div
+                  class="mx-auto rounded-lg shadow-lg transition-transform duration-300"
+                  :style="{
+                    transform: `rotate(${rotationAngle}deg)`,
+                    transformOrigin: 'center center',
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                  }"
+                >
+                  <img
+                    :src="displayImageUrl"
+                    :alt="displayImageTitle"
+                    class="max-w-full h-auto rounded-lg"
+                    style="max-height: 600px; max-width: 600px; display: block;"
+                  />
+                </div>
+              </div>
+              <div v-if="rotationAngle !== 0" class="mt-2 text-sm text-orange-600">
+                回転角度: {{ rotationAngle }}°（プレビュー）
+              </div>
+              <div class="mt-4 flex justify-center gap-2 flex-wrap" style="position: relative; z-index: 10;">
+                <!-- 画像回転ボタン（プレビュー用） -->
+                <button
+                  @click="previewRotate(90)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="時計回りに90度回転（プレビュー）"
+                >
+                  ↻ 90°回転
+                </button>
+                <button
+                  @click="previewRotate(-90)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="反時計回りに90度回転（プレビュー）"
+                >
+                  ↺ 90°回転
+                </button>
+                <button
+                  @click="previewRotate(180)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="180度回転（プレビュー）"
+                >
+                  ↻ 180°回転
+                </button>
+                <button
+                  v-if="rotationAngle !== 0"
+                  @click="resetRotation"
+                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="回転をリセット"
+                >
+                  リセット
+                </button>
+                <button
+                  v-if="rotationAngle !== 0"
+                  @click="saveRotation"
+                  class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="回転を保存"
+                >
+                  保存
+                </button>
                 <a
                   :href="displayImageUrl"
                   target="_blank"
@@ -594,6 +662,9 @@ const selectedOrderId = ref(null);
 const deliveryTypeSelection = ref("complete"); // デフォルト: 完納
 const signageDisplaySelection = ref("show"); // デフォルト: サイネージ表示あり
 
+// 画像回転のプレビュー角度（累積）
+const rotationAngle = ref(0);
+
 // 発注データ紐づけ関連
 const searchResults = ref([]);
 const allInitialOrders = ref([]);
@@ -887,6 +958,63 @@ const handleUnlinkOrder = async () => {
   } catch (error) {
     console.error("発注データ紐づけ解除エラー:", error);
     alert("❌ 発注データの紐づけ解除中にエラーが発生しました。");
+  }
+};
+
+// 画像を回転（プレビュー）
+const previewRotate = (angle) => {
+  rotationAngle.value = (rotationAngle.value + angle) % 360;
+  // 負の角度を正の角度に変換（例: -90 → 270）
+  if (rotationAngle.value < 0) {
+    rotationAngle.value += 360;
+  }
+};
+
+// 回転をリセット
+const resetRotation = () => {
+  rotationAngle.value = 0;
+};
+
+// 画像回転を保存
+const saveRotation = async () => {
+  if (rotationAngle.value === 0) {
+    return;
+  }
+
+  if (!confirm(`画像を${rotationAngle.value}度回転して保存しますか？`)) {
+    return;
+  }
+
+  try {
+    router.post(
+      route("admin.deliveries.rotate-image", props.delivery.id),
+      {
+        angle: rotationAngle.value,
+      },
+      {
+        onSuccess: (page) => {
+          alert("✅ 画像を回転して保存しました！");
+          rotationAngle.value = 0; // リセット
+          // ページをリロードして画像を再読み込み
+          router.visit(route("admin.deliveries.show", props.delivery.id), {
+            method: "get",
+            preserveState: false,
+            preserveScroll: false,
+            only: ["delivery", "documentUrl", "qrCodeUrl", "linkedOrder"],
+          });
+        },
+        onError: (errors) => {
+          console.error("画像回転エラー:", errors);
+          alert(
+            "❌ 画像の回転に失敗しました: " +
+              (errors.message || "不明なエラー")
+          );
+        },
+      }
+    );
+  } catch (error) {
+    console.error("画像回転エラー:", error);
+    alert("❌ 画像の回転中にエラーが発生しました。");
   }
 };
 </script>

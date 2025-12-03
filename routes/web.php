@@ -63,6 +63,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::get('/deliveries', [DeliveryController::class, 'adminIndex'])->name('deliveries.index');
     Route::get('/deliveries/{delivery}', [DeliveryController::class, 'adminShow'])->name('deliveries.show');
     Route::post('/deliveries/{delivery}/apply-seal', [DeliveryController::class, 'applyDigitalSeal'])->name('deliveries.apply-seal');
+    Route::post('/deliveries/{delivery}/rotate-image', [DeliveryController::class, 'rotateImage'])->name('deliveries.rotate-image');
     Route::post('/deliveries/{delivery}/link-order', [DeliveryController::class, 'linkOrder'])->name('deliveries.link-order');
     Route::post('/deliveries/{delivery}/unlink-order', [DeliveryController::class, 'unlinkOrder'])->name('deliveries.unlink-order');
     
