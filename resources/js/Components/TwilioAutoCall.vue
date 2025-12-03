@@ -130,6 +130,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue';
 import { Device } from '@twilio/voice-sdk';
+import axios from 'axios';
 
 // Props
 const props = defineProps({
@@ -246,7 +247,23 @@ const initializeDevice = async () => {
   } catch (error) {
     console.error('Device initialization error:', error);
     deviceStatus.value = 'error';
-    showStatus('error', 'デバイスの初期化に失敗しました: ' + error.message);
+    
+    // エラーメッセージを詳細に取得
+    let errorMessage = 'デバイスの初期化に失敗しました';
+    if (error.response) {
+      // サーバーからのエラーレスポンス
+      const data = error.response.data;
+      errorMessage += ': ' + (data.message || error.response.statusText || error.message);
+    } else if (error.request) {
+      // リクエストは送信されたが、レスポンスがなかった
+      errorMessage += ': サーバーからの応答がありません。ネットワーク接続を確認してください。';
+    } else {
+      // その他のエラー
+      errorMessage += ': ' + error.message;
+    }
+    
+    showStatus('error', errorMessage);
+    emit('call-failed', errorMessage);
   }
 };
 

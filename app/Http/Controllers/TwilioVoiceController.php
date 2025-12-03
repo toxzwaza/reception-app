@@ -43,6 +43,13 @@ class TwilioVoiceController extends Controller
             $twimlAppSid = env('TWILIO_TWIML_APP_SID');
 
             if (!$accountSid || !$apiKey || !$apiSecret || !$twimlAppSid) {
+                Log::error('Twilio configuration incomplete', [
+                    'account_sid' => $accountSid ? 'set' : 'missing',
+                    'api_key' => $apiKey ? 'set' : 'missing',
+                    'api_secret' => $apiSecret ? 'set' : 'missing',
+                    'twiml_app_sid' => $twimlAppSid ? 'set' : 'missing',
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Twilio設定が不完全です。環境変数を確認してください。',
