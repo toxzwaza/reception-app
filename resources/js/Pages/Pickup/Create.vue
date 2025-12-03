@@ -504,12 +504,19 @@ const submitForm = () => {
 
   processing.value = true;
   
-  router.post(route('pickup.store'), form.value, {
+  // ファイルアップロード用のデータを作成（previewはサーバーに送信しない）
+  const formData = {
+    slip_image: form.value.slip_image,
+  };
+  
+  router.post(route('pickup.store'), formData, {
+    forceFormData: true, // ファイルアップロードを確実にFormDataで送信
     onSuccess: () => {
       processing.value = false;
     },
-    onError: () => {
+    onError: (errors) => {
       processing.value = false;
+      console.error('送信エラー:', errors);
     },
   });
 };

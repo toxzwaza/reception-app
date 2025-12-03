@@ -64,9 +64,12 @@ class PickupController extends Controller
     // 集荷伝票の表示
     public function show(Pickup $pickup): Response
     {
+        // sealed_slip_imageが存在する場合はそれを、なければslip_imageを使用
+        $slipImage = $pickup->sealed_slip_image ?? $pickup->slip_image;
+        
         return Inertia::render('Pickup/Show', [
             'pickup' => $pickup,
-            'slipUrl' => Storage::url($pickup->slip_image),
+            'slipUrl' => Storage::url($slipImage),
         ]);
     }
 

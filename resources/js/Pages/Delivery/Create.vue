@@ -637,12 +637,20 @@ const submitForm = () => {
 
   processing.value = true;
   
-  router.post(route('delivery.store'), form.value, {
+  // ファイルアップロード用のデータを作成（previewはサーバーに送信しない）
+  const formData = {
+    delivery_type: form.value.delivery_type,
+    document_image: form.value.document_image,
+  };
+  
+  router.post(route('delivery.store'), formData, {
+    forceFormData: true, // ファイルアップロードを確実にFormDataで送信
     onSuccess: () => {
       processing.value = false;
     },
-    onError: () => {
+    onError: (errors) => {
       processing.value = false;
+      console.error('送信エラー:', errors);
     },
   });
 };

@@ -35,6 +35,8 @@
           <div class="mt-4 p-3 bg-gray-50 rounded-lg">
             <div class="text-xs text-gray-500 mb-1">QRコード画像URL:</div>
             <div class="text-xs text-blue-600 break-all">{{ qrCodeImageUrl }}</div>
+            <div class="text-xs text-gray-500 mt-2 mb-1">印刷用URL:</div>
+            <div class="text-xs text-blue-600 break-all">{{ qrCodePrintUrl }}</div>
           </div>
         </div>
 
@@ -76,6 +78,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import axios from 'axios';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
 import CompleteSection from '@/Components/UI/CompleteSection.vue';
 import Button from '@/Components/UI/Button.vue';
@@ -91,9 +94,17 @@ const props = defineProps({
   },
 });
 
-// QRコード画像のURLを生成
+// QRコード画像のURLを生成（画像表示用）
 const qrCodeImageUrl = computed(() => {
+  if (!props.pickup?.id) {
+    return '';
+  }
   return route('pickup.qr', props.pickup.id);
+});
+
+// 印刷用のURL（qr_code_urlを使用）
+const qrCodePrintUrl = computed(() => {
+  return props.pickup.qr_code_url || '';
 });
 
 // 画像読み込みエラーハンドリング
@@ -117,40 +128,55 @@ const formatDate = (dateString) => {
 
 // QRコード印刷（プリントサーバーに送信）
 const printQR = async () => {
+  const printUrl = qrCodePrintUrl.value;
+  
+  if (!printUrl) {
+    alert('❌ 印刷用URLが設定されていません。');
+    return;
+  }
+  
+  console.log('🖨️ 印刷リクエスト開始');
+  console.log('印刷用URL:', printUrl);
+  
   try {
-    // プリントサーバーに送信（画像データはサーバー側で処理）
-    const response = await fetch(route('pickup.print', props.pickup.id), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({
-        document_info: {
-          document_type: '集荷伝票',
-          timestamp: props.pickup.picked_up_at,
-          id: props.pickup.id
-        }
-      })
+    // プリントサーバーに送信（Flask側でURLを受け取って印刷）
+    const response = await axios.post('https://192.168.210.91:5000/print', {
+      url: printUrl, // 印刷用URL（qr_code_url）
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000, // 10秒でタイムアウト
     });
 
-    const result = await response.json();
+    const result = response.data;
+    console.log('📨 サーバー応答:', result);
 
-    if (result.success) {
-      // 印刷完了ステータスをチェック
-      if (result.status === 'completed') {
-        // 印刷完了ダイアログ
-        alert('✅ 印刷が正常に完了しました！\n\nQRコードが印刷されました。伝票と一緒にお渡しください。');
-      } else {
-        // 送信完了ダイアログ
-        alert('📤 プリントサーバーに正常に送信されました。\n\n印刷処理中です。しばらくお待ちください。');
-      }
+    // Flask側の戻り値 { status: "success" | "error", message?, url?, file? }
+    if (result.status === 'success') {
+      alert('✅ 印刷が正常に完了しました！\n\nQRコードが印刷されました。');
     } else {
-      alert('❌ プリントサーバーへの送信に失敗しました: ' + result.message);
+      alert('❌ プリントサーバーへの送信に失敗しました: ' + (result.message || '原因不明'));
     }
+
   } catch (error) {
     console.error('プリントサーバー送信エラー:', error);
-    alert('プリントサーバーへの送信中にエラーが発生しました。');
+    console.error('エラー詳細:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      request: error.request,
+    });
+
+    if (error.code === 'ECONNABORTED') {
+      alert('⏳ 接続がタイムアウトしました。プリントサーバーが起動中か確認してください。');
+    } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      alert('❌ ネットワークエラー\n\n考えられる原因:\n• プリントサーバー(192.168.210.91:5000)が起動していない\n• ファイアウォールでブロックされている\n• CORS設定の問題\n• SSL証明書の問題');
+    } else if (error.response) {
+      alert(`⚠️ サーバーエラー: ${error.response.status} - ${error.response.statusText}`);
+    } else if (error.request) {
+      alert('❌ サーバーからの応答がありません。プリントサーバーの状態を確認してください。');
+    } else {
+      alert('❌ プリントサーバーへの送信中にエラーが発生しました。\n\nエラー: ' + error.message);
+    }
   }
 };
 </script>

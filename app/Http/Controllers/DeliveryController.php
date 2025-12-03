@@ -36,7 +36,7 @@ class DeliveryController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'delivery_type' => 'required|in:納品書,受領書',
+            'delivery_type' => 'required|in:納品書,その他書類',
             'document_image' => 'required|image|max:10240', // 10MB
         ]);
 
