@@ -96,48 +96,103 @@
           </div>
         </div>
 
-        <!-- 伝票画像 -->
+        <!-- 伝票画像（電子印済み画像がある場合はそちらを優先表示） -->
         <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">伝票画像</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              {{ displayImageTitle }}
+            </h3>
             <div class="text-center">
-              <img 
-                :src="slipUrl" 
-                alt="伝票画像" 
-                class="max-w-full h-auto mx-auto rounded-lg shadow-lg"
-                style="max-height: 600px;"
-              />
-              <div class="mt-4">
-                <a 
-                  :href="slipUrl" 
-                  target="_blank"
-                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              <!-- プレビュー表示用の画像コンテナ（回転を考慮したサイズ） -->
+              <div
+                class="inline-block mx-auto"
+                :style="{
+                  width: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : 'auto',
+                  height: (rotationAngle === 90 || rotationAngle === 270) ? 'auto' : '600px',
+                  maxWidth: '100%',
+                  maxHeight: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : '600px',
+                  minHeight: '200px',
+                  minWidth: (rotationAngle === 90 || rotationAngle === 270) ? '600px' : 'auto',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  padding: (rotationAngle === 90 || rotationAngle === 270) ? '50px 0' : '0',
+                  boxSizing: 'border-box',
+                }"
+              >
+                <div
+                  class="mx-auto rounded-lg shadow-lg transition-transform duration-300"
+                  :style="{
+                    transform: `rotate(${rotationAngle}deg)`,
+                    transformOrigin: 'center center',
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                  }"
                 >
-                  画像を別ウィンドウで開く
-                </a>
+                  <img
+                    :src="displayImageUrl"
+                    :alt="displayImageTitle"
+                    class="max-w-full h-auto rounded-lg"
+                    style="max-height: 600px; max-width: 600px; display: block;"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 電子印済み伝票画像 -->
-        <div v-if="pickup.sealed_slip_image" class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">電子印済み伝票画像</h3>
-            <div class="text-center">
-              <img 
-                :src="sealedSlipUrl" 
-                alt="電子印済み伝票画像" 
-                class="max-w-full h-auto mx-auto rounded-lg shadow-lg"
-                style="max-height: 600px;"
-              />
-              <div class="mt-4">
-                <a 
-                  :href="sealedSlipUrl" 
-                  target="_blank"
-                  class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              <div v-if="rotationAngle !== 0" class="mt-2 text-sm text-orange-600">
+                回転角度: {{ rotationAngle }}°（プレビュー）
+              </div>
+              <div class="mt-4 flex justify-center gap-2 flex-wrap" style="position: relative; z-index: 10;">
+                <!-- 画像回転ボタン（プレビュー用） -->
+                <button
+                  @click="previewRotate(90)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="時計回りに90度回転（プレビュー）"
                 >
-                  電子印済み画像を別ウィンドウで開く
+                  ↻ 90°回転
+                </button>
+                <button
+                  @click="previewRotate(-90)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="反時計回りに90度回転（プレビュー）"
+                >
+                  ↺ 90°回転
+                </button>
+                <button
+                  @click="previewRotate(180)"
+                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="180度回転（プレビュー）"
+                >
+                  ↻ 180°回転
+                </button>
+                <button
+                  v-if="rotationAngle !== 0"
+                  @click="resetRotation"
+                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="回転をリセット"
+                >
+                  リセット
+                </button>
+                <button
+                  v-if="rotationAngle !== 0"
+                  @click="saveRotation"
+                  class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="回転を保存"
+                >
+                  保存
+                </button>
+                <a
+                  :href="displayImageUrl"
+                  target="_blank"
+                  :class="[
+                    'text-white font-bold py-2 px-4 rounded',
+                    pickup.sealed_slip_image
+                      ? 'bg-green-500 hover:bg-green-700'
+                      : 'bg-blue-500 hover:bg-blue-700',
+                  ]"
+                >
+                  {{
+                    pickup.sealed_slip_image
+                      ? "電子印済み画像を別ウィンドウで開く"
+                      : "画像を別ウィンドウで開く"
+                  }}
                 </a>
               </div>
             </div>
@@ -183,11 +238,32 @@ const props = defineProps({
 // 電子印配置モーダルの表示状態
 const showSealOverlay = ref(false);
 
+// 画像回転のプレビュー角度（累積）
+const rotationAngle = ref(0);
+
 // 電子印済み伝票画像のURL
 const sealedSlipUrl = computed(() => {
-  return props.pickup.sealed_slip_image 
-    ? `/storage/${props.pickup.sealed_slip_image}` 
-    : null;
+  if (!props.pickup.sealed_slip_image) {
+    return null;
+  }
+  // 絶対URLの場合はそのまま、相対パスの場合は/storage/を付与
+  const imagePath = props.pickup.sealed_slip_image;
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  return `/storage/${imagePath}`;
+});
+
+// 表示する画像URL（電子印済み画像を優先、なければ元の伝票画像）
+const displayImageUrl = computed(() => {
+  return sealedSlipUrl.value || props.slipUrl;
+});
+
+// 表示する画像タイトル
+const displayImageTitle = computed(() => {
+  return props.pickup.sealed_slip_image
+    ? "電子印済み伝票画像"
+    : "伝票画像";
 });
 
 // 日付フォーマット
@@ -226,6 +302,63 @@ const handleSealSave = async (sealPositions) => {
   } catch (error) {
     console.error('電子印適用エラー:', error);
     alert('❌ 電子印の適用中にエラーが発生しました。');
+  }
+};
+
+// 画像を回転（プレビュー）
+const previewRotate = (angle) => {
+  rotationAngle.value = (rotationAngle.value + angle) % 360;
+  // 負の角度を正の角度に変換（例: -90 → 270）
+  if (rotationAngle.value < 0) {
+    rotationAngle.value += 360;
+  }
+};
+
+// 回転をリセット
+const resetRotation = () => {
+  rotationAngle.value = 0;
+};
+
+// 画像回転を保存
+const saveRotation = async () => {
+  if (rotationAngle.value === 0) {
+    return;
+  }
+
+  if (!confirm(`画像を${rotationAngle.value}度回転して保存しますか？`)) {
+    return;
+  }
+
+  try {
+    router.post(
+      route("admin.pickups.rotate-image", props.pickup.id),
+      {
+        angle: rotationAngle.value,
+      },
+      {
+        onSuccess: (page) => {
+          alert("✅ 画像を回転して保存しました！");
+          rotationAngle.value = 0; // リセット
+          // ページをリロードして画像を再読み込み
+          router.visit(route("admin.pickups.show", props.pickup.id), {
+            method: "get",
+            preserveState: false,
+            preserveScroll: false,
+            only: ["pickup", "slipUrl", "qrCodeUrl"],
+          });
+        },
+        onError: (errors) => {
+          console.error("画像回転エラー:", errors);
+          alert(
+            "❌ 画像の回転に失敗しました: " +
+              (errors.message || "不明なエラー")
+          );
+        },
+      }
+    );
+  } catch (error) {
+    console.error("画像回転エラー:", error);
+    alert("❌ 画像の回転中にエラーが発生しました。");
   }
 };
 </script>

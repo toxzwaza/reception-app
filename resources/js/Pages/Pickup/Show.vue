@@ -1,10 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-          <div class="p-6">
-            <h1 class="text-2xl font-bold text-center mb-8">電子印付き集荷伝票</h1>
+  <ReceptionLayout
+    title="電子印付き伝票"
+    subtitle="集荷伝票"
+    :steps="['納品・集荷選択', '情報入力', '完了']"
+    :current-step="2"
+    :show-back-button="false"
+  >
+    <div class="p-12">
+      <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">電子印付き集荷伝票</h2>
 
             <!-- 伝票情報 -->
             <div class="mb-6">
@@ -33,23 +36,22 @@
               </div>
             </div>
 
-            <!-- 印刷ボタン -->
-            <div class="flex justify-center space-x-4">
-              <button
-                @click="printDocument"
-                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                伝票を印刷
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- 印刷ボタン -->
+      <div class="flex justify-center space-x-4 max-w-3xl mx-auto">
+        <button
+          @click="printDocument"
+          class="px-8 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold text-lg shadow-lg"
+        >
+          伝票を印刷
+        </button>
       </div>
     </div>
-  </div>
+  </ReceptionLayout>
 </template>
 
 <script setup>
+import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
+
 const props = defineProps({
   pickup: {
     type: Object,
