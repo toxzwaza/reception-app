@@ -256,21 +256,23 @@
                   <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                       <tr>
-                        <th class="px-4 py-3 bg-gray-100">注文No</th>
-                        <th class="px-4 py-3 bg-gray-100">画像</th>
-                        <th class="px-4 py-3 bg-gray-100">注文者</th>
-                        <th class="px-4 py-3 bg-gray-100">注文日</th>
-                        <th class="px-4 py-3 bg-gray-100">希望納期</th>
-                        <th class="px-4 py-3 bg-gray-100">注文先</th>
-                        <th class="px-4 py-3 bg-gray-100">品名</th>
-                        <th class="px-4 py-3 bg-gray-100">品番</th>
-                        <th class="px-4 py-3 bg-gray-100">数量</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文No</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">画像</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文者</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文日</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">希望納期</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文先</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品名</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品番</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">数量</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">単価</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">金額</th>
                       </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                       <tr>
-                        <td class="px-4 py-6">{{ linkedOrder.order_no || "-" }}</td>
-                        <td class="w-24 px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.order_no || "-" }}</td>
+                        <td class="w-24 px-4 py-6 whitespace-nowrap">
                           <img
                             v-if="linkedOrder.img_path"
                             @click="modalImage($event.target)"
@@ -285,8 +287,8 @@
                           />
                           <span v-else class="text-gray-400">-</span>
                         </td>
-                        <td class="px-4 py-6">{{ linkedOrder.order_user || "-" }}</td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.order_user || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{
                             linkedOrder.order_date
                               ? new Date(linkedOrder.order_date).toLocaleDateString(
@@ -295,7 +297,7 @@
                               : "-"
                           }}
                         </td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{
                             linkedOrder.desire_delivery_date
                               ? new Date(
@@ -304,11 +306,17 @@
                               : "未指定"
                           }}
                         </td>
-                        <td class="px-4 py-6">{{ linkedOrder.com_name || "-" }}</td>
-                        <td class="px-4 py-6">{{ linkedOrder.name || "-" }}</td>
-                        <td class="px-4 py-6">{{ linkedOrder.s_name || "-" }}</td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.com_name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.s_name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{ linkedOrder.quantity ? linkedOrder.quantity + (linkedOrder.order_unit || "") : "-" }}
+                        </td>
+                        <td class="px-4 py-6 whitespace-nowrap">
+                          {{ linkedOrder.price + "円" || "-" }}
+                        </td>
+                        <td class="px-4 py-6 whitespace-nowrap">
+                          {{ linkedOrder.calc_price + "円" || "-" }}
                         </td>
                       </tr>
                     </tbody>
@@ -432,22 +440,24 @@
                   <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                       <tr>
-                        <th class="px-4 py-3 bg-gray-100">注文No</th>
-                        <th class="px-4 py-3 bg-gray-100">画像</th>
-                        <th class="px-4 py-3 bg-gray-100">注文者</th>
-                        <th class="px-4 py-3 bg-gray-100">注文日</th>
-                        <th class="px-4 py-3 bg-gray-100">希望納期</th>
-                        <th class="px-4 py-3 bg-gray-100">注文先</th>
-                        <th class="px-4 py-3 bg-gray-100">品名</th>
-                        <th class="px-4 py-3 bg-gray-100">品番</th>
-                        <th class="px-4 py-3 bg-gray-100">数量</th>
-                        <th class="px-4 py-3 bg-gray-100">操作</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文No</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">画像</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文者</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文日</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">希望納期</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文先</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品名</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品番</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">数量</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">単価</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">金額</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">操作</th>
                       </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                       <tr v-for="order in searchResults" :key="order.id">
-                        <td class="px-4 py-6">{{ order.order_no || "-" }}</td>
-                        <td class="w-24 px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ order.order_no || "-" }}</td>
+                        <td class="w-24 px-4 py-6 whitespace-nowrap">
                           <img
                             v-if="order.img_path"
                             @click="modalImage($event.target)"
@@ -462,8 +472,8 @@
                           />
                           <span v-else class="text-gray-400">-</span>
                         </td>
-                        <td class="px-4 py-6">{{ order.order_user || "-" }}</td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ order.order_user || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{
                             order.order_date
                               ? new Date(order.order_date).toLocaleDateString(
@@ -472,7 +482,7 @@
                               : "-"
                           }}
                         </td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{
                             order.desire_delivery_date
                               ? new Date(
@@ -481,18 +491,24 @@
                               : "未指定"
                           }}
                         </td>
-                        <td class="px-4 py-6">{{ order.com_name || "-" }}</td>
-                        <td class="px-4 py-6">{{ order.name || "-" }}</td>
-                        <td class="px-4 py-6">{{ order.s_name || "-" }}</td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">{{ order.com_name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">{{ order.name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">{{ order.s_name || "-" }}</td>
+                        <td class="px-4 py-6 whitespace-nowrap">
                           {{ order.quantity ? order.quantity + (order.order_unit || "") : "-" }}
                         </td>
-                        <td class="px-4 py-6">
+                        <td class="px-4 py-6 whitespace-nowrap">
+                          {{ order.price ? order.price + "円" : "-" }}
+                        </td>
+                        <td class="px-4 py-6 whitespace-nowrap">
+                          {{ order.price ? order.calc_price + "円" : "-" }}
+                        </td>
+                        <td class="px-4 py-6 whitespace-nowrap">
                           <button
                             @click="linkOrder(order.id)"
                             class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs"
                           >
-                            紐づける
+                            追加
                           </button>
                         </td>
                       </tr>
@@ -1040,7 +1056,7 @@ const saveRotation = async () => {
             method: "get",
             preserveState: false,
             preserveScroll: false,
-            only: ["delivery", "documentUrl", "qrCodeUrl", "linkedOrder"],
+            only: ["delivery", "documentUrl", "qrCodeUrl", "linkedOrders"],
           });
         },
         onError: (errors) => {
