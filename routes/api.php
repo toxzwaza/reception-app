@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\LocalStorageAuthController;
+use App\Http\Controllers\ReceiveController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,3 +30,7 @@ Route::post('/login-local', [LocalStorageAuthController::class, 'login']);
 Route::post('/logout-local', [LocalStorageAuthController::class, 'logout']);
 Route::post('/test-password', [LocalStorageAuthController::class, 'testPassword']); // デバッグ用
 Route::post('/set-session-user', [LocalStorageAuthController::class, 'setSessionUser']); // セッション設定用
+
+// 納品関連API
+Route::get('/initial-orders', [ReceiveController::class, 'getInitialOrders'])->name('api.initial-orders');
+Route::get('/com-names', [ReceiveController::class, 'getComNames'])->name('api.com-names');

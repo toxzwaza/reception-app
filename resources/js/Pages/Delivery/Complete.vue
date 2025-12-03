@@ -93,7 +93,7 @@ const props = defineProps({
 
 // QRコード画像のURLを生成
 const qrCodeImageUrl = computed(() => {
-  return route('delivery.qr', props.delivery.id);
+  return props.delivery.qr_code_url || '';
 });
 
 // 画像読み込みエラーハンドリング

@@ -50,6 +50,8 @@
 
 <script setup>
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
+import { onMounted } from 'vue';
+
 const props = defineProps({
   delivery: {
     type: Object,
@@ -60,6 +62,10 @@ const props = defineProps({
     required: true,
   },
 });
+
+onMounted(() => {
+  console.log(props)
+})
 
 // 日付フォーマット
 const formatDate = (dateString) => {

@@ -22,6 +22,7 @@ class Delivery extends Model
         'qr_code_file_path',
         'staff_member_id',
         'received_at',
+        'initial_order_id',
     ];
 
     protected $casts = [

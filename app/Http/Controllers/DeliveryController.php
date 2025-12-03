@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Delivery;
+use App\Models\InitialOrder;
 use App\Services\PrintServerService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class DeliveryController extends Controller
         // QRコード画像ファイルの生成と保存
         $qrCodePath = $this->generateQrCodeFile($delivery->id, $qrCodeUrl);
         $delivery->update(['qr_code_file_path' => $qrCodePath]);
-        
+
         // QRコードの生成（画面表示用）
         $qrCode = QrCode::size(300)
             ->margin(2)
@@ -81,7 +82,7 @@ class DeliveryController extends Controller
     {
         return Inertia::render('Delivery/Show', [
             'delivery' => $delivery,
-            'documentUrl' => Storage::url($delivery->document_image),
+            'sealedDocumentUrl' => Storage::url($delivery->document_image),
         ]);
     }
 
@@ -93,7 +94,7 @@ class DeliveryController extends Controller
         }
 
         $filePath = storage_path('app/public/' . $delivery->qr_code_file_path);
-        
+
         if (!file_exists($filePath)) {
             abort(404, 'QRコードファイルが見つかりません');
         }
@@ -132,7 +133,7 @@ class DeliveryController extends Controller
         // SVGファイルとして保存
         $fullFilePath = storage_path('app/public/' . $filePath);
         file_put_contents($fullFilePath, $qrCode);
-        
+
         // ファイルが作成されたか確認
         if (!file_exists($fullFilePath)) {
             throw new \Exception("Failed to create QR code file: {$fullFilePath}");
@@ -162,7 +163,7 @@ class DeliveryController extends Controller
             }
 
             $filePath = storage_path('app/public/' . $delivery->qr_code_file_path);
-            
+
             if (!file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
@@ -181,7 +182,6 @@ class DeliveryController extends Controller
             );
 
             return response()->json($result);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -225,11 +225,84 @@ class DeliveryController extends Controller
     // 管理画面用：納品書・受領書詳細
     public function adminShow(Delivery $delivery)
     {
+        $linkedOrder = null;
+        
+        // 紐づけ済み発注データがある場合は取得
+        if ($delivery->initial_order_id) {
+            $order = InitialOrder::find($delivery->initial_order_id);
+            if ($order) {
+                // Stockデータも取得
+                $stock = \App\Models\Stock::find($order->stock_id);
+                if ($stock) {
+                    $order->img_path = $stock->img_path;
+                    $order->stock_id = $stock->id;
+                }
+                $linkedOrder = $order;
+            }
+        }
+
         return Inertia::render('Admin/Deliveries/Show', [
             'delivery' => $delivery,
             'documentUrl' => Storage::url($delivery->document_image),
-            'qrCodeUrl' => $delivery->qr_code_file_path ? route('delivery.qr', $delivery) : null
+            'qrCodeUrl' => $delivery->qr_code_file_path ? route('delivery.qr', $delivery) : null,
+            'linkedOrder' => $linkedOrder,
         ]);
+    }
+
+    // 発注データを紐づける
+    public function linkOrder(Delivery $delivery, Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|exists:initial_orders,id',
+            'delivery_type' => 'required|in:partial,complete',
+            'signage_display' => 'required|in:show,hide',
+        ]);
+
+        try {
+            $order = InitialOrder::findOrFail($validated['order_id']);
+
+            // delifile_pathを設定: https://akioka-reception.cloud/ + delivery.document_image
+            $delifilePath = 'https://akioka-reception.cloud/' . $delivery->document_image;
+
+            $order->delifile_path = $delifilePath;
+
+            // 完納の場合はreceive_flgを1に設定
+            if ($validated['delivery_type'] === 'complete') {
+                $order->receive_flg = 1;
+            }
+            // サイネージディスプレイの設定（必要に応じて保存処理を追加）
+            $signageDisplay = $validated['signage_display']; // 'show' or 'hide'
+            if ($signageDisplay === 'hide') {
+                $order->receipt_flg = 1;
+            }
+
+            $order->save();
+
+            // delivery.initial_order_idにorder.idを格納
+            $delivery->initial_order_id = $validated['order_id'];
+            $delivery->save();
+
+            return redirect()->back()->with('success', '発注データを紐づけました。');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors([
+                'error' => '発注データの紐づけに失敗しました: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    // 発注データの紐づけを解除
+    public function unlinkOrder(Delivery $delivery)
+    {
+        try {
+            $delivery->initial_order_id = null;
+            $delivery->save();
+
+            return redirect()->back()->with('success', '発注データの紐づけを解除しました。');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors([
+                'error' => '発注データの紐づけ解除に失敗しました: ' . $e->getMessage()
+            ]);
+        }
     }
 
     // 電子印押下
@@ -249,23 +322,22 @@ class DeliveryController extends Controller
         try {
             // 画像合成処理
             $sealedImagePath = $this->createSealedImage($delivery, $validated['seal_positions']);
-            
+
             // 電子印の適用
             $updateData = [
                 'sealed_document_image' => $sealedImagePath,
                 'sealed_at' => now()
             ];
-            
+
             // staff_member_idが提供されている場合のみ更新
             if (!empty($validated['staff_member_id'])) {
                 $updateData['staff_member_id'] = $validated['staff_member_id'];
             }
-            
+
             $delivery->update($updateData);
 
             // Inertia.jsのレスポンス形式で返す
             return redirect()->back()->with('success', '電子印が正常に適用されました。');
-
         } catch (\Exception $e) {
             return redirect()->back()->withErrors([
                 'seal' => '電子印の適用に失敗しました: ' . $e->getMessage()
@@ -278,14 +350,14 @@ class DeliveryController extends Controller
     {
         // 元画像のパス
         $originalImagePath = storage_path('app/public/' . $delivery->document_image);
-        
+
         // 電子印画像のパス
         $sealImagePath = storage_path('app/public/stamp/sealed.png');
-        
+
         if (!file_exists($originalImagePath)) {
             throw new \Exception('元画像が見つかりません: ' . $originalImagePath);
         }
-        
+
         if (!file_exists($sealImagePath)) {
             throw new \Exception('電子印画像が見つかりません: ' . $sealImagePath);
         }
@@ -308,10 +380,10 @@ class DeliveryController extends Controller
         // 電子印を配置
         foreach ($sealPositions as $position) {
             $this->placeSealOnImage(
-                $originalImage, 
-                $sealImage, 
-                $position, 
-                $originalWidth, 
+                $originalImage,
+                $sealImage,
+                $position,
+                $originalWidth,
                 $originalHeight
             );
         }
@@ -394,7 +466,7 @@ class DeliveryController extends Controller
         }
 
         $mimeType = $imageInfo['mime'];
-        
+
         switch ($mimeType) {
             case 'image/jpeg':
                 return imagecreatefromjpeg($filePath);
