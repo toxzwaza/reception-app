@@ -7,6 +7,7 @@ use App\Models\InitialOrder;
 use App\Services\PrintServerService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -238,11 +239,12 @@ class DeliveryController extends Controller
     // 管理画面用：納品書・受領書詳細
     public function adminShow(Delivery $delivery)
     {
-        $linkedOrder = null;
+        // 紐づけ済み発注データを取得（複数件対応）
+        $linkedOrders = [];
+        $delivery->load('initialOrders');
         
-        // 紐づけ済み発注データがある場合は取得
-        if ($delivery->initial_order_id) {
-            $order = InitialOrder::find($delivery->initial_order_id);
+        foreach ($delivery->initialOrders as $pivot) {
+            $order = InitialOrder::find($pivot->id);
             if ($order) {
                 // Stockデータも取得
                 $stock = \App\Models\Stock::find($order->stock_id);
@@ -250,7 +252,10 @@ class DeliveryController extends Controller
                     $order->img_path = $stock->img_path;
                     $order->stock_id = $stock->id;
                 }
-                $linkedOrder = $order;
+                // initial_ordersテーブルから納品種別とサイネージ表示を取得
+                $order->pivot_delivery_type = $order->receive_flg == 1 ? 'complete' : 'partial';
+                $order->pivot_signage_display = $order->receipt_flg == 1 ? 'hide' : 'show';
+                $linkedOrders[] = $order;
             }
         }
 
@@ -266,7 +271,7 @@ class DeliveryController extends Controller
             'delivery' => $delivery,
             'documentUrl' => $documentUrl,
             'qrCodeUrl' => $delivery->qr_code_file_path ? route('delivery.qr', $delivery) : null,
-            'linkedOrder' => $linkedOrder,
+            'linkedOrders' => $linkedOrders, // 複数件対応
         ]);
     }
 
@@ -282,6 +287,14 @@ class DeliveryController extends Controller
         try {
             $order = InitialOrder::findOrFail($validated['order_id']);
 
+            // 既に紐づけられているかチェック
+            $existingLink = $delivery->initialOrders()->where('initial_order_id', $validated['order_id'])->first();
+            if ($existingLink) {
+                return redirect()->back()->withErrors([
+                    'error' => 'この発注データは既に紐づけられています。'
+                ]);
+            }
+
             // delifile_pathを設定: https://akioka-reception.cloud/ + delivery.document_image
             $order->delifile_path = $delivery->document_image;
 
@@ -289,7 +302,11 @@ class DeliveryController extends Controller
             if ($validated['delivery_type'] === 'complete') {
                 $order->receive_flg = 1;
             }
-            // サイネージディスプレイの設定（必要に応じて保存処理を追加）
+            // 分納の場合はreceive_flgを2に設定
+            if ($validated['delivery_type'] === 'partial') {
+                $order->receive_flg = 2;
+            }
+            // サイネージディスプレイの設定
             $signageDisplay = $validated['signage_display']; // 'show' or 'hide'
             if ($signageDisplay === 'hide') {
                 $order->receipt_flg = 1;
@@ -297,9 +314,8 @@ class DeliveryController extends Controller
 
             $order->save();
 
-            // delivery.initial_order_idにorder.idを格納
-            $delivery->initial_order_id = $validated['order_id'];
-            $delivery->save();
+            // 中間テーブルに紐づけを追加
+            $delivery->initialOrders()->attach($validated['order_id']);
 
             return redirect()->back()->with('success', '発注データを紐づけました。');
         } catch (\Exception $e) {
@@ -310,11 +326,28 @@ class DeliveryController extends Controller
     }
 
     // 発注データの紐づけを解除
-    public function unlinkOrder(Delivery $delivery)
+    public function unlinkOrder(Delivery $delivery, Request $request)
     {
+        $validated = $request->validate([
+            'order_id' => 'required|exists:initial_orders,id',
+        ]);
+
         try {
-            $delivery->initial_order_id = null;
-            $delivery->save();
+            $order = InitialOrder::findOrFail($validated['order_id']);
+
+            // 中間テーブルから紐づけを削除
+            $delivery->initialOrders()->detach($validated['order_id']);
+
+            // delifile_pathをリセット（他のdeliveryに紐づけられていない場合のみ）
+            $otherDeliveries = DB::table('delivery_initial_order')
+                ->where('initial_order_id', $validated['order_id'])
+                ->where('delivery_id', '!=', $delivery->id)
+                ->exists();
+
+            if (!$otherDeliveries) {
+                $order->delifile_path = null;
+                $order->save();
+            }
 
             return redirect()->back()->with('success', '発注データの紐づけを解除しました。');
         } catch (\Exception $e) {

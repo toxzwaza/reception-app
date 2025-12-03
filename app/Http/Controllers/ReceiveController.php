@@ -16,8 +16,9 @@ class ReceiveController extends Controller
     public function getInitialOrders()
     {
         $initial_orders = InitialOrder::where(function ($query) {
-            $query->whereNull('receive_flg')
-                ->orWhere('receive_flg', 0);
+            $query->whereNull('receive_flg') //未納品
+                ->orWhere('receive_flg', 0) //未納品
+                ->orWhere('receive_flg', 2); //分納
         })->where('del_flg', 0)->get();
 
         foreach ($initial_orders as $order) {

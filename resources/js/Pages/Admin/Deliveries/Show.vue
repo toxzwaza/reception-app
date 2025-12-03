@@ -229,83 +229,96 @@
               発注データ紐づけ
             </h3>
 
-            <!-- 紐づけ済み発注データの表示 -->
-            <div v-if="linkedOrder" class="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div class="flex justify-between items-start mb-4">
-                <h4 class="text-md font-medium text-gray-900">紐づけ済み発注データ</h4>
-                <button
-                  @click="handleUnlinkOrder"
-                  class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm"
-                >
-                  紐づけ解除
-                </button>
-              </div>
-              <div class="border border-gray-200 rounded-lg overflow-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th class="px-4 py-3 bg-gray-100">注文No</th>
-                      <th class="px-4 py-3 bg-gray-100">画像</th>
-                      <th class="px-4 py-3 bg-gray-100">注文者</th>
-                      <th class="px-4 py-3 bg-gray-100">注文日</th>
-                      <th class="px-4 py-3 bg-gray-100">希望納期</th>
-                      <th class="px-4 py-3 bg-gray-100">注文先</th>
-                      <th class="px-4 py-3 bg-gray-100">品名</th>
-                      <th class="px-4 py-3 bg-gray-100">品番</th>
-                      <th class="px-4 py-3 bg-gray-100">数量</th>
-                    </tr>
-                  </thead>
-                  <tbody class="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td class="px-4 py-6">{{ linkedOrder.order_no || "-" }}</td>
-                      <td class="w-24 px-4 py-6">
-                        <img
-                          v-if="linkedOrder.img_path"
-                          @click="modalImage($event.target)"
-                          :src="
-                            linkedOrder.img_path &&
-                            linkedOrder.img_path.includes('https://')
-                              ? linkedOrder.img_path
-                              : 'https://akioka.cloud/' + linkedOrder.img_path
-                          "
-                          alt="商品画像"
-                          class="cursor-pointer"
-                        />
-                        <span v-else class="text-gray-400">-</span>
-                      </td>
-                      <td class="px-4 py-6">{{ linkedOrder.order_user || "-" }}</td>
-                      <td class="px-4 py-6">
-                        {{
-                          linkedOrder.order_date
-                            ? new Date(linkedOrder.order_date).toLocaleDateString(
-                                "ja-JP"
-                              )
-                            : "-"
-                        }}
-                      </td>
-                      <td class="px-4 py-6">
-                        {{
-                          linkedOrder.desire_delivery_date
-                            ? new Date(
-                                linkedOrder.desire_delivery_date
-                              ).toLocaleDateString("ja-JP")
-                            : "未指定"
-                        }}
-                      </td>
-                      <td class="px-4 py-6">{{ linkedOrder.com_name || "-" }}</td>
-                      <td class="px-4 py-6">{{ linkedOrder.name || "-" }}</td>
-                      <td class="px-4 py-6">{{ linkedOrder.s_name || "-" }}</td>
-                      <td class="px-4 py-6">
-                        {{ linkedOrder.quantity ? linkedOrder.quantity + (linkedOrder.order_unit || "") : "-" }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            <!-- 紐づけ済み発注データの表示（複数件対応） -->
+            <div v-if="linkedOrders && linkedOrders.length > 0" class="mb-6">
+              <h4 class="text-md font-medium text-gray-900 mb-4">紐づけ済み発注データ ({{ linkedOrders.length }}件)</h4>
+              <div v-for="(linkedOrder, index) in linkedOrders" :key="linkedOrder.id" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <span class="text-sm text-gray-600">#{{ index + 1 }}</span>
+                    <span class="ml-2 text-xs px-2 py-1 rounded"
+                      :class="linkedOrder.pivot_delivery_type === 'complete' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                      {{ linkedOrder.pivot_delivery_type === 'complete' ? '完納' : '分納' }}
+                    </span>
+                    <span class="ml-2 text-xs px-2 py-1 rounded"
+                      :class="linkedOrder.pivot_signage_display === 'show' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'">
+                      サイネージ: {{ linkedOrder.pivot_signage_display === 'show' ? '表示あり' : '表示なし' }}
+                    </span>
+                  </div>
+                  <button
+                    @click="handleUnlinkOrder(linkedOrder.id)"
+                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  >
+                    紐づけ解除
+                  </button>
+                  </div>
+                <div class="border border-gray-200 rounded-lg overflow-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-4 py-3 bg-gray-100">注文No</th>
+                        <th class="px-4 py-3 bg-gray-100">画像</th>
+                        <th class="px-4 py-3 bg-gray-100">注文者</th>
+                        <th class="px-4 py-3 bg-gray-100">注文日</th>
+                        <th class="px-4 py-3 bg-gray-100">希望納期</th>
+                        <th class="px-4 py-3 bg-gray-100">注文先</th>
+                        <th class="px-4 py-3 bg-gray-100">品名</th>
+                        <th class="px-4 py-3 bg-gray-100">品番</th>
+                        <th class="px-4 py-3 bg-gray-100">数量</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr>
+                        <td class="px-4 py-6">{{ linkedOrder.order_no || "-" }}</td>
+                        <td class="w-24 px-4 py-6">
+                          <img
+                            v-if="linkedOrder.img_path"
+                            @click="modalImage($event.target)"
+                            :src="
+                              linkedOrder.img_path &&
+                              linkedOrder.img_path.includes('https://')
+                                ? linkedOrder.img_path
+                                : 'https://akioka.cloud/' + linkedOrder.img_path
+                            "
+                            alt="商品画像"
+                            class="cursor-pointer"
+                          />
+                          <span v-else class="text-gray-400">-</span>
+                        </td>
+                        <td class="px-4 py-6">{{ linkedOrder.order_user || "-" }}</td>
+                        <td class="px-4 py-6">
+                          {{
+                            linkedOrder.order_date
+                              ? new Date(linkedOrder.order_date).toLocaleDateString(
+                                  "ja-JP"
+                                )
+                              : "-"
+                          }}
+                        </td>
+                        <td class="px-4 py-6">
+                          {{
+                            linkedOrder.desire_delivery_date
+                              ? new Date(
+                                  linkedOrder.desire_delivery_date
+                                ).toLocaleDateString("ja-JP")
+                              : "未指定"
+                          }}
+                        </td>
+                        <td class="px-4 py-6">{{ linkedOrder.com_name || "-" }}</td>
+                        <td class="px-4 py-6">{{ linkedOrder.name || "-" }}</td>
+                        <td class="px-4 py-6">{{ linkedOrder.s_name || "-" }}</td>
+                        <td class="px-4 py-6">
+                          {{ linkedOrder.quantity ? linkedOrder.quantity + (linkedOrder.order_unit || "") : "-" }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <!-- 絞り込みブロック（紐づけ済みの場合は非表示） -->
-            <div v-else class="space-y-4">
+            <!-- 絞り込みブロック（常に表示） -->
+            <div class="space-y-4">
               <div class="bg-gray-50 p-4 rounded-lg">
                 <h4 class="text-md font-medium text-gray-900 mb-4">絞り込み条件</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -650,7 +663,10 @@ const props = defineProps({
   delivery: Object,
   documentUrl: String,
   qrCodeUrl: String,
-  linkedOrder: Object,
+  linkedOrders: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 // 電子印配置モーダルの表示状態
@@ -823,7 +839,15 @@ const handleSearch = async () => {
 
 // 絞り込みを適用
 const applyFilters = () => {
+  // 既に紐づけられている発注データのIDリストを取得
+  const linkedOrderIds = props.linkedOrders.map(order => order.id);
+  
   searchResults.value = allInitialOrders.value.filter((order) => {
+    // 既に紐づけられている発注データは除外
+    if (linkedOrderIds.includes(order.id)) {
+      return false;
+    }
+
     // 注文Noで絞り込み
     if (filters.value.orderNo) {
       const orderNo = order.order_no?.toString() || "";
@@ -916,6 +940,13 @@ const confirmLinkOrder = async () => {
             product: "",
           };
           searchResults.value = [];
+          // ページをリロード
+          router.visit(route("admin.deliveries.show", props.delivery.id), {
+            method: "get",
+            preserveState: false,
+            preserveScroll: false,
+            only: ["delivery", "documentUrl", "qrCodeUrl", "linkedOrders"],
+          });
         },
         onError: (errors) => {
           console.error("発注データ紐づけエラー:", errors);
@@ -933,7 +964,7 @@ const confirmLinkOrder = async () => {
 };
 
 // 発注データの紐づけを解除
-const handleUnlinkOrder = async () => {
+const handleUnlinkOrder = async (orderId) => {
   if (!confirm("発注データの紐づけを解除しますか？")) {
     return;
   }
@@ -941,10 +972,19 @@ const handleUnlinkOrder = async () => {
   try {
     router.post(
       route("admin.deliveries.unlink-order", props.delivery.id),
-      {},
+      {
+        order_id: orderId,
+      },
       {
         onSuccess: (page) => {
           alert("✅ 発注データの紐づけを解除しました！");
+          // ページをリロード
+          router.visit(route("admin.deliveries.show", props.delivery.id), {
+            method: "get",
+            preserveState: false,
+            preserveScroll: false,
+            only: ["delivery", "documentUrl", "qrCodeUrl", "linkedOrders"],
+          });
         },
         onError: (errors) => {
           console.error("発注データ紐づけ解除エラー:", errors);
