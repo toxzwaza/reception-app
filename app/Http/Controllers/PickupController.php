@@ -67,9 +67,16 @@ class PickupController extends Controller
         // sealed_slip_imageが存在する場合はそれを、なければslip_imageを使用
         $slipImage = $pickup->sealed_slip_image ?? $pickup->slip_image;
         
+        // 絶対URLの場合はそのまま、相対パスの場合はStorage::urlを使用
+        if (strpos($slipImage, 'http://') === 0 || strpos($slipImage, 'https://') === 0) {
+            $sealedSlipUrl = $slipImage;
+        } else {
+            $sealedSlipUrl = Storage::url($slipImage);
+        }
+        
         return Inertia::render('Pickup/Show', [
             'pickup' => $pickup,
-            'slipUrl' => Storage::url($slipImage),
+            'sealedSlipUrl' => $sealedSlipUrl,
         ]);
     }
 
@@ -390,6 +397,99 @@ class PickupController extends Controller
                 return imagecreatefromwebp($filePath);
             default:
                 return false;
+        }
+    }
+
+    // 画像を回転
+    public function rotateImage(Pickup $pickup, Request $request)
+    {
+        $validated = $request->validate([
+            'angle' => 'required|integer|min:0|max:360',
+        ]);
+
+        try {
+            // 回転する画像を決定（sealed_slip_imageがあればそれ、なければslip_image）
+            $imageToRotate = $pickup->sealed_slip_image ?? $pickup->slip_image;
+            
+            if (!$imageToRotate) {
+                return redirect()->back()->withErrors([
+                    'error' => '回転する画像が見つかりません。'
+                ]);
+            }
+
+            // 画像パスを取得（絶対URLの場合は相対パスに変換）
+            if (strpos($imageToRotate, 'http://') === 0 || strpos($imageToRotate, 'https://') === 0) {
+                // 絶対URLの場合、/storage/以降のパスを抽出
+                $path = parse_url($imageToRotate, PHP_URL_PATH);
+                $relativePath = str_replace('/storage/', '', $path);
+                $imagePath = storage_path('app/public/' . $relativePath);
+            } else {
+                // 相対パスの場合
+                $imagePath = storage_path('app/public/' . $imageToRotate);
+            }
+
+            if (!file_exists($imagePath)) {
+                return redirect()->back()->withErrors([
+                    'error' => '画像ファイルが見つかりません: ' . $imagePath
+                ]);
+            }
+
+            // 画像を読み込む
+            $image = $this->createImageFromFile($imagePath);
+            if (!$image) {
+                return redirect()->back()->withErrors([
+                    'error' => '画像の読み込みに失敗しました。'
+                ]);
+            }
+
+            // 画像を回転（imagerotateは時計回りが正、角度は0-360度）
+            $angle = $validated['angle'];
+            // 360度の場合は0度として扱う
+            if ($angle === 360) {
+                $angle = 0;
+            }
+            // 0度の場合は回転不要
+            if ($angle === 0) {
+                imagedestroy($image);
+                return redirect()->back()->with('success', '画像を回転しました。');
+            }
+            $rotatedImage = imagerotate($image, -$angle, 0); // imagerotateは時計回りが正なので、符号を反転
+            imagedestroy($image);
+
+            // 回転後の画像を保存
+            $imageInfo = getimagesize($imagePath);
+            $mimeType = $imageInfo['mime'];
+            
+            // 元のファイルを上書き保存
+            switch ($mimeType) {
+                case 'image/jpeg':
+                    imagejpeg($rotatedImage, $imagePath, 90);
+                    break;
+                case 'image/png':
+                    imagealphablending($rotatedImage, false);
+                    imagesavealpha($rotatedImage, true);
+                    imagepng($rotatedImage, $imagePath, 9);
+                    break;
+                case 'image/gif':
+                    imagegif($rotatedImage, $imagePath);
+                    break;
+                case 'image/webp':
+                    imagewebp($rotatedImage, $imagePath, 90);
+                    break;
+                default:
+                    imagedestroy($rotatedImage);
+                    return redirect()->back()->withErrors([
+                        'error' => 'サポートされていない画像形式です。'
+                    ]);
+            }
+
+            imagedestroy($rotatedImage);
+
+            return redirect()->back()->with('success', '画像を回転しました。');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors([
+                'error' => '画像の回転に失敗しました: ' . $e->getMessage()
+            ]);
         }
     }
 }

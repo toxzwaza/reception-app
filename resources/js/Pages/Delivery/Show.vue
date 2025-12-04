@@ -4,6 +4,7 @@
     :subtitle="delivery.delivery_type"
     :steps="['納品・集荷選択', '情報入力', '完了']"
     :current-step="2"
+    :show-back-button="false"
   >
     <div class="p-12">
       <h2 class="text-3xl font-bold text-gray-900 text-center mb-8">電子印付き{{ delivery.delivery_type }}</h2>

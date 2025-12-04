@@ -71,6 +71,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::get('/pickups', [PickupController::class, 'adminIndex'])->name('pickups.index');
     Route::get('/pickups/{pickup}', [PickupController::class, 'adminShow'])->name('pickups.show');
     Route::post('/pickups/{pickup}/apply-seal', [PickupController::class, 'applyDigitalSeal'])->name('pickups.apply-seal');
+    Route::post('/pickups/{pickup}/rotate-image', [PickupController::class, 'rotateImage'])->name('pickups.rotate-image');
 });
 
 // アポイントありの方
