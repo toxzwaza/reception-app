@@ -9,8 +9,16 @@
           <!-- スキャン中表示 -->
           <div v-if="showCamera">
             <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">受領書をスキャン中...</h2>
-            <div class="relative bg-gray-100 rounded-2xl overflow-hidden mb-6" style="height: 500px;">
-              <div class="absolute inset-0 flex items-center justify-center">
+            <div class="relative bg-gray-900 rounded-2xl overflow-hidden mb-6">
+              <!-- ビデオフィード表示 -->
+              <img 
+                :src="videoFeedUrl" 
+                alt="スキャン映像"
+                class="w-full h-auto"
+                @error="handleVideoFeedError"
+              />
+              <!-- ビデオフィードエラー時のフォールバック表示 -->
+              <div v-if="videoFeedError" class="absolute inset-0 flex items-center justify-center bg-gray-100">
                 <div class="text-center">
                   <div class="mb-4">
                     <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -22,8 +30,9 @@
                   <div class="text-sm text-gray-500 mt-2">書類をスキャナーにセットしてください</div>
                 </div>
               </div>
+              <!-- スキャン枠オーバーレイ -->
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="border-4 border-indigo-500 border-dashed rounded-xl" style="width: 85%; height: 85%;"></div>
+                <div class="border-4 border-indigo-500 border-dashed rounded-xl opacity-50" style="width: 85%; height: 85%;"></div>
               </div>
             </div>
             
@@ -175,6 +184,7 @@ const getProtocol = () => {
 const PROTOCOL = getProtocol();
 const START_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/start_scan`;
 const GET_IMAGE_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/get_scan_image`;
+const VIDEO_FEED_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/video_feed`;
 const WS_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}`;
 
 console.log('📡 スキャンツール設定:', {
@@ -182,6 +192,7 @@ console.log('📡 スキャンツール設定:', {
   ip: RASPI_IP,
   port: PORT,
   startUrl: START_URL,
+  videoFeedUrl: VIDEO_FEED_URL,
   wsUrl: WS_URL,
 });
 
@@ -196,6 +207,8 @@ const processing = ref(false);
 const showCamera = ref(false);
 const cameraError = ref('');
 const isScanning = ref(false);  // スキャン中フラグ
+const videoFeedError = ref(false);  // ビデオフィードエラーフラグ
+const videoFeedUrl = ref(VIDEO_FEED_URL);  // ビデオフィードURL
 let socket = null;  // Socket.IO接続
 
 onMounted(() => {
@@ -381,6 +394,7 @@ const startCamera = async () => {
     console.log('▶ /start_scan を送信してスキャンを開始');
     isScanning.value = true;
     cameraError.value = '';
+    videoFeedError.value = false;  // ビデオフィードエラーをリセット
     
     // /start_scan にPOSTリクエストを送信
     // ブラウザ環境ではSSL検証の無効化はできないため、サーバー側でCORSとSSL証明書の設定が必要
@@ -481,9 +495,16 @@ const base64ToFile = (base64String, filename) => {
   }
 };
 
+// ビデオフィードエラーハンドリング
+const handleVideoFeedError = (event) => {
+  console.error('ビデオフィードの読み込みに失敗しました:', event);
+  videoFeedError.value = true;
+};
+
 // キャンセル
 const handleCancel = () => {
   isScanning.value = false;
+  videoFeedError.value = false;  // ビデオフィードエラーをリセット
   showCamera.value = false;
 };
 
