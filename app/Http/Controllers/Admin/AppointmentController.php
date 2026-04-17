@@ -101,7 +101,7 @@ class AppointmentController extends Controller
             'send_email' => 'nullable|boolean',
             // 施設予約のバリデーション
             'facility_reservation' => 'nullable|array',
-            'facility_reservation.facility_id' => 'required_with:facility_reservation|exists:akioka_db.facilities,id',
+            'facility_reservation.facility_id' => 'required_with:facility_reservation|exists:facilities,id',
             'facility_reservation.title' => 'required_with:facility_reservation|string|max:255',
             'facility_reservation.start_datetime' => 'required_with:facility_reservation|date_format:Y-m-d H:i',
             'facility_reservation.end_datetime' => 'required_with:facility_reservation|date_format:Y-m-d H:i',
@@ -109,7 +109,7 @@ class AppointmentController extends Controller
             'facility_reservation.description_url' => 'nullable|url|max:500',
             // 参加者のバリデーション
             'facility_reservation.participants' => 'nullable|array',
-            'facility_reservation.participants.*' => 'exists:akioka_db.users,id',
+            'facility_reservation.participants.*' => 'exists:users,id',
         ]);
 
         // トランザクション処理
@@ -354,7 +354,7 @@ class AppointmentController extends Controller
     {
         $validated = $request->validate([
             'user_ids' => 'required|array',
-            'user_ids.*' => 'exists:akioka_db.users,id',
+            'user_ids.*' => 'exists:users,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);

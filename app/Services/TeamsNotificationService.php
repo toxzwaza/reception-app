@@ -6,515 +6,316 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Group;
+use App\Models\NotificationSetting;
 
+/**
+ * Teams への Incoming Webhook 通知を一元化するサービス。
+ *
+ * 設計方針（参考: 秘書部門/01_一時フォルダ/Notify/notify.py）:
+ *   同 Python スクリプトが本番稼働している実装に合わせ、
+ *   ペイロード構造を統一し「動いているもの」と同形式に固定する。
+ *
+ *   共通エントリポイント: notify($mentionIds, $title, $message, $url = null)
+ *   既存の notifyInterviewArrival 等はこの notify() を内部で呼ぶ薄いラッパー。
+ */
 class TeamsNotificationService
 {
-    private $webhookUrl;
-
-    public function __construct()
+    /**
+     * Webhook URL の取得。config > env の順で評価。
+     */
+    private function getWebhookUrl(): ?string
     {
-        $this->webhookUrl = config('services.teams.webhook_url');
+        return config('services.teams.webhook_url') ?: env('TEAMS_WEBHOOK_URL');
     }
 
     /**
-     * アポイント登録通知をTeamsに送信
+     * ★ 汎用通知送信メソッド（参考 Python スクリプトと同一構造）
      *
-     * @param array $appointmentData
-     * @return bool
+     * @param string|array $mentionIds メンション対象 email（単一 or 配列）。空可。
+     * @param string $title タイトル（デフォルト色）
+     * @param string $message 本文（good 色、大きめ）
+     * @param string|null $url 任意。末尾に「[受付システム]($url)」リンクを追加
+     * @return bool 送信成功時 true
      */
-    public function sendAppointmentNotification(array $appointmentData): bool
+    public function notify(string|array $mentionIds, string $title, string $message, ?string $url = null): bool
     {
-        if (!$this->webhookUrl) {
+        $webhookUrl = $this->getWebhookUrl();
+        if (!$webhookUrl) {
             Log::warning('Teams webhook URL not configured');
             return false;
         }
 
-        $message = [
-            "@type" => "MessageCard",
-            "@context" => "https://schema.org/extensions",
-            "themeColor" => "0078D4",
-            "summary" => "新しいアポイントが登録されました",
-            "sections" => [
-                [
-                    "activityTitle" => "📅 新しいアポイント登録",
-                    "activitySubtitle" => "受付番号: {$appointmentData['reception_number']}",
-                    "activityImage" => "https://img.icons8.com/color/48/000000/calendar.png",
-                    "facts" => [
-                        [
-                            "name" => "会社名",
-                            "value" => $appointmentData['company_name']
-                        ],
-                        [
-                            "name" => "訪問者名",
-                            "value" => $appointmentData['visitor_name']
-                        ],
-                        [
-                            "name" => "担当者",
-                            "value" => $appointmentData['staff_member_name'] ?? '未設定'
-                        ],
-                        [
-                            "name" => "訪問予定日時",
-                            "value" => $appointmentData['visit_date'] . ' ' . $appointmentData['visit_time']
-                        ],
-                        [
-                            "name" => "訪問目的",
-                            "value" => $appointmentData['purpose'] ?? 'なし'
-                        ]
-                    ],
-                    "markdown" => true
-                ]
-            ],
-            "potentialAction" => [
-                [
-                    "@type" => "OpenUri",
-                    "name" => "管理画面で確認",
-                    "targets" => [
-                        [
-                            "os" => "default",
-                            "uri" => route('admin.appointments.index')
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        return $this->sendMessage($message);
-    }
-
-    /**
-     * チェックイン通知をTeamsに送信
-     *
-     * @param array $checkinData
-     * @return bool
-     */
-    public function sendCheckinNotification(array $checkinData): bool
-    {
-        if (!$this->webhookUrl) {
-            Log::warning('Teams webhook URL not configured');
-            return false;
+        // mentionIds を配列に正規化
+        if (is_string($mentionIds)) {
+            $mentionIds = $mentionIds === '' ? [] : [$mentionIds];
         }
+        $mentionIds = array_values(array_filter($mentionIds, fn($id) => !empty($id)));
 
-        // 担当者のメンション情報を取得
-        $mentionIds = [];
-        if (!empty($checkinData['staff_member_email'])) {
-            $mentionIds[] = $checkinData['staff_member_email'];
-        }
-
-        $staffMemberName = $checkinData['staff_member_name'] ?? '未設定';
-        $appointmentInfoText = isset($checkinData['appointment_info']) ? "アポイント情報:\n" . $checkinData['appointment_info'] : "";
-        
-        $message = [
-            "summary" => "来訪者がチェックインしました",
-            "text" => "✅ 来訪者がチェックインしました\n\n受付番号: {$checkinData['reception_number']}\n会社名: {$checkinData['company_name']}\n訪問者名: {$checkinData['visitor_name']}\n担当者: {$staffMemberName}\nチェックイン時刻: " . now()->format('Y年m月d日 H:i') . "\n\n" . $appointmentInfoText,
-            "mention_ids" => $mentionIds
-        ];
-
-        return $this->sendMessage($message);
-    }
-
-    /**
-     * Teamsにメッセージを送信
-     *
-     * @param array $message
-     * @return bool
-     */
-    private function sendMessage(array $message): bool
-    {
-        try {
-            // メンション情報の処理
-            $mentions = [];
-            if (!empty($message['mention_ids'])) {
-                $mentionIds = is_array($message['mention_ids']) ? $message['mention_ids'] : [$message['mention_ids']];
-                
-                foreach ($mentionIds as $id) {
-                    $mentions[] = [
-                        "type" => "mention",
-                        "text" => "<at>{$id}</at>",
-                        "mentioned" => [
-                            "id" => $id,
-                            "name" => $id
-                        ]
-                    ];
-                }
-            }
-
-            // メンションテキストの生成
-            $mentionText = '';
-            if (!empty($message['mention_ids'])) {
-                $mentionIds = is_array($message['mention_ids']) ? $message['mention_ids'] : [$message['mention_ids']];
-                $mentionText = implode(' ', array_map(function($id) { return "@<at>{$id}</at>"; }, $mentionIds));
-            }
-
-            // Teams Adaptive Card形式のペイロード
-            $body = [];
-            
-            // メンションがある場合は最初に追加
-            if ($mentionText) {
-                $body[] = [
-                    "type" => "TextBlock",
-                    "text" => $mentionText,
-                    "color" => "attention",
-                    "size" => "large",
-                    "wrap" => true
-                ];
-            }
-
-            // タイトル
-            $body[] = [
-                "type" => "TextBlock",
-                "text" => $message['summary'] ?? 'Notification',
-                "color" => $mentionText ? "default" : "attention",
-                "size" => $mentionText ? "default" : "large",
-                "wrap" => true
-            ];
-
-            // メッセージ本文
-            $body[] = [
-                "type" => "TextBlock",
-                "text" => $message['text'] ?? $message['summary'] ?? 'Notification',
-                "color" => "good",
-                "size" => "medium",
-                "wrap" => true
-            ];
-
-            $payload = [
-                "type" => "message",
-                "attachments" => [
-                    [
-                        "contentType" => "application/vnd.microsoft.card.adaptive",
-                        "content" => [
-                            "type" => "AdaptiveCard",
-                            "body" => $body,
-                            "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
-                            "version" => "1.0",
-                            "msteams" => [
-                                "entities" => $mentions
-                            ]
-                        ]
-                    ]
-                ]
-            ];
-
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false]) // SSL証明書検証を無効化（開発環境用）
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ])
-                ->post($this->webhookUrl, $payload);
-
-            Log::info('Teams notification request details', [
-                'url' => $this->webhookUrl,
-                'payload' => $payload,
-                'status' => $response->status(),
-                'response_body' => $response->body()
-            ]);
-
-            if ($response->successful()) {
-                Log::info('Teams notification sent successfully', [
-                    'message' => $message['summary'] ?? 'Notification',
-                    'status' => $response->status()
-                ]);
-                return true;
-            } else {
-                Log::error('Failed to send Teams notification', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Teams notification error: ' . $e->getMessage(), [
-                'exception' => $e
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * テスト通知を送信
-     *
-     * @return bool
-     */
-    public function sendTestNotification(): bool
-    {
-        if (!$this->webhookUrl) {
-            Log::warning('Teams webhook URL not configured');
-            return false;
-        }
-
-        // シンプルなテキストメッセージでテスト
-        $message = [
-            "text" => "🧪 システムテスト通知\n\nこれはテスト通知です。\n受付システムからTeams通知機能のテストを行っています。\n\n時刻: " . now()->format('Y年m月d日 H:i:s'),
-            "summary" => "テスト通知",
-            "themeColor" => "FF6B35"
-        ];
-
-        return $this->sendMessage($message);
-    }
-
-    /**
-     * 訪問者チェックイン通知を送信（既存のメソッドとの互換性のため）
-     *
-     * @param \App\Models\Visitor $visitor
-     * @return bool
-     */
-    public function notifyAppointmentCheckIn($visitor): bool
-    {
-        // アポイント情報を取得
-        $appointment = \App\Models\Appointment::where('reception_number', $visitor->reception_number)->first();
-        
-        $appointmentInfo = '';
-        if ($appointment) {
-            $appointmentInfo = "訪問予定日: " . $appointment->visit_date->format('Y年m月d日') . "\n" .
-                              "訪問予定時刻: " . $appointment->visit_time->format('H:i') . "\n" .
-                              "訪問目的: " . ($appointment->purpose ?? 'なし');
-        }
-
-        $checkinData = [
-            'reception_number' => $visitor->reception_number,
-            'company_name' => $visitor->company_name,
-            'visitor_name' => $visitor->visitor_name,
-            'staff_member_name' => $visitor->staffMember->name ?? '未設定',
-            'staff_member_email' => $visitor->staffMember->email ?? null,
-            'appointment_info' => $appointmentInfo,
-        ];
-
-        return $this->sendCheckinNotification($checkinData);
-    }
-
-    /**
-     * 面接受付通知を送信（メンション付き）
-     *
-     * @return bool
-     */
-    public function notifyInterviewArrival(): bool
-    {
-        if (!$this->webhookUrl) {
-            Log::warning('Teams webhook URL not configured');
-            return false;
-        }
-
-        // visitor_checkin トリガーのメール通知受信者を取得
-        $mentionIds = $this->getInterviewMentionIds();
-
-        if ($mentionIds->isEmpty()) {
-            Log::warning('No interview mention IDs found for visitor_checkin trigger');
-            // メンションIDが見つからない場合でも、通知は送信する
-        }
-
-        // メンションテキストとエンティティを生成（Adaptive Card形式）
-        $mentionText = '';
+        // メンションエンティティとテキストの生成
         $mentions = [];
-        
-        foreach ($mentionIds as $index => $mentionId) {
-            $mentionText .= "<at>{$mentionId}</at> ";
+        $mentionTextParts = [];
+        foreach ($mentionIds as $id) {
             $mentions[] = [
-                "type" => "mention",
-                "text" => "<at>{$mentionId}</at>",
-                "mentioned" => [
-                    "id" => $mentionId,
-                    "name" => $mentionId
-                ]
+                'type' => 'mention',
+                'text' => "<at>{$id}</at>",
+                'mentioned' => [
+                    'id' => $id,
+                    'name' => $id,
+                ],
             ];
+            $mentionTextParts[] = "@<at>{$id}</at>";
         }
+        $mentionText = implode(' ', $mentionTextParts);
 
-        // Adaptive Card形式のボディを構築
+        // Adaptive Card body 構築
         $body = [];
-        
-        // メンションがある場合は最初に追加
-        if ($mentionText) {
+
+        // メンションがある場合は最上部に大きく表示
+        if ($mentionText !== '') {
             $body[] = [
-                "type" => "TextBlock",
-                "text" => $mentionText,
-                "color" => "attention",
-                "size" => "large",
-                "weight" => "bolder",
-                "wrap" => true
+                'type' => 'TextBlock',
+                'text' => $mentionText,
+                'color' => 'attention',
+                'size' => 'large',
+                'wrap' => true,
             ];
         }
 
         // タイトル
         $body[] = [
-            "type" => "TextBlock",
-            "text" => "👥 面接受付者到着",
-            "color" => "warning",
-            "size" => "large",
-            "weight" => "bolder",
-            "wrap" => true
+            'type' => 'TextBlock',
+            'text' => $title,
+            'color' => 'default',
+            'size' => 'default',
+            'wrap' => true,
         ];
 
-        // メッセージ本文
+        // 本文メッセージ
         $body[] = [
-            "type" => "TextBlock",
-            "text" => "面接受付者が受付に到着しました。担当者に連絡をお願いします。\n\nチェックイン時刻: " . now()->format('Y年m月d日 H:i'),
-            "color" => "good",
-            "size" => "medium",
-            "wrap" => true
+            'type' => 'TextBlock',
+            'text' => $message,
+            'color' => 'good',
+            'size' => 'medium',
+            'wrap' => true,
         ];
 
-        // Adaptive Card形式のペイロード
+        // 任意 URL 追加
+        if ($url) {
+            $body[] = [
+                'type' => 'TextBlock',
+                'text' => "[受付システム]({$url})",
+                'color' => 'accent',
+                'size' => 'medium',
+                'wrap' => true,
+            ];
+        }
+
         $payload = [
-            "type" => "message",
-            "attachments" => [
-                [
-                    "contentType" => "application/vnd.microsoft.card.adaptive",
-                    "content" => [
-                        "type" => "AdaptiveCard",
-                        "body" => $body,
-                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "version" => "1.4",
-                        "msteams" => [
-                            "width" => "Full",
-                            "entities" => $mentions
-                        ]
-                    ]
-                ]
-            ]
+            'type' => 'message',
+            'attachments' => [[
+                'contentType' => 'application/vnd.microsoft.card.adaptive',
+                'content' => [
+                    'type' => 'AdaptiveCard',
+                    'body' => $body,
+                    '$schema' => 'http://adaptivecards.io/schemas/adaptive-card.json',
+                    'version' => '1.0',
+                    'msteams' => [
+                        'entities' => $mentions,
+                    ],
+                ],
+            ]],
         ];
 
         try {
             $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
+                ->withOptions(['verify' => false])  // 社内 SSL 互換用
                 ->withHeaders([
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
                 ])
-                ->post($this->webhookUrl, $payload);
-
-            Log::info('Teams interview notification sent', [
-                'mention_ids' => $mentionIds->toArray(),
-                'status' => $response->status(),
-                'response_body' => $response->body()
-            ]);
+                ->post($webhookUrl, $payload);
 
             if ($response->successful()) {
-                Log::info('Teams interview notification sent successfully');
-                return true;
-            } else {
-                Log::error('Teams interview notification failed', [
+                Log::info('Teams notification sent', [
+                    'title' => $title,
+                    'mention_count' => count($mentionIds),
                     'status' => $response->status(),
-                    'body' => $response->body()
                 ]);
-                return false;
+                return true;
             }
-        } catch (\Exception $e) {
-            Log::error('Teams interview notification exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+
+            Log::error('Teams notification failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('Teams notification exception: ' . $e->getMessage(), [
+                'exception' => $e,
             ]);
             return false;
         }
     }
 
+    // ========================================================================
+    // 以下、トリガー別のラッパー（内部で notify() を呼ぶ）
+    // ========================================================================
+
     /**
-     * 面接用のメンションIDを取得
-     * 
-     * @return \Illuminate\Support\Collection
+     * 面接受付者到着（明示的なボタン押下時のみ呼ばれる）
      */
-    private function getInterviewMentionIds()
+    public function notifyInterviewArrival(): bool
     {
-        // visitor_checkin トリガーの有効な通知設定を取得
-        $notificationSettings = \App\Models\NotificationSetting::where('trigger_event', 'visitor_checkin')
-            ->where('is_active', true)
-            ->get();
+        $mentionIds = $this->getMentionIdsForTrigger('visitor_checkin');
 
-        $mentionIds = collect();
+        $title = '👥 面接受付者到着';
+        $message = "面接の方が受付に到着しました。担当者の方は受付までお越しください。\n"
+                 . "到着時刻: " . now()->format('Y年m月d日 H:i');
 
-        foreach ($notificationSettings as $setting) {
-            // メール通知の受信者を取得（notification_dataがメンションID）
-            $emailRecipients = $setting->activeRecipients()
-                ->where('notification_type', 'email')
-                ->get();
-
-            foreach ($emailRecipients as $recipient) {
-                // notification_dataをメンションIDとして使用
-                $mentionIds->push($recipient->notification_data);
-            }
-        }
-
-        return $mentionIds;
+        return $this->notify($mentionIds->toArray(), $title, $message);
     }
 
+    /**
+     * アポイントあり来訪チェックイン
+     */
+    public function sendCheckinNotification(array $data): bool
+    {
+        $mentionIds = [];
+        if (!empty($data['staff_member_email'])) {
+            $mentionIds[] = $data['staff_member_email'];
+        }
+
+        $title = '✅ 来訪者チェックイン';
+
+        $lines = [];
+        $lines[] = '会社名: ' . ($data['company_name'] ?? '—');
+        $lines[] = '訪問者名: ' . ($data['visitor_name'] ?? '—');
+        $lines[] = '担当者: ' . ($data['staff_member_name'] ?? '未設定');
+        $lines[] = '受付番号: ' . ($data['reception_number'] ?? '—');
+        $lines[] = 'チェックイン時刻: ' . now()->format('Y年m月d日 H:i');
+        if (!empty($data['appointment_info'])) {
+            $lines[] = '';
+            $lines[] = 'アポイント情報:';
+            $lines[] = $data['appointment_info'];
+        }
+
+        return $this->notify($mentionIds, $title, implode("\n", $lines));
+    }
 
     /**
-     * 部署選択後の訪問者通知（メンション付き）
-     *
-     * @param array $visitorData
-     * @param int $groupId
-     * @return bool
+     * 部署の全員へ訪問者到着を通知（アポなし来訪）
      */
     public function notifyDepartmentVisitor(array $visitorData, int $groupId): bool
     {
-        if (!$this->webhookUrl) {
-            Log::warning('Teams webhook URL not configured');
-            return false;
-        }
-
-        // 部署情報を取得
-        $group = Group::find($groupId);
-        $departmentName = $group ? $group->name : '不明な部署';
-
-        // 部署のユーザー一覧を取得してメンション用のユーザー情報を作成
+        // 部署ユーザーのメールを抽出（User モデルに email カラムがある想定）
         $users = User::where('group_id', $groupId)
             ->where('del_flg', 0)
             ->get();
+        $mentionIds = $users->pluck('email')->filter()->values()->toArray();
 
-        $mentions = [];
-        foreach ($users as $user) {
-            if ($user->email) {
-                $mentions[] = [
-                    "type" => "mention",
-                    "text" => "<at>{$user->name}</at>",
-                    "mentioned" => [
-                        "id" => $user->email,
-                        "name" => $user->name
-                    ]
-                ];
+        $group = Group::find($groupId);
+        $groupName = $group->name ?? '部署';
+
+        $title = '👥 来訪者到着（' . $groupName . '宛）';
+
+        $lines = [];
+        $lines[] = '会社名: ' . ($visitorData['company_name'] ?? '—');
+        $lines[] = '訪問者名: ' . ($visitorData['visitor_name'] ?? '—');
+        if (!empty($visitorData['number_of_people'])) {
+            $lines[] = '人数: ' . $visitorData['number_of_people'] . '名';
+        }
+        if (!empty($visitorData['purpose'])) {
+            $lines[] = '用件: ' . $visitorData['purpose'];
+        }
+        $lines[] = 'チェックイン時刻: ' . now()->format('Y年m月d日 H:i');
+
+        return $this->notify($mentionIds, $title, implode("\n", $lines));
+    }
+
+    /**
+     * 新規アポイント登録通知（管理画面からの登録時）
+     */
+    public function sendAppointmentNotification(array $appointmentData): bool
+    {
+        $mentionIds = [];
+        if (!empty($appointmentData['staff_member_email'])) {
+            $mentionIds[] = $appointmentData['staff_member_email'];
+        }
+
+        $title = '📅 新規アポイント登録';
+
+        $lines = [];
+        $lines[] = '受付番号: ' . ($appointmentData['reception_number'] ?? '—');
+        $lines[] = '会社名: ' . ($appointmentData['company_name'] ?? '—');
+        $lines[] = '訪問者名: ' . ($appointmentData['visitor_name'] ?? '—');
+        $lines[] = '担当者: ' . ($appointmentData['staff_member_name'] ?? '未設定');
+        $lines[] = '訪問予定日時: ' . ($appointmentData['visit_date'] ?? '') . ' ' . ($appointmentData['visit_time'] ?? '');
+        if (!empty($appointmentData['purpose'])) {
+            $lines[] = '訪問目的: ' . $appointmentData['purpose'];
+        }
+
+        // 管理画面URL
+        $url = route('admin.appointments.index');
+
+        return $this->notify($mentionIds, $title, implode("\n", $lines), $url);
+    }
+
+    /**
+     * テスト通知送信（管理画面からの動作確認用）
+     */
+    public function sendTestNotification(): bool
+    {
+        return $this->notify(
+            [],
+            '🧪 テスト通知',
+            "受付システムからのテスト通知です。\n送信時刻: " . now()->format('Y年m月d日 H:i:s'),
+        );
+    }
+
+    /**
+     * notification_settings.trigger_event に紐づく email type recipient の ID を取得
+     */
+    private function getMentionIdsForTrigger(string $triggerEvent): \Illuminate\Support\Collection
+    {
+        $ids = collect();
+        $settings = NotificationSetting::where('trigger_event', $triggerEvent)
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($settings as $setting) {
+            $emailRecipients = $setting->activeRecipients()
+                ->where('notification_type', 'email')
+                ->get();
+            foreach ($emailRecipients as $recipient) {
+                if (!empty($recipient->notification_data)) {
+                    $ids->push($recipient->notification_data);
+                }
             }
         }
 
-        $message = [
-            "type" => "message",
-            "attachments" => [
-                [
-                    "contentType" => "application/vnd.microsoft.card.adaptive",
-                    "content" => [
-                        "type" => "AdaptiveCard",
-                        "body" => [
-                            [
-                                "type" => "TextBlock",
-                                "text" => "新しい訪問者が到着しました",
-                                "color" => "attention",
-                                "size" => "large",
-                                "wrap" => true
-                            ],
-                            [
-                                "type" => "TextBlock",
-                                "text" => "新しい訪問者が到着しました
+        return $ids->unique()->values();
+    }
 
-" . (isset($visitorData['reception_number']) && $visitorData['reception_number'] ? "受付番号: {$visitorData['reception_number']}\n" : "") . "会社名: {$visitorData['company_name']}
-訪問者: {$visitorData['visitor_name']}
-人数: {$visitorData['number_of_people']}名
-訪問目的: {$visitorData['purpose']}
-チェックイン時刻: " . now()->format('Y年m月d日 H:i') . "
+    /**
+     * 旧メソッドとの互換性のためのラッパー（既存コード呼び出し保護）
+     */
+    public function notifyAppointmentCheckIn($visitor): bool
+    {
+        $appointment = \App\Models\Appointment::where('reception_number', $visitor->reception_number)->first();
+        $appointmentInfo = '';
+        if ($appointment) {
+            $appointmentInfo = "訪問予定日: " . $appointment->visit_date->format('Y年m月d日') . "\n"
+                             . "訪問予定時刻: " . $appointment->visit_time->format('H:i');
+        }
 
-訪問先部署: {$departmentName}",
-                                "color" => "good",
-                                "size" => "medium",
-                                "wrap" => true
-                            ]
-                        ],
-                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "version" => "1.0",
-                        "msteams" => [
-                            "entities" => $mentions
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        return $this->sendMessage($message);
+        $staff = $visitor->staffMember ?? null;
+        return $this->sendCheckinNotification([
+            'reception_number' => $visitor->reception_number,
+            'company_name' => $visitor->company_name,
+            'visitor_name' => $visitor->visitor_name,
+            'staff_member_name' => $staff->name ?? '未設定',
+            'staff_member_email' => $staff->email ?? null,
+            'appointment_info' => $appointmentInfo,
+        ]);
     }
 }

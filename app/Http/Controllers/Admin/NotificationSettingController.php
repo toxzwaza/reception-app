@@ -7,6 +7,8 @@ use App\Models\NotificationSetting;
 use App\Models\NotificationRecipient;
 use App\Models\StaffMember;
 use App\Models\User;
+use App\Services\TeamsNotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -162,8 +164,49 @@ class NotificationSettingController extends Controller
         ]);
 
         $status = $notificationSetting->is_active ? '有効' : '無効';
-        
+
         return redirect()->back()
             ->with('success', "通知設定を{$status}にしました。");
+    }
+
+    /**
+     * Teams 通知のテスト送信（管理画面から動作確認用）
+     * 特定の設定に紐づく email type の受信者にメンションしてテストメッセージを送る。
+     * notification_setting_id を指定しない場合はメンション無しでシンプルに送信する。
+     */
+    public function sendTest(Request $request, TeamsNotificationService $teams): JsonResponse
+    {
+        $validated = $request->validate([
+            'notification_setting_id' => 'nullable|exists:notification_settings,id',
+            'message' => 'nullable|string|max:1000',
+        ]);
+
+        $mentionIds = [];
+        $title = '🧪 テスト通知';
+        $message = $validated['message']
+            ?? "受付システムからのテスト通知です。\n送信時刻: " . now()->format('Y年m月d日 H:i:s');
+
+        if (!empty($validated['notification_setting_id'])) {
+            $setting = NotificationSetting::with('activeRecipients')->find($validated['notification_setting_id']);
+            if ($setting) {
+                $title = '🧪 テスト通知: ' . $setting->name;
+                $mentionIds = $setting->activeRecipients
+                    ->where('notification_type', 'email')
+                    ->pluck('notification_data')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+            }
+        }
+
+        $ok = $teams->notify($mentionIds, $title, $message);
+
+        return response()->json([
+            'status' => $ok ? 'success' : 'failed',
+            'message' => $ok
+                ? 'テスト通知を送信しました。Teams でご確認ください。'
+                : 'テスト通知の送信に失敗しました。ログを確認してください。',
+            'mention_count' => count($mentionIds),
+        ], $ok ? 200 : 500);
     }
 }

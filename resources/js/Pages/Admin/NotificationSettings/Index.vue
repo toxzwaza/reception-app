@@ -4,13 +4,22 @@
       <div class="flex justify-between items-center">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">通知設定管理</h2>
         <div class="flex space-x-2">
-          <Link 
+          <button
+            type="button"
+            @click="sendTestGeneral"
+            :disabled="testSending"
+            class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-bold py-2 px-4 rounded"
+            title="メンションなしのシンプルなテスト通知を Teams に送信"
+          >
+            {{ testSending ? '送信中...' : '🧪 Teams テスト送信' }}
+          </button>
+          <Link
             :href="route('admin.dashboard')"
             class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
           >
             ダッシュボードに戻る
           </Link>
-          <Link 
+          <Link
             :href="route('admin.notification-settings.create')"
             class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           >
@@ -88,7 +97,7 @@
                         >
                           編集
                         </Link>
-                        <button 
+                        <button
                           @click="toggleSetting(setting.id)"
                           :class="[
                             'text-sm',
@@ -97,7 +106,15 @@
                         >
                           {{ setting.is_active ? '無効化' : '有効化' }}
                         </button>
-                        <button 
+                        <button
+                          @click="sendTestForSetting(setting.id, setting.name)"
+                          :disabled="testSending"
+                          class="text-purple-600 hover:text-purple-900 disabled:text-gray-400"
+                          title="この設定の受信者にテスト通知を送信"
+                        >
+                          🧪 テスト
+                        </button>
+                        <button
                           @click="deleteSetting(setting.id)"
                           class="text-red-600 hover:text-red-900"
                         >
@@ -134,7 +151,9 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import axios from 'axios';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
@@ -142,6 +161,31 @@ const props = defineProps({
   triggerEvents: Object,
   notificationTypes: Object,
 });
+
+// テスト送信中フラグ（多重押下防止）
+const testSending = ref(false);
+
+// テスト送信（設定ID指定 or 全般）
+const runTestSend = async (notificationSettingId = null, label = '全般') => {
+  if (testSending.value) return;
+  testSending.value = true;
+  try {
+    const { data } = await axios.post(
+      route('admin.notification-settings.test-send'),
+      notificationSettingId ? { notification_setting_id: notificationSettingId } : {},
+    );
+    alert(`✅ ${label}: ${data.message}${data.mention_count ? `\nメンション: ${data.mention_count}名` : ''}`);
+  } catch (error) {
+    const msg = error.response?.data?.message || error.message || '不明なエラー';
+    alert(`❌ ${label}: テスト送信に失敗しました\n${msg}`);
+    console.error(error);
+  } finally {
+    testSending.value = false;
+  }
+};
+
+const sendTestGeneral = () => runTestSend(null, '全般テスト');
+const sendTestForSetting = (id, name) => runTestSend(id, `${name} のテスト`);
 
 // 日付フォーマット
 const formatDate = (dateString) => {

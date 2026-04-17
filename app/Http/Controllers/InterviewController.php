@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\NotificationSetting;
 use App\Models\NotificationRecipient;
 use App\Services\TeamsNotificationService;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,24 +18,38 @@ class InterviewController extends Controller
         $this->teamsNotification = $teamsNotification;
     }
 
-    // 面接受付画面
+    /**
+     * 面接受付画面を表示する。
+     * 【重要】この GET では通知を一切発火しない（暴発対策）。
+     * 実際の通知発火は notifyStaff() POST のみ。
+     */
     public function index(): Response
     {
-        // 面接担当者へ通知を送信（メンション付き）
-        $this->teamsNotification->notifyInterviewArrival();
-        
-        // 有効な面接用電話番号を取得
-        // trigger_event = 'visitor_checkin' かつ notification_type = 'phone' のデータを取得
+        // 電話番号は表示のみ（UI 側で明示的にボタンを押したときに初めて発信する）
         $interviewPhones = $this->getInterviewPhones();
-        
+
         return Inertia::render('Interview/Index', [
             'interviewPhones' => $interviewPhones,
         ]);
     }
 
     /**
+     * 「担当者を呼ぶ」ボタン押下時に呼ばれる POST エンドポイント。
+     * Teams 通知のみ担当（Twilio 発信はフロント側で別途実行）。
+     */
+    public function notifyStaff(): JsonResponse
+    {
+        $ok = $this->teamsNotification->notifyInterviewArrival();
+
+        return response()->json([
+            'status' => $ok ? 'success' : 'failed',
+            'message' => $ok ? '担当者にTeams通知を送信しました' : 'Teams通知の送信に失敗しました',
+        ], $ok ? 200 : 500);
+    }
+
+    /**
      * 面接用の電話番号を取得
-     * 
+     *
      * @return \Illuminate\Support\Collection
      */
     private function getInterviewPhones()
@@ -53,7 +68,7 @@ class InterviewController extends Controller
                 ->get();
 
             foreach ($phoneRecipients as $recipient) {
-                // TwilioAutoCallコンポーネントで使用するフォーマットに変換
+                // TwilioAutoCall コンポーネント用のフォーマットに変換
                 $phones->push([
                     'id' => $recipient->id,
                     'phone_number' => $recipient->notification_data,
@@ -66,4 +81,3 @@ class InterviewController extends Controller
         return $phones;
     }
 }
-

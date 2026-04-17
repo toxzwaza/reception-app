@@ -49,7 +49,7 @@ class ProjectGroupController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'user_ids' => 'nullable|array',
-            'user_ids.*' => 'exists:akioka_db.users,id',
+            'user_ids.*' => 'exists:users,id',
         ]);
 
         $projectGroup = ProjectGroup::create([
@@ -103,7 +103,7 @@ class ProjectGroupController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'user_ids' => 'nullable|array',
-            'user_ids.*' => 'exists:akioka_db.users,id',
+            'user_ids.*' => 'exists:users,id',
         ]);
 
         $projectGroup->update([

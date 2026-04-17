@@ -84,15 +84,18 @@ class VisitorController extends Controller
     // Teams通知の送信
     private function sendTeamsNotification(Visitor $visitor)
     {
-        $teamsService = new \App\Services\TeamsNotificationService();
-        
+        $teamsService = app(\App\Services\TeamsNotificationService::class);
+
+        $staff = $visitor->staffMember;  // User モデル
+
         $checkinData = [
             'reception_number' => $visitor->reception_number,
             'company_name' => $visitor->company_name,
             'visitor_name' => $visitor->visitor_name,
-            'staff_member_name' => $visitor->staffMember->name ?? '未設定',
+            'staff_member_name' => $staff->name ?? '未設定',
+            'staff_member_email' => $staff->email ?? null,  // メンション先
         ];
-        
+
         $teamsService->sendCheckinNotification($checkinData);
     }
 }

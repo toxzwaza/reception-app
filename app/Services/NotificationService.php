@@ -258,7 +258,7 @@ class NotificationService
     }
 
     /**
-     * Teamsメンション通知を送信
+     * Teamsメンション通知を送信（TeamsNotificationService::notify() へ委譲）
      *
      * @param NotificationRecipient $recipient
      * @param array $data
@@ -267,97 +267,22 @@ class NotificationService
     private static function sendTeamsMention(NotificationRecipient $recipient, array $data): void
     {
         $mention = $recipient->notification_data;
-        
-        // .envからTeams Webhook URLを取得
-        $webhookUrl = env('TEAMS_WEBHOOK_URL');
-        
-        if (!$webhookUrl) {
-            Log::error('Teams Webhook URLが設定されていません', [
-                'recipient' => $recipient->user->name,
-                'mention' => $mention
-            ]);
-            return;
-        }
-        
-        // メンション情報の処理
-        $mentions = [];
-        if ($mention) {
-            $mentions[] = [
-                "type" => "mention",
-                "text" => "<at>{$mention}</at>",
-                "mentioned" => [
-                    "id" => $mention,
-                    "name" => $mention
-                ]
-            ];
-        }
-        
-        // メッセージの生成
         $messageText = self::formatTeamsMessage($data);
-        $mentionText = $mention ? "<at>{$mention}</at> " : '';
-        
-        // Teams Adaptive Card形式のペイロード
-        $message = [
-            "type" => "message",
-            "attachments" => [
-                [
-                    "contentType" => "application/vnd.microsoft.card.adaptive",
-                    "content" => [
-                        "type" => "AdaptiveCard",
-                        "body" => [
-                            [
-                                "type" => "TextBlock",
-                                "text" => "📦 納品書・受領書受信通知",
-                                "color" => "attention",
-                                "size" => "large",
-                                "wrap" => true
-                            ],
-                            [
-                                "type" => "TextBlock",
-                                "text" => $mentionText . $messageText,
-                                "color" => "good",
-                                "size" => "medium",
-                                "wrap" => true
-                            ]
-                        ],
-                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "version" => "1.0",
-                        "msteams" => [
-                            "entities" => $mentions
-                        ]
-                    ]
-                ]
-            ]
-        ];
-        
-        try {
-            $response = Http::timeout(10)
-                ->withOptions([
-                    'verify' => false, // SSL証明書の検証を無効化（開発環境用）
-                ])
-                ->post($webhookUrl, $message);
-            
-            if ($response->successful()) {
-                Log::info('Teamsメンション通知送信成功', [
-                    'recipient' => $recipient->user->name,
-                    'mention' => $mention,
-                    'message' => $mentionText . $messageText
-                ]);
-            } else {
-                Log::error('Teamsメンション通知送信失敗', [
-                    'recipient' => $recipient->user->name,
-                    'mention' => $mention,
-                    'status' => $response->status(),
-                    'response' => $response->body()
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Teamsメンション通知送信エラー', [
-                'recipient' => $recipient->user->name,
-                'mention' => $mention,
-                'error' => $e->getMessage()
-            ]);
-        }
+
+        // トリガーに応じたタイトル
+        $title = match ($data['type'] ?? '') {
+            'delivery_received' => '📦 納品書・受領書受信',
+            'pickup_received' => '🚚 集荷伝票受信',
+            'interview_call' => '📞 面接時通話',
+            default => '🔔 通知',
+        };
+
+        $teams = app(TeamsNotificationService::class);
+        $teams->notify(
+            $mention ? [$mention] : [],
+            $title,
+            $messageText
+        );
     }
 
     /**
@@ -399,7 +324,7 @@ class NotificationService
     }
 
     /**
-     * アポイントTeams通知を送信
+     * アポイントTeams通知を送信（TeamsNotificationService::notify() へ委譲）
      *
      * @param NotificationSetting $setting
      * @param array $data
@@ -409,97 +334,14 @@ class NotificationService
     private static function sendAppointmentTeamsNotification(NotificationSetting $setting, array $data, array $mentionData): void
     {
         $mention = $mentionData['mention_id'] ?? $mentionData['email'] ?? '';
-        
-        // .envからTeams Webhook URLを取得
-        $webhookUrl = env('TEAMS_WEBHOOK_URL');
-        
-        if (!$webhookUrl) {
-            Log::error('Teams Webhook URLが設定されていません', [
-                'setting_name' => $setting->name,
-                'mention' => $mention
-            ]);
-            return;
-        }
-        
-        // メンション情報の処理
-        $mentions = [];
-        if ($mention) {
-            $mentions[] = [
-                "type" => "mention",
-                "text" => "<at>{$mention}</at>",
-                "mentioned" => [
-                    "id" => $mention,
-                    "name" => $mention
-                ]
-            ];
-        }
-        
-        // メッセージの生成
         $messageText = self::formatAppointmentTeamsMessage($data);
-        $mentionText = $mention ? "<at>{$mention}</at> " : '';
-        
-        // Teams Adaptive Card形式のペイロード
-        $message = [
-            "type" => "message",
-            "attachments" => [
-                [
-                    "contentType" => "application/vnd.microsoft.card.adaptive",
-                    "content" => [
-                        "type" => "AdaptiveCard",
-                        "body" => [
-                            [
-                                "type" => "TextBlock",
-                                "text" => "📅 アポイントチェックイン通知",
-                                "color" => "attention",
-                                "size" => "large",
-                                "wrap" => true
-                            ],
-                            [
-                                "type" => "TextBlock",
-                                "text" => $mentionText . $messageText,
-                                "color" => "good",
-                                "size" => "medium",
-                                "wrap" => true
-                            ]
-                        ],
-                        "\$schema" => "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "version" => "1.0",
-                        "msteams" => [
-                            "entities" => $mentions
-                        ]
-                    ]
-                ]
-            ]
-        ];
-        
-        try {
-            $response = Http::timeout(10)
-                ->withOptions([
-                    'verify' => false, // SSL証明書の検証を無効化（開発環境用）
-                ])
-                ->post($webhookUrl, $message);
-            
-            if ($response->successful()) {
-                Log::info('アポイントTeams通知送信成功', [
-                    'setting_name' => $setting->name,
-                    'mention' => $mention,
-                    'message' => $mentionText . $messageText
-                ]);
-            } else {
-                Log::error('アポイントTeams通知送信失敗', [
-                    'setting_name' => $setting->name,
-                    'mention' => $mention,
-                    'status' => $response->status(),
-                    'response' => $response->body()
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('アポイントTeams通知送信エラー', [
-                'setting_name' => $setting->name,
-                'mention' => $mention,
-                'error' => $e->getMessage()
-            ]);
-        }
+
+        $teams = app(TeamsNotificationService::class);
+        $teams->notify(
+            $mention ? [$mention] : [],
+            '📅 来訪者チェックイン',
+            $messageText
+        );
     }
 
     /**

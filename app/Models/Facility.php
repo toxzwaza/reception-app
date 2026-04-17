@@ -19,6 +19,7 @@ class Facility extends Model
 
     protected $fillable = [
         'name',
+        'outlook_resource_email',
     ];
 
     /**

@@ -27,6 +27,7 @@ class ScheduleEvent extends Model
         'badge',
         'description_url',
         'status',
+        'outlook_event_id',
     ];
 
     // dateカラムは文字列として扱い、タイムゾーン変換を避ける

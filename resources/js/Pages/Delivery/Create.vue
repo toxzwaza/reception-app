@@ -147,14 +147,52 @@
           <!-- プレビュー -->
           <div v-else-if="form.document_preview">
             <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">こちらの画像でよろしいですか？</h3>
-            <div class="relative mb-6">
+            <div class="relative mb-4 overflow-hidden">
               <img
                 :src="form.document_preview"
                 :alt="form.delivery_type"
-                class="w-full rounded-lg shadow-lg"
+                class="w-full rounded-lg shadow-lg transition-transform duration-200"
+                :style="{ transform: `rotate(${rotationDegrees}deg)` }"
               />
             </div>
-            
+
+            <!-- 回転コントロール -->
+            <div class="flex gap-2 mb-6 justify-center">
+              <button
+                type="button"
+                @click="rotateLeft"
+                :disabled="processing"
+                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base flex items-center justify-center gap-2"
+                aria-label="左に90度回転"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                左に90°
+              </button>
+              <button
+                type="button"
+                @click="rotate180"
+                :disabled="processing"
+                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base"
+                aria-label="180度回転"
+              >
+                180°
+              </button>
+              <button
+                type="button"
+                @click="rotateRight"
+                :disabled="processing"
+                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base flex items-center justify-center gap-2"
+                aria-label="右に90度回転"
+              >
+                右に90°
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                </svg>
+              </button>
+            </div>
+
             <!-- 注意文 -->
             <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div class="flex">
@@ -168,15 +206,17 @@
                     <li>手や指で隠れていないか確認してください</li>
                     <li>書類全体が写っているか確認してください</li>
                     <li>明るさが適切か確認してください</li>
+                    <li>向きが正しくない場合は回転ボタンで調整してください</li>
                   </ul>
                 </div>
               </div>
             </div>
-            
+
             <div class="flex gap-4">
               <button
                 type="button"
                 @click="retakeImage"
+                :disabled="processing"
                 class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-lg"
               >
                 撮り直す
@@ -283,6 +323,7 @@ const isCountingDown = ref(false);
 const isScanning = ref(false);  // スキャン中フラグ
 const videoFeedError = ref(false);  // ビデオフィードエラーフラグ
 const videoFeedUrl = ref(VIDEO_FEED_URL);  // ビデオフィードURL
+const rotationDegrees = ref(0);  // スキャン画像の回転角度（0/90/180/270）
 let stream = null;
 let countdownTimer = null;
 let socket = null;  // Socket.IO接続
@@ -639,6 +680,7 @@ const handleCancel = () => {
 const retakeImage = () => {
   form.value.document_preview = null;
   form.value.document_image = null;
+  rotationDegrees.value = 0;  // 回転もリセット
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
@@ -649,31 +691,93 @@ const retakeImage = () => {
   startCamera();
 };
 
+// ====== 回転操作 ======
+const rotateLeft = () => {
+  rotationDegrees.value = (rotationDegrees.value + 270) % 360;
+};
+const rotateRight = () => {
+  rotationDegrees.value = (rotationDegrees.value + 90) % 360;
+};
+const rotate180 = () => {
+  rotationDegrees.value = (rotationDegrees.value + 180) % 360;
+};
+
+// Base64 画像を canvas 経由で指定角度回転させて File に戻す
+const rotateImageFile = async (srcDataUrl, degrees, filename) => {
+  if (!degrees || degrees === 0) {
+    return form.value.document_image;  // 回転不要
+  }
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const rad = (degrees * Math.PI) / 180;
+        const swap = degrees === 90 || degrees === 270;
+        const canvas = document.createElement('canvas');
+        canvas.width = swap ? img.height : img.width;
+        canvas.height = swap ? img.width : img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(rad);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('canvas.toBlob が失敗'));
+            return;
+          }
+          resolve(new File([blob], filename, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.95);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error('画像読み込み失敗'));
+    img.src = srcDataUrl;
+  });
+};
+
 // フォーム送信
-const submitForm = () => {
+const submitForm = async () => {
   if (!form.value.document_image) {
     cameraError.value = '書類をスキャンしてください';
     return;
   }
 
   processing.value = true;
-  
-  // ファイルアップロード用のデータを作成（previewはサーバーに送信しない）
-  const formData = {
-    delivery_type: form.value.delivery_type,
-    document_image: form.value.document_image,
-  };
-  
-  router.post(route('delivery.store'), formData, {
-    forceFormData: true, // ファイルアップロードを確実にFormDataで送信
-    onSuccess: () => {
-      processing.value = false;
-    },
-    onError: (errors) => {
-      processing.value = false;
-      console.error('送信エラー:', errors);
-    },
-  });
+
+  try {
+    // 回転が指定されていれば実画像を回転してから送信
+    let imageToSend = form.value.document_image;
+    if (rotationDegrees.value !== 0 && form.value.document_preview) {
+      imageToSend = await rotateImageFile(
+        form.value.document_preview,
+        rotationDegrees.value,
+        form.value.document_image.name || 'document.jpg'
+      );
+      console.log(`🔄 画像を ${rotationDegrees.value}° 回転して送信`);
+    }
+
+    // ファイルアップロード用のデータを作成（previewはサーバーに送信しない）
+    const formData = {
+      delivery_type: form.value.delivery_type,
+      document_image: imageToSend,
+    };
+
+    router.post(route('delivery.store'), formData, {
+      forceFormData: true, // ファイルアップロードを確実にFormDataで送信
+      onSuccess: () => {
+        processing.value = false;
+      },
+      onError: (errors) => {
+        processing.value = false;
+        console.error('送信エラー:', errors);
+      },
+    });
+  } catch (e) {
+    processing.value = false;
+    cameraError.value = `画像の回転処理に失敗しました: ${e.message}`;
+    console.error(e);
+  }
 };
 
 </script>

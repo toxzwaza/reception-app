@@ -54,4 +54,10 @@ return [
         'twiml_app_sid' => env('TWILIO_TWIML_APP_SID'),
     ],
 
+    'microsoft_graph' => [
+        'tenant_id' => env('GRAPH_TENANT_ID'),
+        'client_id' => env('GRAPH_CLIENT_ID'),
+        'client_secret' => env('GRAPH_CLIENT_SECRET'),
+    ],
+
 ];

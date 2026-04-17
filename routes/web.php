@@ -53,8 +53,10 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // 通知設定管理
     Route::resource('staff-members', StaffMemberController::class);
-    Route::resource('notification-settings', NotificationSettingController::class);
+    // Teams 通知のテスト送信（resource より前に定義して resource の {id} に吸収されないようにする）
+    Route::post('notification-settings/test-send', [NotificationSettingController::class, 'sendTest'])->name('notification-settings.test-send');
     Route::post('notification-settings/{notification_setting}/toggle', [NotificationSettingController::class, 'toggle'])->name('notification-settings.toggle');
+    Route::resource('notification-settings', NotificationSettingController::class);
     
     // お知らせ管理
     Route::resource('announcements', AdminAnnouncementController::class);
@@ -89,6 +91,8 @@ Route::prefix('delivery-pickup')->name('delivery-pickup.')->group(function () {
 // 面接の方
 Route::prefix('interview')->name('interview.')->group(function () {
     Route::get('/', [InterviewController::class, 'index'])->name('index');
+    // 担当者を呼ぶ（ボタン押下時のみ通知発火）
+    Route::post('/notify-staff', [InterviewController::class, 'notifyStaff'])->name('notify-staff');
 });
 
 // アポイントなしの方

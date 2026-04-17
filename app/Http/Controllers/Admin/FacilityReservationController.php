@@ -77,14 +77,14 @@ class FacilityReservationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'facility_id' => 'required|exists:akioka_db.facilities,id',
+            'facility_id' => 'required|exists:facilities,id',
             'title' => 'required|string|max:500',
             'start_datetime' => 'required|date_format:Y-m-d H:i',
             'end_datetime' => 'required|date_format:Y-m-d H:i|after:start_datetime',
             'badge' => 'nullable|string|max:100',
             'description_url' => 'nullable|url|max:500',
             'participants' => 'nullable|array',
-            'participants.*' => 'exists:akioka_db.users,id',
+            'participants.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
@@ -184,7 +184,7 @@ class FacilityReservationController extends Controller
             'badge' => 'nullable|string|max:100',
             'description_url' => 'nullable|url|max:500',
             'participants' => 'nullable|array',
-            'participants.*' => 'exists:akioka_db.users,id',
+            'participants.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
