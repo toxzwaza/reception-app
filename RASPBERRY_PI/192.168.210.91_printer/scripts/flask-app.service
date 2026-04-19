@@ -1,0 +1,14 @@
+[Unit]
+Description=Flask App (Run as root)
+After=network.target
+
+[Service]
+# 実行ユーザーを root に
+User=root
+WorkingDirectory=/home/to-murakami/Documents
+ExecStart=/usr/bin/python3 /home/to-murakami/Documents/app.py
+Restart=always
+Environment="PATH=/usr/bin"
+
+[Install]
+WantedBy=multi-user.target

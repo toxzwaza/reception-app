@@ -1,0 +1,14 @@
+[Unit]
+Description=Brother PT-P750W Keep-Alive Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/to-murakami/Documents/printer_keepalive.py
+Restart=always
+User=root
+WorkingDirectory=/home/to-murakami/Documents
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

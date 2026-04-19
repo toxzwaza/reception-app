@@ -16,3 +16,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Twilio 運用ガイド（APIキー含有のためリモート管理しない）
+TWILIO/

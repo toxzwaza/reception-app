@@ -17,11 +17,14 @@ use App\Http\Controllers\PickupController;
 use App\Http\Controllers\TwilioTestController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\FacilityTimelineController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/facility-timeline', [FacilityTimelineController::class, 'index'])->name('facility-timeline');
 
 // 認証ルート
 require __DIR__.'/auth.php';

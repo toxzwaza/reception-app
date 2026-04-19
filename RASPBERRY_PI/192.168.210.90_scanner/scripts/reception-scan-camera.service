@@ -1,0 +1,22 @@
+[Unit]
+Description=Reception Scan Camera Service
+After=network.target
+
+[Service]
+Type=simple
+User=to-murakami
+Group=to-murakami
+WorkingDirectory=/home/to-murakami/Documents/reception-scan-camera
+Environment="DISPLAY=:0"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 /home/to-murakami/Documents/reception-scan-camera/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# カメラデバイスへのアクセス権限
+SupplementaryGroups=video
+
+[Install]
+WantedBy=multi-user.target
