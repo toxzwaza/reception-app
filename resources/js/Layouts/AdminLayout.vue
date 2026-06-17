@@ -1,222 +1,150 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+// ナビゲーション項目
+const navItems = [
+    { label: 'ダッシュボード', route: 'admin.dashboard', pattern: 'admin.dashboard' },
+    { label: 'アポイント', route: 'admin.appointments.index', pattern: 'admin.appointments.*' },
+    { label: '施設管理', route: 'admin.facilities.index', pattern: 'admin.facilities.*' },
+    { label: '通知設定', route: 'admin.notification-settings.index', pattern: 'admin.notification-settings.*' },
+    { label: 'お知らせ', route: 'admin.announcements.index', pattern: 'admin.announcements.*' },
+];
+
+// 現在時刻
+const currentTime = ref('');
+let timeInterval;
+function formatDateTime(date) {
+    return new Intl.DateTimeFormat('ja-JP', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', weekday: 'short',
+    }).format(date);
+}
+onMounted(() => {
+    currentTime.value = formatDateTime(new Date());
+    timeInterval = setInterval(() => {
+        currentTime.value = formatDateTime(new Date());
+    }, 1000);
+});
+onUnmounted(() => {
+    if (timeInterval) clearInterval(timeInterval);
+});
 </script>
 
 <template>
-    <div>
-        <div class="min-h-screen bg-gray-100">
-            <nav class="bg-white border-b border-gray-100">
-                <!-- Primary Navigation Menu -->
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
-                        <div class="flex">
-                            <!-- Logo -->
-                            <div class="shrink-0 flex items-center">
-                                <Link :href="route('admin.dashboard')" class="text-xl font-bold text-gray-800">
-                                    受付管理システム
-                                </Link>
-                            </div>
-
-                            <!-- Navigation Links -->
-                            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                                <Link 
-                                    :href="route('admin.dashboard')" 
-                                    :class="[
-                                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5',
-                                        route().current('admin.dashboard') 
-                                            ? 'border-indigo-400 text-gray-900 focus:outline-none focus:border-indigo-700' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300'
-                                    ]"
-                                >
-                                    ダッシュボード
-                                </Link>
-                                <Link 
-                                    :href="route('admin.appointments.index')" 
-                                    :class="[
-                                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5',
-                                        route().current('admin.appointments.*') 
-                                            ? 'border-indigo-400 text-gray-900 focus:outline-none focus:border-indigo-700' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300'
-                                    ]"
-                                >
-                                    アポイント
-                                </Link>
-                                <Link
-                                    :href="route('admin.facilities.index')"
-                                    :class="[
-                                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5',
-                                        route().current('admin.facilities.*')
-                                            ? 'border-indigo-400 text-gray-900 focus:outline-none focus:border-indigo-700'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300'
-                                    ]"
-                                >
-                                    施設管理
-                                </Link>
-                                <Link
-                                    :href="route('admin.notification-settings.index')"
-                                    :class="[
-                                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5',
-                                        route().current('admin.notification-settings.*')
-                                            ? 'border-indigo-400 text-gray-900 focus:outline-none focus:border-indigo-700'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300'
-                                    ]"
-                                >
-                                    通知設定
-                                </Link>
-                                <Link 
-                                    :href="route('admin.announcements.index')" 
-                                    :class="[
-                                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5',
-                                        route().current('admin.announcements.*') 
-                                            ? 'border-indigo-400 text-gray-900 focus:outline-none focus:border-indigo-700' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300'
-                                    ]"
-                                >
-                                    お知らせ
-                                </Link>
-                            </div>
+    <div class="min-h-screen bg-slate-50">
+        <nav class="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <!-- Logo -->
+                        <div class="shrink-0 flex items-center">
+                            <Link :href="route('admin.dashboard')" class="flex items-center gap-2 text-white">
+                                <span class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-lg">🏢</span>
+                                <span class="text-lg font-bold tracking-wide">受付管理システム</span>
+                            </Link>
                         </div>
 
-                        <div class="hidden sm:flex sm:items-center sm:ml-6">
-                            <!-- Logout Button -->
-                            <div class="ml-3 relative">
-                                <Link 
-                                    :href="route('logout')" 
-                                    method="post" 
-                                    as="button"
-                                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150"
-                                >
-                                    ログアウト
-                                </Link>
-                            </div>
-                        </div>
-
-                        <!-- Hamburger -->
-                        <div class="-mr-2 flex items-center sm:hidden">
-                            <button
-                                @click="showingNavigationDropdown = !showingNavigationDropdown"
-                                class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
+                        <!-- Navigation Links -->
+                        <div class="hidden space-x-1 sm:ml-8 sm:flex sm:items-center">
+                            <Link
+                                v-for="item in navItems"
+                                :key="item.route"
+                                :href="route(item.route)"
+                                :class="[
+                                    'inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150',
+                                    route().current(item.pattern)
+                                        ? 'bg-white/20 text-white'
+                                        : 'text-blue-100 hover:bg-white/10 hover:text-white'
+                                ]"
                             >
-                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path
-                                        :class="{
-                                            hidden: showingNavigationDropdown,
-                                            'inline-flex': !showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        :class="{
-                                            hidden: !showingNavigationDropdown,
-                                            'inline-flex': showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Responsive Navigation Menu -->
-                <div
-                    :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
-                    class="sm:hidden"
-                >
-                    <div class="pt-2 pb-3 space-y-1">
-                        <Link 
-                            :href="route('admin.dashboard')" 
-                            :class="[
-                                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                                route().current('admin.dashboard')
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                            ]"
-                        >
-                            ダッシュボード
-                        </Link>
-                        <Link 
-                            :href="route('admin.appointments.index')" 
-                            :class="[
-                                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                                route().current('admin.appointments.*')
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                            ]"
-                        >
-                            アポイント
-                        </Link>
-                        <Link
-                            :href="route('admin.facilities.index')"
-                            :class="[
-                                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                                route().current('admin.facilities.*')
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                            ]"
-                        >
-                            施設管理
-                        </Link>
-                        <Link
-                            :href="route('admin.notification-settings.index')"
-                            :class="[
-                                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                                route().current('admin.notification-settings.*')
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                            ]"
-                        >
-                            通知設定
-                        </Link>
-                        <Link 
-                            :href="route('admin.announcements.index')" 
-                            :class="[
-                                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                                route().current('admin.announcements.*')
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-                            ]"
-                        >
-                            お知らせ
-                        </Link>
-                    </div>
-
-                    <!-- Responsive Logout Button -->
-                    <div class="pt-4 pb-1 border-t border-gray-200">
-                        <div class="px-4">
-                            <Link 
-                                :href="route('logout')" 
-                                method="post" 
-                                as="button"
-                                class="block w-full text-left px-3 py-2 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                            >
-                                ログアウト
+                                {{ item.label }}
                             </Link>
                         </div>
                     </div>
-                </div>
-            </nav>
 
-            <!-- Page Heading -->
-            <header class="bg-white shadow" v-if="$slots.header">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    <slot name="header" />
-                </div>
-            </header>
+                    <!-- 右側：現在時刻 + ログアウト -->
+                    <div class="hidden sm:flex sm:items-center sm:gap-4">
+                        <span class="text-sm text-blue-50 font-medium tabular-nums">{{ currentTime }}</span>
+                        <Link
+                            :href="route('logout')"
+                            method="post"
+                            as="button"
+                            class="inline-flex items-center px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/30 rounded-lg font-semibold text-xs text-white tracking-wide transition"
+                        >
+                            ログアウト
+                        </Link>
+                    </div>
 
-            <!-- Page Content -->
-            <main>
-                <slot />
-            </main>
-        </div>
+                    <!-- Hamburger -->
+                    <div class="-mr-2 flex items-center sm:hidden">
+                        <button
+                            @click="showingNavigationDropdown = !showingNavigationDropdown"
+                            class="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-white/10 focus:outline-none transition"
+                        >
+                            <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                                <path
+                                    :class="{ hidden: showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }"
+                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                                <path
+                                    :class="{ hidden: !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }"
+                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Responsive Navigation Menu -->
+            <div
+                :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
+                class="sm:hidden bg-blue-700 pb-3"
+            >
+                <div class="pt-2 space-y-1 px-2">
+                    <Link
+                        v-for="item in navItems"
+                        :key="item.route"
+                        :href="route(item.route)"
+                        :class="[
+                            'block px-3 py-2 rounded-lg text-base font-medium',
+                            route().current(item.pattern)
+                                ? 'bg-white/20 text-white'
+                                : 'text-blue-100 hover:bg-white/10'
+                        ]"
+                    >
+                        {{ item.label }}
+                    </Link>
+                </div>
+                <div class="pt-3 px-4 border-t border-white/20 mt-2">
+                    <div class="text-sm text-blue-100 mb-2">{{ currentTime }}</div>
+                    <Link
+                        :href="route('logout')"
+                        method="post"
+                        as="button"
+                        class="block w-full text-center px-3 py-2 rounded-lg text-base font-medium text-white bg-white/15 hover:bg-white/25 border border-white/30"
+                    >
+                        ログアウト
+                    </Link>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Heading -->
+        <header class="bg-white shadow-sm border-b border-slate-200" v-if="$slots.header">
+            <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
+                <slot name="header" />
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main>
+            <slot />
+        </main>
     </div>
 </template>

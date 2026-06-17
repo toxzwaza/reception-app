@@ -51,7 +51,7 @@ const component = computed(() => props.href ? Link : 'button');
 // 共通のクラスを計算
 const buttonClasses = computed(() => [
   'inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2',
-  props.variant === 'primary' && 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500',
+  props.variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
   props.variant === 'secondary' && 'bg-gray-800 text-white hover:bg-gray-900 focus:ring-gray-700',
   props.variant === 'outline' && 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
   props.variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
