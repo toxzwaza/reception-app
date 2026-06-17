@@ -157,6 +157,7 @@ class AppointmentController extends Controller
 
                 $scheduleEvent = ScheduleEvent::create([
                     'facility_id' => $facilityData['facility_id'],
+                    'appointment_id' => $appointment->id, // チェックイン通知で参加メンバーをメンションするため紐付け
                     'date' => $date,
                     'title' => $facilityData['title'], // 一旦タイトルだけで保存
                     'start_datetime' => $startTime,

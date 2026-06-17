@@ -170,10 +170,11 @@ class NotificationService
      */
     private static function sendPhoneNotification(NotificationRecipient $recipient, array $data): void
     {
-        // Twilioを使用した電話通知の実装
-        // ここではログに記録するのみ
-        Log::info('電話通知送信', [
-            'recipient' => $recipient->user->name,
+        // 方針(§4-B): 電話発信はサーバ自動発信せず、受付端末フロントの Twilio Device で実施する。
+        //   （面接=InterviewController、アポなし来訪=OtherVisitor/Complete.vue の TwilioAutoCall）
+        //   ここでは発信トリガーとなる電話番号をログに残すのみ。
+        Log::info('電話通知（フロントTwilio Deviceで発信想定）', [
+            'recipient' => $recipient->user->name ?? null,
             'phone' => $recipient->notification_data,
             'data' => $data
         ]);
@@ -328,9 +329,10 @@ class NotificationService
      */
     private static function sendAppointmentPhoneNotification(NotificationSetting $setting, array $data, array $mentionData): void
     {
+        // 方針(§4-B): サーバ自動発信は行わない。発信は受付端末フロントの Twilio Device 側で実施。
         $phoneNumber = $mentionData['phone_number'] ?? '';
-        
-        Log::info('アポイント電話通知送信', [
+
+        Log::info('アポイント電話通知（フロントTwilio Deviceで発信想定）', [
             'setting_name' => $setting->name,
             'phone' => $phoneNumber,
             'data' => $data
@@ -348,12 +350,30 @@ class NotificationService
     private static function sendAppointmentEmailNotification(NotificationSetting $setting, array $data, array $mentionData): void
     {
         $email = $mentionData['email'] ?? '';
-        
-        Log::info('アポイントメール通知送信', [
-            'setting_name' => $setting->name,
-            'email' => $email,
-            'data' => $data
-        ]);
+        if (empty($email)) {
+            Log::warning('アポイントメール通知: 宛先が空のためスキップ', ['setting_id' => $setting->id]);
+            return;
+        }
+
+        $subject = self::subjectForData($data + ['type' => $data['type'] ?? 'visitor_checkin']);
+        $body = self::formatAppointmentTeamsMessage($data);
+        if ($body === '') {
+            $body = '受付システムから通知が届きました。';
+        }
+
+        try {
+            Mail::to($email)->send(new \App\Mail\GenericNotificationMail($subject, $body));
+            Log::info('アポイントメール通知送信成功', [
+                'setting_name' => $setting->name,
+                'email' => $email,
+                'type' => $data['type'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('アポイントメール通知送信失敗', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -366,12 +386,17 @@ class NotificationService
      */
     private static function sendAppointmentTeamsNotification(NotificationSetting $setting, array $data, array $mentionData): void
     {
-        $mention = $mentionData['mention_id'] ?? $mentionData['email'] ?? '';
+        // 担当スタッフ + 参加メンバーをメンション（mention_ids 配列を優先、無ければ単一を流用）
+        $mentions = $mentionData['mention_ids'] ?? null;
+        if (!is_array($mentions) || empty($mentions)) {
+            $single = $mentionData['mention_id'] ?? $mentionData['email'] ?? '';
+            $mentions = $single ? [$single] : [];
+        }
         $messageText = self::formatAppointmentTeamsMessage($data);
 
         $teams = app(TeamsNotificationService::class);
         $teams->notify(
-            $mention ? [$mention] : [],
+            $mentions,
             '📅 来訪者チェックイン',
             $messageText
         );

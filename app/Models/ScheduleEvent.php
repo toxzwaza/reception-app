@@ -20,6 +20,7 @@ class ScheduleEvent extends Model
 
     protected $fillable = [
         'facility_id',
+        'appointment_id',
         'date',
         'title',
         'start_datetime',
@@ -41,6 +42,14 @@ class ScheduleEvent extends Model
     public function facility(): BelongsTo
     {
         return $this->belongsTo(Facility::class);
+    }
+
+    /**
+     * この予定に紐づくアポイントを取得
+     */
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     /**

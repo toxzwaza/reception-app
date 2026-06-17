@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Visitor;
 use App\Models\StaffMember;
 use App\Models\Appointment;
+use App\Models\ScheduleEvent;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -142,7 +143,8 @@ class AppointmentController extends Controller
 
         // スタッフメンバー情報を取得
         $staffMember = StaffMember::with('user')->find($appointment->staff_member_id);
-        
+        $staffEmail = $staffMember && $staffMember->user ? $staffMember->user->email : '';
+
         // 通知データを準備
         $data = [
             'type' => 'visitor_checkin',
@@ -154,10 +156,36 @@ class AppointmentController extends Controller
             'appointment_info' => $appointment->appointment_info ?? '',
         ];
 
+        // メンション先メールを収集（担当スタッフ + 施設予約の参加メンバー）
+        // 施設予約を伴うアポイントは participants に同席者が登録されている（担当スタッフ含む）。
+        $mentionEmails = [];
+        if (!empty($staffEmail)) {
+            $mentionEmails[] = $staffEmail;
+        }
+
+        $scheduleEvent = ScheduleEvent::with('participants')
+            ->where('appointment_id', $appointment->id)
+            ->latest('id')
+            ->first();
+        if ($scheduleEvent) {
+            foreach ($scheduleEvent->participants as $participant) {
+                if (!empty($participant->email)) {
+                    $mentionEmails[] = $participant->email;
+                }
+            }
+        }
+
+        // 重複を排除（大文字小文字を無視）
+        $mentionEmails = array_values(array_intersect_key(
+            $mentionEmails,
+            array_unique(array_map('strtolower', $mentionEmails))
+        ));
+
         // メンション情報を準備
         $mentionData = [
-            'mention_id' => $staffMember ? $staffMember->user->email : '',
-            'email' => $staffMember ? $staffMember->user->email : '',
+            'mention_ids' => $mentionEmails,                 // 担当 + 参加メンバー（配列）
+            'mention_id' => $mentionEmails[0] ?? '',         // 後方互換
+            'email' => $staffEmail,
             'phone_number' => '', // 必要に応じて追加
         ];
 

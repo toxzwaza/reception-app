@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityReservationController;
 use App\Http\Controllers\Admin\NotificationSettingController;
@@ -48,6 +49,11 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // プロジェクトグループ管理
     Route::resource('project-groups', AdminProjectGroupController::class);
+
+    // 部署電話番号管理（アポなし来訪のTwilio発信先）
+    Route::get('/departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
+    Route::get('/departments/{department}/edit', [AdminDepartmentController::class, 'edit'])->name('departments.edit');
+    Route::put('/departments/{department}', [AdminDepartmentController::class, 'update'])->name('departments.update');
     
     // 施設予約取得API
     Route::get('/facilities/{facility}/schedule', [AdminAppointmentController::class, 'getFacilitySchedule'])->name('facilities.schedule');

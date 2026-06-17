@@ -597,7 +597,7 @@ const form = useForm({
   visit_date: '',
   visit_time: '',
   purpose: '',
-  send_email: false,
+  send_email: true, // デフォルトON（確認ダイアログで「送信しない」を選べば外せる）
 });
 
 // 施設予約フォーム

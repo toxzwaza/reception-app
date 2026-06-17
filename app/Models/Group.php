@@ -14,6 +14,7 @@ class Group extends Model
 
     protected $fillable = [
         'name',
+        'phone_number', // アポなし来訪時に部署代表電話へTwilioでつなぐための番号
     ];
 
     /**

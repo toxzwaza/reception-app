@@ -20,6 +20,7 @@ const navItems = [
     { label: 'アポイント', route: 'admin.appointments.index', pattern: 'admin.appointments.*' },
     { label: '施設管理', route: 'admin.facilities.index', pattern: 'admin.facilities.*' },
     { label: '通知設定', route: 'admin.notification-settings.index', pattern: 'admin.notification-settings.*' },
+    { label: '部署電話番号', route: 'admin.departments.index', pattern: 'admin.departments.*' },
     { label: 'お知らせ', route: 'admin.announcements.index', pattern: 'admin.announcements.*' },
 ];
 
