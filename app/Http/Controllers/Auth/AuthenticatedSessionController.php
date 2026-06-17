@@ -32,6 +32,18 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // スタッフメンバーとして登録された社員のみ管理画面へのログインを許可する
+        $user = Auth::user();
+        if (!\App\Models\StaffMember::where('user_id', $user->id)->exists()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors([
+                'email' => 'このアカウントには管理画面へのアクセス権限がありません。管理者にお問い合わせください。',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended('/dashboard');

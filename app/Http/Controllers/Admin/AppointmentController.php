@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Models\Facility;
 use App\Models\ScheduleEvent;
+use App\Models\StaffMember;
 use App\Models\UserSchedule;
 use App\Models\Group;
 use App\Models\ProjectGroup;
@@ -58,7 +59,10 @@ class AppointmentController extends Controller
      */
     public function create(): Response
     {
-        $staffMembers = User::select('id', 'name', 'email')
+        // スタッフメンバーとして登録された社員のみを担当候補にする
+        $registeredUserIds = StaffMember::pluck('user_id');
+        $staffMembers = User::select('id', 'name', 'email', 'group_id')
+            ->whereIn('id', $registeredUserIds)
             ->whereNotNull('email')
             ->active()
             ->orderBy('name')
@@ -254,15 +258,21 @@ class AppointmentController extends Controller
     {
         $appointment->load('staffMember');
 
-        $staffMembers = User::select('id', 'name', 'email')
+        // スタッフメンバーとして登録された社員のみを担当候補にする
+        $registeredUserIds = StaffMember::pluck('user_id');
+        $staffMembers = User::select('id', 'name', 'email', 'group_id')
+            ->whereIn('id', $registeredUserIds)
             ->whereNotNull('email')
             ->active()
             ->orderBy('name')
             ->get();
 
+        $groups = Group::select('id', 'name')->orderBy('name')->get();
+
         return Inertia::render('Admin/Appointments/Edit', [
             'appointment' => $appointment,
             'staffMembers' => $staffMembers,
+            'groups' => $groups,
         ]);
     }
 

@@ -65,13 +65,16 @@ class CheckLocalStorageAuth
             ->where('del_flg', 0)
             ->first();
 
-        if (!$user) {
+        // スタッフメンバーとして登録された社員のみ管理画面へのアクセスを許可する
+        $isStaff = $user && \App\Models\StaffMember::where('user_id', $user->id)->exists();
+
+        if (!$user || !$isStaff) {
             // APIリクエストの場合はJSONを返す
             if ($request->expectsJson()) {
                 return response()->json([
                     'requires_auth' => true,
                     'redirect_to' => route('login'),
-                    'message' => 'ユーザーが見つかりません'
+                    'message' => $user ? '管理画面へのアクセス権限がありません' : 'ユーザーが見つかりません'
                 ], 401);
             }
             // Webリクエストの場合はログインページにリダイレクト

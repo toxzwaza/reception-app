@@ -89,17 +89,31 @@
               <label for="staff_member_id" class="block text-sm font-medium text-gray-700 mb-1">
                 担当スタッフ <span class="text-red-500">*</span>
               </label>
-              <select
-                id="staff_member_id"
-                v-model="form.staff_member_id"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">選択してください</option>
-                <option v-for="staff in staffMembers" :key="staff.id" :value="staff.id">
-                  {{ staff.name }} ({{ staff.department }})
-                </option>
-              </select>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <!-- 部署で絞り込み -->
+                <select
+                  v-model="staffGroupId"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">すべての部署</option>
+                  <option v-for="group in groups" :key="group.id" :value="group.id">
+                    {{ group.name }}
+                  </option>
+                </select>
+                <!-- 担当者を選択 -->
+                <select
+                  id="staff_member_id"
+                  v-model="form.staff_member_id"
+                  required
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">選択してください（{{ filteredStaffMembers.length }}名）</option>
+                  <option v-for="staff in filteredStaffMembers" :key="staff.id" :value="staff.id">
+                    {{ staff.name }}
+                  </option>
+                </select>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">部署を選ぶと担当者を絞り込めます。</p>
               <p v-if="form.errors.staff_member_id" class="mt-1 text-sm text-red-600">
                 {{ form.errors.staff_member_id }}
               </p>
@@ -187,11 +201,13 @@
 
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   appointment: Object,
   staffMembers: Array,
+  groups: { type: Array, default: () => [] },
 });
 
 const form = useForm({
@@ -203,6 +219,18 @@ const form = useForm({
   visit_date: props.appointment.visit_date,
   visit_time: props.appointment.visit_time,
   purpose: props.appointment.purpose,
+});
+
+// 担当スタッフの部署絞り込み（既存担当者の部署を初期選択）
+const staffGroupId = ref(props.appointment.staff_member?.group_id ?? '');
+const filteredStaffMembers = computed(() => {
+  if (!staffGroupId.value) return props.staffMembers;
+  return props.staffMembers.filter((s) => String(s.group_id) === String(staffGroupId.value));
+});
+watch(staffGroupId, () => {
+  if (form.staff_member_id && !filteredStaffMembers.value.some((s) => s.id === form.staff_member_id)) {
+    form.staff_member_id = '';
+  }
 });
 
 const submit = () => {
