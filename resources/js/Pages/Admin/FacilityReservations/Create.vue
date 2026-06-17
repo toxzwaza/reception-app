@@ -20,7 +20,7 @@
                 v-model="form.title"
                 type="text"
                 required
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="例: 営業会議"
               />
             </div>
@@ -34,7 +34,7 @@
                 id="badge"
                 v-model="form.badge"
                 type="text"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="例: 重要"
               />
             </div>
@@ -48,7 +48,7 @@
                 id="description_url"
                 v-model="form.description_url"
                 type="url"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="https://example.com"
               />
             </div>
@@ -72,7 +72,7 @@
                     <select
                       v-model="selectedGroupId"
                       @change="loadGroupUsers"
-                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
                       <option value="">部署を選択...</option>
                       <option v-for="group in groups" :key="group.id" :value="group.id">
@@ -111,7 +111,7 @@
                     <button
                       type="button"
                       @click="selectAllUsers"
-                      class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-md"
+                      class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md"
                     >
                       全選択
                     </button>
@@ -134,7 +134,7 @@
                       type="checkbox"
                       :value="user.id"
                       v-model="selectedParticipants"
-                      class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
                     />
                     <div class="flex-1">
                       <div class="font-medium text-gray-900">{{ user.name }}</div>
@@ -199,7 +199,7 @@
               <button
                 type="submit"
                 :disabled="form.processing || !calendarSelection"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
               >
                 登録
               </button>
@@ -336,7 +336,7 @@ const participantColors = [
   { bg: 'bg-purple-400', border: 'border-purple-500', text: 'text-purple-900', badgeBg: 'bg-purple-100', badgeBorder: 'border-purple-300', hex: '#c084fc' },
   { bg: 'bg-yellow-400', border: 'border-yellow-500', text: 'text-yellow-900', badgeBg: 'bg-yellow-100', badgeBorder: 'border-yellow-300', hex: '#facc15' },
   { bg: 'bg-pink-400', border: 'border-pink-500', text: 'text-pink-900', badgeBg: 'bg-pink-100', badgeBorder: 'border-pink-300', hex: '#f472b6' },
-  { bg: 'bg-indigo-400', border: 'border-indigo-500', text: 'text-indigo-900', badgeBg: 'bg-indigo-100', badgeBorder: 'border-indigo-300', hex: '#818cf8' },
+  { bg: 'bg-blue-400', border: 'border-blue-500', text: 'text-blue-900', badgeBg: 'bg-blue-100', badgeBorder: 'border-blue-300', hex: '#818cf8' },
   { bg: 'bg-orange-400', border: 'border-orange-500', text: 'text-orange-900', badgeBg: 'bg-orange-100', badgeBorder: 'border-orange-300', hex: '#fb923c' },
   { bg: 'bg-teal-400', border: 'border-teal-500', text: 'text-teal-900', badgeBg: 'bg-teal-100', badgeBorder: 'border-teal-300', hex: '#2dd4bf' },
 ];

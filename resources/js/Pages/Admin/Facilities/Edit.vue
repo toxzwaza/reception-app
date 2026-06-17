@@ -20,7 +20,7 @@
                 v-model="form.name"
                 type="text"
                 required
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <div v-if="form.errors.name" class="text-sm text-red-600 mt-1">{{ form.errors.name }}</div>
             </div>
@@ -37,7 +37,7 @@
               <select
                 v-model="selectedRoom"
                 @change="applyRoom"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 mb-2"
               >
                 <option value="">― 会議室を選択 ―</option>
                 <option v-for="room in outlookRooms" :key="room.emailAddress" :value="room.emailAddress">
@@ -49,7 +49,7 @@
                 id="outlook_resource_email"
                 v-model="form.outlook_resource_email"
                 type="email"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="meetingroomX@akioka-ltd.jp"
               />
               <p class="text-xs text-gray-500 mt-1">
@@ -72,7 +72,7 @@
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
               >
                 更新
               </button>

@@ -18,7 +18,7 @@
                 v-model="form.title"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.title" class="mt-1 text-sm text-red-600">
                 {{ form.errors.title }}
@@ -35,7 +35,7 @@
                 v-model="form.content"
                 rows="6"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               ></textarea>
               <p v-if="form.errors.content" class="mt-1 text-sm text-red-600">
                 {{ form.errors.content }}
@@ -51,7 +51,7 @@
                 id="type"
                 v-model="form.type"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="info">情報</option>
                 <option value="warning">警告</option>
@@ -72,7 +72,7 @@
                 v-model="form.start_date"
                 type="date"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.start_date" class="mt-1 text-sm text-red-600">
                 {{ form.errors.start_date }}
@@ -89,7 +89,7 @@
                 v-model="form.end_date"
                 type="date"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.end_date" class="mt-1 text-sm text-red-600">
                 {{ form.errors.end_date }}
@@ -106,7 +106,7 @@
                 v-model.number="form.display_order"
                 type="number"
                 min="0"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p class="mt-1 text-sm text-gray-500">小さい数字ほど上に表示されます</p>
               <p v-if="form.errors.display_order" class="mt-1 text-sm text-red-600">
@@ -120,7 +120,7 @@
                 id="is_active"
                 v-model="form.is_active"
                 type="checkbox"
-                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label for="is_active" class="ml-2 block text-sm text-gray-700">
                 有効
@@ -138,7 +138,7 @@
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
               >
                 登録
               </button>

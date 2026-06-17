@@ -10,21 +10,21 @@
         <div class="mb-6 flex justify-center">
           <div class="flex items-center space-x-4">
             <div class="flex items-center">
-              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 1 ? 'bg-indigo-600' : 'bg-indigo-400']">
+              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 1 ? 'bg-blue-600' : 'bg-blue-400']">
                 1
               </div>
               <span class="ml-2 text-sm font-medium text-gray-700">アポイント情報</span>
             </div>
             <div class="w-16 h-1 bg-gray-300"></div>
             <div class="flex items-center">
-              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 2 ? 'bg-indigo-600' : currentStep > 2 ? 'bg-indigo-400' : 'bg-gray-300']">
+              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 2 ? 'bg-blue-600' : currentStep > 2 ? 'bg-blue-400' : 'bg-gray-300']">
                 2
               </div>
               <span class="ml-2 text-sm font-medium text-gray-700">施設予約</span>
             </div>
             <div class="w-16 h-1 bg-gray-300"></div>
             <div class="flex items-center">
-              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 3 ? 'bg-indigo-600' : 'bg-gray-300']">
+              <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 3 ? 'bg-blue-600' : 'bg-gray-300']">
                 3
               </div>
               <span class="ml-2 text-sm font-medium text-gray-700">確認</span>
@@ -48,7 +48,7 @@
                 v-model="form.company_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.company_name" class="mt-1 text-sm text-red-600">
                 {{ form.errors.company_name }}
@@ -65,7 +65,7 @@
                 v-model="form.visitor_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_name" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_name }}
@@ -81,7 +81,7 @@
                 id="visitor_email"
                 v-model="form.visitor_email"
                 type="email"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_email" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_email }}
@@ -97,7 +97,7 @@
                 id="visitor_phone"
                 v-model="form.visitor_phone"
                 type="tel"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_phone" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_phone }}
@@ -113,7 +113,7 @@
                 id="staff_member_id"
                 v-model="form.staff_member_id"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="">選択してください</option>
                 <option v-for="staff in staffMembers" :key="staff.id" :value="staff.id">
@@ -135,7 +135,7 @@
                 v-model="form.visit_date"
                 type="date"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visit_date" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visit_date }}
@@ -152,7 +152,7 @@
                 v-model="form.visit_time"
                 type="time"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visit_time }}
@@ -168,7 +168,7 @@
                 id="purpose"
                 v-model="form.purpose"
                 rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               ></textarea>
               <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
                 {{ form.errors.purpose }}
@@ -186,7 +186,7 @@
               <button
                 type="button"
                 @click="goToFacilityReservation"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
               >
                 次へ（施設予約）
               </button>
@@ -213,7 +213,7 @@
                   id="schedule_title"
                   v-model="facilityForm.title"
                   type="text"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="例: 〇〇社との打ち合わせ"
                 />
               </div>
@@ -227,7 +227,7 @@
                   id="badge"
                   v-model="facilityForm.badge"
                   type="text"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="例: 重要、定例会議"
                 />
               </div>
@@ -241,7 +241,7 @@
                   id="description_url"
                   v-model="facilityForm.description_url"
                   type="url"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="https://"
                 />
               </div>
@@ -266,7 +266,7 @@
                       <select
                         v-model="selectedGroupId"
                         @change="loadGroupUsers"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="">部署を選択...</option>
                         <option v-for="group in groups" :key="group.id" :value="group.id">
@@ -305,7 +305,7 @@
                       <button
                         type="button"
                         @click="selectAllUsers"
-                        class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-md"
+                        class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md"
                       >
                         全選択
                       </button>
@@ -329,12 +329,12 @@
                         :value="user.id"
                         v-model="selectedParticipants"
                         :disabled="user.id === form.staff_member_id"
-                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3"
+                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
                       />
                       <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900">
                           {{ user.name }}
-                          <span v-if="user.id === form.staff_member_id" class="text-xs text-indigo-600 ml-2">
+                          <span v-if="user.id === form.staff_member_id" class="text-xs text-blue-600 ml-2">
                             (担当スタッフ)
                           </span>
                         </div>
@@ -413,7 +413,7 @@
                     type="button"
                     @click="goToConfirmation"
                     :disabled="!calendarSelection"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
                   >
                     次へ（確認）
                   </button>
@@ -844,7 +844,7 @@ const participantColors = [
   { bg: 'bg-purple-400', border: 'border-purple-500', text: 'text-purple-900', bgClass: 'bg-purple-400', badgeBg: 'bg-purple-100', badgeBorder: 'border-purple-300', hex: '#c084fc' },
   { bg: 'bg-yellow-400', border: 'border-yellow-500', text: 'text-yellow-900', bgClass: 'bg-yellow-400', badgeBg: 'bg-yellow-100', badgeBorder: 'border-yellow-300', hex: '#facc15' },
   { bg: 'bg-pink-400', border: 'border-pink-500', text: 'text-pink-900', bgClass: 'bg-pink-400', badgeBg: 'bg-pink-100', badgeBorder: 'border-pink-300', hex: '#f472b6' },
-  { bg: 'bg-indigo-400', border: 'border-indigo-500', text: 'text-indigo-900', bgClass: 'bg-indigo-400', badgeBg: 'bg-indigo-100', badgeBorder: 'border-indigo-300', hex: '#818cf8' },
+  { bg: 'bg-blue-400', border: 'border-blue-500', text: 'text-blue-900', bgClass: 'bg-blue-400', badgeBg: 'bg-blue-100', badgeBorder: 'border-blue-300', hex: '#818cf8' },
   { bg: 'bg-orange-400', border: 'border-orange-500', text: 'text-orange-900', bgClass: 'bg-orange-400', badgeBg: 'bg-orange-100', badgeBorder: 'border-orange-300', hex: '#fb923c' },
   { bg: 'bg-teal-400', border: 'border-teal-500', text: 'text-teal-900', bgClass: 'bg-teal-400', badgeBg: 'bg-teal-100', badgeBorder: 'border-teal-300', hex: '#2dd4bf' },
 ];

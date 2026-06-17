@@ -122,7 +122,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link 
                         :href="route('admin.deliveries.show', delivery.id)"
-                        class="text-indigo-600 hover:text-indigo-900 mr-3"
+                        class="text-blue-600 hover:text-blue-900 mr-3"
                       >
                         詳細
                       </Link>

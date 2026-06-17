@@ -27,7 +27,7 @@
                     </label>
                     <select 
                       v-model="form.user_id"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       required
                     >
                       <option value="">ユーザーを選択してください</option>

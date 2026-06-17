@@ -28,7 +28,7 @@
                     <input 
                       type="text" 
                       v-model="form.name"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       placeholder="例: 納品書受信通知"
                       required
                     >
@@ -40,7 +40,7 @@
                     <textarea 
                       v-model="form.description"
                       rows="3"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       placeholder="通知の詳細説明（任意）"
                     ></textarea>
                     <div v-if="errors.description" class="mt-1 text-sm text-red-600">{{ errors.description }}</div>
@@ -52,7 +52,7 @@
                     </label>
                     <select 
                       v-model="form.trigger_event"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       required
                     >
                       <option value="">選択してください</option>
@@ -68,7 +68,7 @@
                       <input 
                         type="checkbox" 
                         v-model="form.is_active"
-                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
                       <span class="ml-2 text-sm text-gray-700">有効にする</span>
                     </label>
@@ -113,7 +113,7 @@
                       <select 
                         v-model="recipient.staff_member_id"
                         @change="onStaffMemberChange(index)"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required
                       >
                         <option value="">選択してください</option>
@@ -130,7 +130,7 @@
                       <select 
                         v-model="recipient.notification_type"
                         @change="onNotificationTypeChange(index)"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required
                       >
                         <option value="">選択してください</option>
@@ -147,7 +147,7 @@
                       <input 
                         type="text" 
                         v-model="recipient.notification_data"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         :placeholder="getNotificationDataPlaceholder(recipient.notification_type)"
                         required
                       >

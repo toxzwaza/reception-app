@@ -28,7 +28,7 @@
                 v-model="form.name"
                 type="text"
                 required
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="例: プロジェクトA"
               />
               <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">{{ form.errors.name }}</p>
@@ -43,7 +43,7 @@
                 id="description"
                 v-model="form.description"
                 rows="3"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="このプロジェクトグループの説明を入力してください"
               ></textarea>
               <p v-if="form.errors.description" class="mt-1 text-sm text-red-600">{{ form.errors.description }}</p>
@@ -61,7 +61,7 @@
                 <input
                   v-model="searchQuery"
                   type="text"
-                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="メンバーを検索..."
                 />
               </div>
@@ -77,7 +77,7 @@
                     type="checkbox"
                     :value="user.id"
                     v-model="form.user_ids"
-                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
                   />
                   <div class="flex-1">
                     <div class="font-medium text-gray-900">{{ user.name }}</div>
@@ -104,7 +104,7 @@
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
               >
                 更新
               </button>

@@ -87,7 +87,7 @@
                       <div class="flex space-x-2">
                         <Link 
                           :href="route('admin.notification-settings.show', setting.id)"
-                          class="text-indigo-600 hover:text-indigo-900"
+                          class="text-blue-600 hover:text-blue-900"
                         >
                           詳細
                         </Link>

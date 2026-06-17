@@ -28,7 +28,7 @@
                 v-model="form.company_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.company_name" class="mt-1 text-sm text-red-600">
                 {{ form.errors.company_name }}
@@ -45,7 +45,7 @@
                 v-model="form.visitor_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_name" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_name }}
@@ -61,7 +61,7 @@
                 id="visitor_email"
                 v-model="form.visitor_email"
                 type="email"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_email" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_email }}
@@ -77,7 +77,7 @@
                 id="visitor_phone"
                 v-model="form.visitor_phone"
                 type="tel"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visitor_phone" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visitor_phone }}
@@ -93,7 +93,7 @@
                 id="staff_member_id"
                 v-model="form.staff_member_id"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="">選択してください</option>
                 <option v-for="staff in staffMembers" :key="staff.id" :value="staff.id">
@@ -115,7 +115,7 @@
                 v-model="form.visit_date"
                 type="date"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visit_date" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visit_date }}
@@ -132,7 +132,7 @@
                 v-model="form.visit_time"
                 type="time"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visit_time }}
@@ -148,7 +148,7 @@
                 id="purpose"
                 v-model="form.purpose"
                 rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               ></textarea>
               <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
                 {{ form.errors.purpose }}
@@ -173,7 +173,7 @@
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
               >
                 更新
               </button>
