@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Facility;
 use App\Models\ScheduleEvent;
+use App\Models\User;
+use App\Models\UserSchedule;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -195,6 +197,88 @@ class OutlookCalendarService
         if ($deleted > 0) {
             Log::info("Outlook sync: deleted {$deleted} removed events", [
                 'facility' => $facility->name,
+            ]);
+        }
+
+        return $upsertCount;
+    }
+
+    /**
+     * 指定ユーザーのOutlook（M365メールボックス）カレンダーを user_schedules に同期する。
+     * 施設の syncFacility と対称の処理。ユーザーの email を M365 メールボックスとして扱う。
+     */
+    public function syncUser(User $user, string $startDate, string $endDate): int
+    {
+        if (empty($user->email)) {
+            return 0;
+        }
+
+        $startDateTime = "{$startDate}T00:00:00";
+        $endDateTime = "{$endDate}T23:59:59";
+
+        $events = $this->getCalendarView(
+            $user->email,
+            $startDateTime,
+            $endDateTime
+        );
+
+        $syncedOutlookIds = [];
+        $upsertCount = 0;
+
+        foreach ($events as $event) {
+            $outlookEventId = $event['id'];
+            $syncedOutlookIds[] = $outlookEventId;
+
+            $start = Carbon::parse($event['start']['dateTime']);
+            $end = Carbon::parse($event['end']['dateTime']);
+
+            $isAllDay = $event['isAllDay'] ?? false;
+
+            $date = $start->format('Y-m-d');
+            $startTime = $isAllDay ? '00:00' : $start->format('H:i');
+            $endTime = $isAllDay ? '23:59' : $end->format('H:i');
+
+            $subject = $event['subject'] ?? '(件名なし)';
+            $title = mb_substr($subject, 0, 500);
+
+            $existing = UserSchedule::where('user_id', $user->id)
+                ->where('outlook_event_id', $outlookEventId)
+                ->first();
+
+            if ($existing) {
+                $existing->update([
+                    'date' => $date,
+                    'title' => $title,
+                    'start_datetime' => $startTime,
+                    'end_datetime' => $endTime,
+                ]);
+            } else {
+                UserSchedule::create([
+                    'user_id' => $user->id,
+                    'date' => $date,
+                    'title' => $title,
+                    'start_datetime' => $startTime,
+                    'end_datetime' => $endTime,
+                    'badge' => null,
+                    'description_url' => null,
+                    'status' => 1,
+                    'outlook_event_id' => $outlookEventId,
+                ]);
+            }
+
+            $upsertCount++;
+        }
+
+        // Outlook側で削除された予定をDBからも削除（手動登録分=outlook_event_id null は保持）
+        $deleted = UserSchedule::where('user_id', $user->id)
+            ->whereNotNull('outlook_event_id')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereNotIn('outlook_event_id', $syncedOutlookIds)
+            ->delete();
+
+        if ($deleted > 0) {
+            Log::info("Outlook sync: deleted {$deleted} removed user events", [
+                'user_id' => $user->id,
             ]);
         }
 

@@ -414,6 +414,28 @@ class AppointmentController extends Controller
         $startDate = $validated['start_date'];
         $endDate = $validated['end_date'];
 
+        // 参加者の予定を表示直前にOutlookからリアルタイム同期する（施設予定と同じ挙動）。
+        // 同期に失敗したユーザーがいてもDBの内容で表示を続行する。
+        $outlook = app(OutlookCalendarService::class);
+        if ($outlook->isConfigured()) {
+            $users = User::whereIn('id', $userIds)
+                ->where('del_flg', 0)
+                ->get();
+            foreach ($users as $user) {
+                if (empty($user->email)) {
+                    continue;
+                }
+                try {
+                    $outlook->syncUser($user, $startDate, $endDate);
+                } catch (\Throwable $e) {
+                    Log::warning('参加者予定のリアルタイム同期に失敗（DB内容で表示）', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
         $schedules = UserSchedule::whereIn('user_id', $userIds)
             ->whereBetween('date', [$startDate, $endDate])
             ->with(['user' => function ($query) {
