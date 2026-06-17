@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityReservationController;
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
@@ -39,6 +40,9 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // 事前アポイント管理
     Route::resource('appointments', AdminAppointmentController::class);
     
+    // 施設管理（マスタ）
+    Route::resource('facilities', AdminFacilityController::class)->except(['show']);
+
     // 施設予約管理
     Route::resource('facility-reservations', AdminFacilityReservationController::class);
     
