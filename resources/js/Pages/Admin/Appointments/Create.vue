@@ -384,6 +384,7 @@
 
                 <!-- カレンダーコンポーネント -->
                 <FacilityScheduleCalendar
+                  ref="calendarRef"
                   :facilities="facilities"
                   :participant-schedules="participantSchedules"
                   :user-color-map="userColorMap"
@@ -597,6 +598,9 @@ const facilityForm = ref({
 // カレンダーからの選択
 const calendarSelection = ref(null);
 
+// カレンダーコンポーネントの参照（重複時に最新予定を再取得するため）
+const calendarRef = ref(null);
+
 // 参加者管理
 const selectedGroupId = ref('');
 const selectedProjectGroupId = ref(null);
@@ -707,7 +711,18 @@ const finalSubmit = (sendEmail) => {
     } : null,
   };
   
-  form.transform(() => submitData).post(route('admin.appointments.store'));
+  form.transform(() => submitData).post(route('admin.appointments.store'), {
+    preserveState: true,
+    preserveScroll: true,
+    onError: (errors) => {
+      // 会議室の重複で登録できなかった場合は、メッセージを表示し、
+      // 最新の会議室予定を再取得して再描画する
+      if (errors.facility_conflict) {
+        alert(errors.facility_conflict);
+        calendarRef.value?.refreshSchedules();
+      }
+    },
+  });
 };
 
 // スタッフ名を取得

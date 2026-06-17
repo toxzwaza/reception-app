@@ -1044,6 +1044,13 @@ const previousWeek = () => {
 const nextWeek = () => {
   weekOffset.value++;
 };
+
+// 親コンポーネントから最新予定の再取得・選択クリアを呼べるように公開
+const refreshSchedules = () => {
+  clearSelection();
+  loadSchedules();
+};
+defineExpose({ loadSchedules, refreshSchedules });
 </script>
 
 <style scoped>

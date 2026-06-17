@@ -11,6 +11,7 @@ use App\Models\UserSchedule;
 use App\Models\Group;
 use App\Models\ProjectGroup;
 use App\Mail\AppointmentConfirmation;
+use App\Services\OutlookCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
@@ -138,7 +139,18 @@ class AppointmentController extends Controller
                 $date = explode(' ', $startDatetime)[0];          // "YYYY-MM-DD"
                 $startTime = explode(' ', $startDatetime)[1];     // "HH:MM"
                 $endTime = explode(' ', $endDatetime)[1];         // "HH:MM"
-                
+
+                $facility = Facility::find($facilityData['facility_id']);
+                $outlook = app(OutlookCalendarService::class);
+
+                // 重複チェック（Outlook会議室の予定とリアルタイム照合）
+                if ($facility && $facility->outlook_resource_email
+                    && $outlook->hasConflict($facility, $date, $startTime, $endTime)) {
+                    DB::rollBack();
+                    return Redirect::back()->withInput()
+                        ->withErrors(['facility_conflict' => '指定した時間は予約を入れることができません。最新の予約状況に更新しましたので、空き時間を確認して再度選択してください。']);
+                }
+
                 $scheduleEvent = ScheduleEvent::create([
                     'facility_id' => $facilityData['facility_id'],
                     'date' => $date,
@@ -168,6 +180,21 @@ class AppointmentController extends Controller
                 }
                 
                 $scheduleEvent->participants()->attach($participants);
+
+                // Outlook会議室カレンダーへ書き込み（失敗してもDB予約は成立させる）
+                if ($facility && $facility->outlook_resource_email) {
+                    try {
+                        $outlookId = $outlook->createEvent($facility, $scheduleEvent->fresh());
+                        if ($outlookId) {
+                            $scheduleEvent->update(['outlook_event_id' => $outlookId]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Outlook予定作成に失敗', [
+                            'schedule_event_id' => $scheduleEvent->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // メール送信処理
@@ -279,6 +306,19 @@ class AppointmentController extends Controller
     {
         $startDate = $request->input('start_date', now()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->addDays(7)->format('Y-m-d'));
+
+        // Outlook連携施設は、表示直前に最新の予定を取り込む（リアルタイム化）。
+        // 失敗してもDBの内容で表示を続行する。
+        if ($facility->outlook_resource_email) {
+            try {
+                app(OutlookCalendarService::class)->syncFacility($facility, $startDate, $endDate);
+            } catch (\Throwable $e) {
+                Log::warning('施設予定のリアルタイム同期に失敗（DB内容で表示）', [
+                    'facility_id' => $facility->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         Log::info('Fetching schedules', [
             'facility_id' => $facility->id,

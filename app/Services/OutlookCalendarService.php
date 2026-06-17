@@ -240,4 +240,190 @@ class OutlookCalendarService
             'errors' => $errors,
         ];
     }
+
+    // ============================================================
+    // 書き込み系（DB → Outlook）
+    // ============================================================
+
+    private function graphSend(string $method, string $path, array $body = []): ?array
+    {
+        $send = function () use ($method, $path, $body) {
+            $req = Http::withToken($this->getToken())
+                ->withHeaders(['Prefer' => 'outlook.timezone="Tokyo Standard Time"']);
+            return match ($method) {
+                'POST' => $req->post(self::BASE_URL . $path, $body),
+                'PATCH' => $req->patch(self::BASE_URL . $path, $body),
+                'DELETE' => $req->delete(self::BASE_URL . $path),
+                default => throw new \InvalidArgumentException("Unsupported method: {$method}"),
+            };
+        };
+
+        $response = $send();
+
+        if ($response->status() === 401) {
+            Cache::forget(self::TOKEN_CACHE_KEY);
+            $response = $send();
+        }
+
+        if ($response->status() === 429) {
+            $retryAfter = (int) ($response->header('Retry-After') ?: 10);
+            Log::warning('Graph API rate limited (write)', ['retry_after' => $retryAfter]);
+            sleep(min($retryAfter, 30));
+            $response = $send();
+        }
+
+        if (!$response->successful()) {
+            Log::error('Graph API write failed', [
+                'method' => $method,
+                'path' => $path,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return null;
+        }
+
+        // DELETE は 204 No Content（ボディなし）
+        return $response->body() ? $response->json() : [];
+    }
+
+    /**
+     * 予約日時から Graph 用の dateTime 文字列を組み立てる。
+     * ScheduleEvent は date="Y-m-d" / start_datetime="HH:MM" 形式。
+     */
+    private function buildEventBody(Facility $facility, ScheduleEvent $event): array
+    {
+        $startIso = $event->date instanceof Carbon
+            ? $event->date->format('Y-m-d')
+            : Carbon::parse($event->date)->format('Y-m-d');
+
+        $body = [
+            'subject' => mb_substr((string) $event->title, 0, 255),
+            'start' => [
+                'dateTime' => "{$startIso}T{$event->start_datetime}:00",
+                'timeZone' => 'Tokyo Standard Time',
+            ],
+            'end' => [
+                'dateTime' => "{$startIso}T{$event->end_datetime}:00",
+                'timeZone' => 'Tokyo Standard Time',
+            ],
+            'body' => [
+                'contentType' => 'text',
+                'content' => '受付システムから登録された予約です。',
+            ],
+            // 場所を会議室名に設定
+            'location' => [
+                'displayName' => $facility->name,
+            ],
+        ];
+
+        // 予約の参加者を attendees に設定（選択したユーザーのメールアドレス）
+        $event->loadMissing('participants');
+        $attendees = [];
+        foreach ($event->participants as $user) {
+            if (!empty($user->email)) {
+                $attendees[] = [
+                    'emailAddress' => [
+                        'address' => $user->email,
+                        'name' => $user->name,
+                    ],
+                    'type' => 'required',
+                ];
+            }
+        }
+        if (!empty($attendees)) {
+            $body['attendees'] = $attendees;
+        }
+
+        return $body;
+    }
+
+    /**
+     * 会議室カレンダーに予定を作成する。成功時は outlook_event_id を返す。
+     */
+    public function createEvent(Facility $facility, ScheduleEvent $event): ?string
+    {
+        if (!$this->isConfigured() || empty($facility->outlook_resource_email)) {
+            return null;
+        }
+
+        $result = $this->graphSend(
+            'POST',
+            "/users/{$facility->outlook_resource_email}/events",
+            $this->buildEventBody($facility, $event)
+        );
+
+        return $result['id'] ?? null;
+    }
+
+    /**
+     * 会議室カレンダーの予定を更新する。
+     */
+    public function updateEvent(Facility $facility, ScheduleEvent $event): bool
+    {
+        if (!$this->isConfigured() || empty($facility->outlook_resource_email) || empty($event->outlook_event_id)) {
+            return false;
+        }
+
+        $result = $this->graphSend(
+            'PATCH',
+            "/users/{$facility->outlook_resource_email}/events/{$event->outlook_event_id}",
+            $this->buildEventBody($facility, $event)
+        );
+
+        return $result !== null;
+    }
+
+    /**
+     * 会議室カレンダーから予定を削除する。
+     */
+    public function deleteEvent(Facility $facility, ScheduleEvent $event): bool
+    {
+        if (!$this->isConfigured() || empty($facility->outlook_resource_email) || empty($event->outlook_event_id)) {
+            return false;
+        }
+
+        $result = $this->graphSend(
+            'DELETE',
+            "/users/{$facility->outlook_resource_email}/events/{$event->outlook_event_id}"
+        );
+
+        return $result !== null;
+    }
+
+    /**
+     * 指定会議室の指定日時に、既存予約と重複があるか判定する（リアルタイム）。
+     * $ignoreOutlookEventId を指定すると、その予定自身は除外する（更新時用）。
+     */
+    public function hasConflict(Facility $facility, string $date, string $startTime, string $endTime, ?string $ignoreOutlookEventId = null): bool
+    {
+        if (!$this->isConfigured() || empty($facility->outlook_resource_email)) {
+            return false;
+        }
+
+        $events = $this->getCalendarView(
+            $facility->outlook_resource_email,
+            "{$date}T00:00:00",
+            "{$date}T23:59:59"
+        );
+
+        $reqStart = Carbon::parse("{$date} {$startTime}");
+        $reqEnd = Carbon::parse("{$date} {$endTime}");
+
+        foreach ($events as $event) {
+            if ($ignoreOutlookEventId && ($event['id'] ?? null) === $ignoreOutlookEventId) {
+                continue;
+            }
+            if ($event['isAllDay'] ?? false) {
+                return true;
+            }
+            $evStart = Carbon::parse($event['start']['dateTime']);
+            $evEnd = Carbon::parse($event['end']['dateTime']);
+            // 時間帯が重なるか（開始 < 相手終了 かつ 終了 > 相手開始）
+            if ($reqStart->lt($evEnd) && $reqEnd->gt($evStart)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

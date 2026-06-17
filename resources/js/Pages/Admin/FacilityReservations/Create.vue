@@ -180,6 +180,7 @@
 
               <!-- カレンダーコンポーネント -->
               <FacilityScheduleCalendar
+                ref="calendarRef"
                 :facilities="facilities"
                 :participant-schedules="participantSchedules"
                 :user-color-map="userColorMap"
@@ -232,6 +233,9 @@ const form = useForm({
   description_url: '',
   participants: [],
 });
+
+// カレンダーコンポーネントの参照（重複時に最新予定を再取得するため）
+const calendarRef = ref(null);
 
 // カレンダーからの選択
 const calendarSelection = ref(null);
@@ -407,6 +411,17 @@ const submit = () => {
   }
 
   form.participants = selectedParticipants.value;
-  form.post(route('admin.facility-reservations.store'));
+  form.post(route('admin.facility-reservations.store'), {
+    preserveState: true,
+    preserveScroll: true,
+    onError: (errors) => {
+      // 重複等で登録できなかった場合は、メッセージを表示し、
+      // 最新の会議室予定を再取得して再描画する
+      if (errors.facility_conflict) {
+        alert(errors.facility_conflict);
+        calendarRef.value?.refreshSchedules();
+      }
+    },
+  });
 };
 </script>
