@@ -23,17 +23,17 @@ class CheckLocalStorageAuth
             return $next($request);
         }
 
-        // localStorageのuser_idをチェック（クエリパラメータ、セッション、ヘッダーの順で確認）
-        $userId = $request->query('user_id') 
-            ?? $request->session()->get('localStorage_user_id') 
-            ?? $request->header('X-User-ID');
-        
-        // クエリパラメータでuser_idが渡された場合はセッションにも保存
-        if ($request->query('user_id') && !$request->session()->get('localStorage_user_id')) {
-            $request->session()->put('localStorage_user_id', $request->query('user_id'));
-            $userId = $request->query('user_id');
-            \Log::info('Set session user_id from query parameter:', [
-                'user_id' => $userId,
+        // localStorage 由来の値（クエリパラメータ・ヘッダー）を優先する。
+        // セッションには別ユーザーの古い値が残ることがあるため、最後のフォールバックに留める。
+        $incoming = $request->query('user_id') ?? $request->header('X-User-ID');
+        $userId = $incoming ?? $request->session()->get('localStorage_user_id');
+
+        // localStorage 由来の値が来たら、セッションを常に最新へ同期する
+        // （別ユーザーでログインし直した際に古い session 値が残り続けるのを防ぐ）
+        if ($incoming && (string) $incoming !== (string) $request->session()->get('localStorage_user_id')) {
+            $request->session()->put('localStorage_user_id', $incoming);
+            \Log::info('Synced session user_id from localStorage (query/header):', [
+                'user_id' => $incoming,
                 'session_id' => $request->session()->getId(),
             ]);
         }

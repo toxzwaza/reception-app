@@ -31,8 +31,16 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
+            // クロージャで遅延評価する（localstorage.auth ミドルウェアの setUserResolver は
+            // このミドルウェアの後に実行されるため、即値だと user が null になる）。
+            // フォールバックとしてセッションの localStorage_user_id からも解決する。
             'auth' => [
-                'user' => $request->user(),
+                'user' => fn () => $request->user()
+                    ?? ($request->session()->get('localStorage_user_id')
+                        ? \App\Models\User::where('id', $request->session()->get('localStorage_user_id'))
+                            ->where('del_flg', 0)
+                            ->first()
+                        : null),
             ],
             'ziggy' => function () use ($request) {
                 return array_merge((new Ziggy)->toArray(), [

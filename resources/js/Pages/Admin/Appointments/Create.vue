@@ -568,7 +568,7 @@
 </template>
 
 <script setup>
-import { useForm, Link } from '@inertiajs/vue3';
+import { useForm, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import FacilityScheduleCalendar from '@/Components/FacilityScheduleCalendar.vue';
@@ -580,6 +580,10 @@ const props = defineProps({
   projectGroups: Array,
 });
 
+// ログイン中のユーザー（担当スタッフの初期値に使用）
+const page = usePage();
+const authUser = page.props.auth?.user ?? null;
+
 // ステップ管理
 const currentStep = ref(1);
 
@@ -589,7 +593,7 @@ const form = useForm({
   visitor_name: '',
   visitor_email: '',
   visitor_phone: '',
-  staff_member_id: '',
+  staff_member_id: authUser?.id ?? '',
   visit_date: '',
   visit_time: '',
   purpose: '',
@@ -615,8 +619,8 @@ const calendarSelection = ref(null);
 // カレンダーコンポーネントの参照（重複時に最新予定を再取得するため）
 const calendarRef = ref(null);
 
-// 担当スタッフの部署絞り込み
-const staffGroupId = ref('');
+// 担当スタッフの部署絞り込み（初期はログインユーザーの部署）
+const staffGroupId = ref(authUser?.group_id ?? '');
 const filteredStaffMembers = computed(() => {
   if (!staffGroupId.value) return props.staffMembers;
   return props.staffMembers.filter((s) => String(s.group_id) === String(staffGroupId.value));

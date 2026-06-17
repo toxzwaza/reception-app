@@ -1,8 +1,18 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+// ログイン中のユーザー
+const page = usePage();
+const authUser = computed(() => page.props.auth?.user ?? null);
+
+// ログアウト：localStorageのuser_idをクリアしてからログアウト（再ログイン防止）
+const handleLogout = () => {
+    localStorage.removeItem('user_id');
+    router.post(route('logout'));
+};
 
 // ナビゲーション項目
 const navItems = [
@@ -65,17 +75,19 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <!-- 右側：現在時刻 + ログアウト -->
+                    <!-- 右側：ログインユーザー + 現在時刻 + ログアウト -->
                     <div class="hidden sm:flex sm:items-center sm:gap-4">
-                        <span class="text-sm text-blue-50 font-medium tabular-nums">{{ currentTime }}</span>
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
+                        <span v-if="authUser" class="flex items-center gap-1.5 text-sm text-white font-medium">
+                            <span class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs">👤</span>
+                            {{ authUser.name }}
+                        </span>
+                        <span class="hidden lg:inline text-sm text-blue-50 font-medium tabular-nums">{{ currentTime }}</span>
+                        <button
+                            @click="handleLogout"
                             class="inline-flex items-center px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/30 rounded-lg font-semibold text-xs text-white tracking-wide transition"
                         >
                             ログアウト
-                        </Link>
+                        </button>
                     </div>
 
                     <!-- Hamburger -->
@@ -122,15 +134,14 @@ onUnmounted(() => {
                     </Link>
                 </div>
                 <div class="pt-3 px-4 border-t border-white/20 mt-2">
+                    <div v-if="authUser" class="text-sm text-white font-medium mb-1">👤 {{ authUser.name }}</div>
                     <div class="text-sm text-blue-100 mb-2">{{ currentTime }}</div>
-                    <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
+                    <button
+                        @click="handleLogout"
                         class="block w-full text-center px-3 py-2 rounded-lg text-base font-medium text-white bg-white/15 hover:bg-white/25 border border-white/30"
                     >
                         ログアウト
-                    </Link>
+                    </button>
                 </div>
             </div>
         </nav>

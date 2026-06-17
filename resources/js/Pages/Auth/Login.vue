@@ -1,269 +1,186 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, computed, onMounted } from 'vue';
+import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 
-defineProps({
+const props = defineProps({
     canResetPassword: Boolean,
     status: String,
+    groups: { type: Array, default: () => [] },
+    staffMembers: { type: Array, default: () => [] },
 });
 
-const users = ref([]);
-const selectedUser = ref(null);
-const isUserSelected = ref(false);
+const selectedGroupId = ref('');
+const selectedUserId = ref('');
+const errorMessage = ref('');
+const processing = ref(false);
 
-const form = useForm({
-    user_id: '',
-    password: '',
-    remember: false,
+// 部署で絞り込んだスタッフ
+const filteredStaff = computed(() => {
+    if (!selectedGroupId.value) return props.staffMembers;
+    return props.staffMembers.filter((s) => String(s.group_id) === String(selectedGroupId.value));
 });
 
-// ユーザー一覧を取得
-const fetchUsers = async () => {
-    try {
-        const response = await axios.get('/api/users');
-        users.value = response.data;
-    } catch (error) {
-        console.error('ユーザー一覧の取得に失敗しました:', error);
+// 部署を変えて選択中のスタッフが外れたら解除
+const onGroupChange = () => {
+    if (selectedUserId.value && !filteredStaff.value.some((s) => String(s.id) === String(selectedUserId.value))) {
+        selectedUserId.value = '';
     }
 };
 
-// ユーザー選択
-const selectUser = (user) => {
-    console.log('ユーザー選択:', user);
-    selectedUser.value = user;
-    form.user_id = user.id.toString(); // 文字列として設定
-    isUserSelected.value = true;
-    console.log('form.user_id設定後:', form.user_id, typeof form.user_id);
-};
-
-// ユーザー選択をクリア
-const clearUserSelection = () => {
-    selectedUser.value = null;
-    form.user_id = '';
-    isUserSelected.value = false;
-    form.reset('password');
-};
-
-// ログイン処理
+// ログイン（部署→スタッフ選択。パスワードなし）
 const submit = async () => {
-    if (!form.user_id) {
-        form.setError('user_id', 'ユーザーを選択してください。');
+    errorMessage.value = '';
+    if (!selectedUserId.value) {
+        errorMessage.value = 'スタッフを選択してください。';
         return;
     }
-
-    if (!form.password) {
-        form.setError('password', 'パスワードを入力してください。');
-        return;
-    }
-
+    processing.value = true;
     try {
-        // localStorage認証APIを使用
-        const loginData = {
-            user_id: parseInt(form.user_id), // 整数に変換
-            password: form.password,
-        };
-        
-        console.log('ログインリクエスト送信:', {
-            form_user_id: form.user_id,
-            form_user_id_type: typeof form.user_id,
-            parsed_user_id: loginData.user_id,
-            parsed_user_id_type: typeof loginData.user_id,
-            password: form.password,
-        });
-        
-        const response = await axios.post('/api/login-local', loginData);
-
-               console.log('ログインレスポンス:', response.data);
-        console.log('response.data.success:', response.data.success);
-        console.log('typeof response.data.success:', typeof response.data.success);
-
+        const userId = parseInt(selectedUserId.value);
+        const response = await axios.post('/api/login-local', { user_id: userId });
         if (response.data.success) {
-            // ログイン成功時、localStorageにuser_idを保存
-            const userIdToStore = loginData.user_id.toString();
-            localStorage.setItem('user_id', userIdToStore);
-            console.log('ログイン成功、localStorageにuser_idを保存:', userIdToStore);
-            console.log('localStorage確認:', localStorage.getItem('user_id'));
-            console.log('リダイレクト実行前...');
-            
-            // セッションにもuser_idを確実に保存してからリダイレクト
-            axios.post('/api/set-session-user', {
-                user_id: loginData.user_id
-            }).then(() => {
-                console.log('セッションにuser_idを保存完了、管理画面にリダイレクト');
-                // 管理画面ダッシュボードにリダイレクト（クエリパラメータ付き）
-                window.location.href = `/admin/dashboard?user_id=${loginData.user_id}`;
-            }).catch(sessionError => {
-                console.error('セッション保存エラー:', sessionError);
-                // セッション保存に失敗した場合でもクエリパラメータでリダイレクト
-                window.location.href = `/admin/dashboard?user_id=${loginData.user_id}`;
-            });
-        } else {
-            console.error('ログイン失敗:', response.data);
+            localStorage.setItem('user_id', String(userId));
+            await axios.post('/api/set-session-user', { user_id: userId }).catch(() => {});
+            window.location.href = `/admin/dashboard?user_id=${userId}`;
         }
     } catch (error) {
-        console.error('ログインエラー:', error);
-        console.error('エラーレスポンス:', error.response);
-        
-        if (error.response && error.response.data.errors) {
-            const errors = error.response.data.errors;
-            console.log('バリデーションエラー:', errors);
-            
-            if (errors.password) {
-                form.setError('password', errors.password[0]);
-                
-                // パスワードエラーの場合、テストAPIを呼び出してデバッグ情報を取得
-                if (form.user_id && form.password) {
-                    console.log('パスワードエラー発生、テストAPIを呼び出し中...');
-                    axios.post('/api/test-password', {
-                        user_id: parseInt(form.user_id),
-                        password: form.password,
-                    }).then(response => {
-                        console.log('パスワードテスト結果:', response.data);
-                    }).catch(testError => {
-                        console.error('パスワードテストエラー:', testError);
-                    });
-                }
-            }
-            if (errors.user_id) {
-                form.setError('user_id', errors.user_id[0]);
-            }
-        } else if (error.response && error.response.data.message) {
-            console.log('エラーメッセージ:', error.response.data.message);
-            form.setError('password', error.response.data.message);
-        } else {
-            form.setError('password', 'ログインに失敗しました。');
-        }
+        errorMessage.value =
+            error.response?.data?.errors?.user_id?.[0] ||
+            error.response?.data?.message ||
+            'ログインに失敗しました。';
+    } finally {
+        processing.value = false;
     }
 };
 
-// 既存のuser_idをチェック
+// 既にlocalStorageにuser_idがあれば自動ログイン（ログアウト時はクリア済み）
 const checkExistingUser = () => {
     const existingUserId = localStorage.getItem('user_id');
     if (existingUserId) {
-        // 既存のuser_idからユーザー情報を取得
-        axios.get(`/api/users/${existingUserId}`)
-            .then(response => {
-                selectUser(response.data);
-                // 既存のユーザーがいる場合は、セッションに保存して管理画面にリダイレクト
-                axios.post('/api/set-session-user', {
-                    user_id: parseInt(existingUserId)
-                }).then(() => {
-                    console.log('セッションにuser_idを保存完了、管理画面にリダイレクト');
-                    window.location.href = `/admin/dashboard?user_id=${existingUserId}`;
-                }).catch(sessionError => {
-                    console.error('セッション保存エラー:', sessionError);
-                    // セッション保存に失敗した場合でもクエリパラメータでリダイレクト
-                    window.location.href = `/admin/dashboard?user_id=${existingUserId}`;
-                });
+        axios
+            .post('/api/set-session-user', { user_id: parseInt(existingUserId) })
+            .then(() => {
+                window.location.href = `/admin/dashboard?user_id=${existingUserId}`;
             })
-            .catch(error => {
-                // ユーザーが見つからない場合、localStorageをクリア
+            .catch(() => {
                 localStorage.removeItem('user_id');
-                console.error('ユーザー情報の取得に失敗しました:', error);
             });
     }
 };
 
 onMounted(() => {
-    fetchUsers();
     checkExistingUser();
 });
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="ログイン" />
+    <Head title="ログイン" />
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
-            {{ status }}
-        </div>
+    <div
+        class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-4 py-10"
+    >
+        <!-- 背景の装飾 -->
+        <div class="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white/10 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-32 -right-20 w-[28rem] h-[28rem] rounded-full bg-indigo-400/20 blur-3xl"></div>
+        <div class="pointer-events-none absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-blue-300/10 blur-3xl"></div>
 
-        <form @submit.prevent="submit">
-            <!-- ユーザー選択 -->
-            <div v-if="!isUserSelected">
-                <InputLabel for="user-select" value="ユーザーを選択してください" />
-                
-                <div class="mt-1 relative">
-                    <select
-                        id="user-select"
-                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                        @change="selectUser(users.find(u => u.id === parseInt($event.target.value)))"
-                        required
-                        autofocus
-                    >
-                        <option value="">ユーザーを選択してください</option>
-                        <option
-                            v-for="user in users"
-                            :key="user.id"
-                            :value="user.id.toString()"
-                        >
-                            {{ user.emp_no }} - {{ user.name }}
-                        </option>
-                    </select>
-                </div>
-                
-                <InputError class="mt-2" :message="form.errors.user_id" />
-            </div>
-
-            <!-- 選択されたユーザー情報 -->
-            <div v-if="isUserSelected" class="bg-gray-50 p-4 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-sm font-medium text-gray-900">選択されたユーザー</p>
-                        <p class="text-lg text-gray-700">{{ selectedUser.emp_no }} - {{ selectedUser.name }}</p>
+        <div class="relative w-full max-w-md">
+            <!-- カード -->
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden ring-1 ring-black/5">
+                <!-- カードヘッダー -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8 text-center">
+                    <div class="mx-auto w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl shadow-inner">
+                        🏢
                     </div>
-                    <button
-                        type="button"
-                        @click="clearUserSelection"
-                        class="text-sm text-indigo-600 hover:text-indigo-500"
+                    <h1 class="mt-4 text-xl font-bold tracking-wide text-white">受付管理システム</h1>
+                    <p class="mt-1 text-sm text-blue-100">管理画面ログイン</p>
+                </div>
+
+                <!-- フォーム -->
+                <div class="px-8 py-8">
+                    <div
+                        v-if="status"
+                        class="mb-5 rounded-lg bg-green-50 border border-green-200 px-4 py-2.5 text-sm font-medium text-green-700"
                     >
-                        変更
-                    </button>
+                        {{ status }}
+                    </div>
+
+                    <p class="mb-6 text-center text-sm text-slate-500">
+                        部署とスタッフ名を選択してログインしてください
+                    </p>
+
+                    <form @submit.prevent="submit" class="space-y-5">
+                        <!-- 部署選択 -->
+                        <div>
+                            <label for="group-select" class="flex items-center gap-1.5 text-sm font-semibold text-slate-700 mb-1.5">
+                                <span class="text-blue-600">🏬</span> 部署
+                            </label>
+                            <select
+                                id="group-select"
+                                v-model="selectedGroupId"
+                                @change="onGroupChange"
+                                class="block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:bg-white transition py-2.5"
+                            >
+                                <option value="">すべての部署</option>
+                                <option v-for="group in groups" :key="group.id" :value="group.id">
+                                    {{ group.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- スタッフ選択 -->
+                        <div>
+                            <label for="staff-select" class="flex items-center gap-1.5 text-sm font-semibold text-slate-700 mb-1.5">
+                                <span class="text-blue-600">👤</span> スタッフ名
+                            </label>
+                            <select
+                                id="staff-select"
+                                v-model="selectedUserId"
+                                required
+                                autofocus
+                                class="block w-full rounded-xl border-slate-300 bg-slate-50 text-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:bg-white transition py-2.5"
+                            >
+                                <option value="">選択してください（{{ filteredStaff.length }}名）</option>
+                                <option v-for="staff in filteredStaff" :key="staff.id" :value="staff.id">
+                                    {{ staff.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- エラー -->
+                        <div
+                            v-if="errorMessage"
+                            class="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600"
+                        >
+                            {{ errorMessage }}
+                        </div>
+
+                        <!-- ログインボタン -->
+                        <button
+                            type="submit"
+                            :disabled="processing"
+                            class="group relative w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-700 hover:to-blue-800 hover:shadow-blue-700/40 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <svg
+                                v-if="processing"
+                                class="animate-spin h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span>{{ processing ? 'ログイン中…' : 'ログイン' }}</span>
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <div v-if="isUserSelected" class="mt-4">
-                <InputLabel for="password" value="パスワード" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div v-if="isUserSelected" class="block mt-4">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ml-2 text-sm text-gray-600">ログイン状態を保持する</span>
-                </label>
-            </div>
-
-            <div v-if="isUserSelected" class="flex items-center justify-end mt-4">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                    パスワードをお忘れですか？
-                </Link>
-
-                <PrimaryButton class="ml-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    ログイン
-                </PrimaryButton>
-            </div>
-        </form>
-    </GuestLayout>
+            <p class="mt-6 text-center text-xs text-blue-100/70">
+                © 株式会社アキオカ 受付管理システム
+            </p>
+        </div>
+    </div>
 </template>

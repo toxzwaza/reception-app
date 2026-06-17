@@ -19,9 +19,22 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): Response
     {
+        // 部署一覧
+        $groups = \App\Models\Group::select('id', 'name')->orderBy('name')->get();
+
+        // スタッフメンバー登録済みの社員のみをログイン候補にする（部署情報付き）
+        $registeredUserIds = \App\Models\StaffMember::pluck('user_id');
+        $staffMembers = \App\Models\User::select('id', 'name', 'emp_no', 'group_id')
+            ->whereIn('id', $registeredUserIds)
+            ->where('del_flg', 0)
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'groups' => $groups,
+            'staffMembers' => $staffMembers,
         ]);
     }
 
@@ -56,11 +69,14 @@ class AuthenticatedSessionController extends Controller
     {
         Auth::guard('web')->logout();
 
+        // localStorage認証用のセッションキーもクリア
+        $request->session()->forget('localStorage_user_id');
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // ログアウト後はログイン画面へ
+        return redirect()->route('login');
     }
 
     /**
