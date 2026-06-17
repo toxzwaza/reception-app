@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>受付管理システム 通知設定 説明書</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1e40af; --blue-soft:#eff6ff;
+    --slate:#334155; --slate-light:#64748b; --line:#e2e8f0;
+    --green:#059669; --green-soft:#ecfdf5;
+    --amber:#b45309; --amber-soft:#fffbeb;
+    --rose:#e11d48; --rose-soft:#fff1f2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    color:var(--slate); line-height:1.8; background:#f8fafc;
+  }
+  .layout{display:flex; max-width:1180px; margin:0 auto;}
+  /* サイドバー */
+  nav.toc{
+    position:sticky; top:0; align-self:flex-start; width:260px; height:100vh;
+    overflow-y:auto; padding:28px 20px; background:#fff; border-right:1px solid var(--line);
+  }
+  nav.toc h2{font-size:13px; color:var(--slate-light); letter-spacing:.05em; margin:0 0 12px;}
+  nav.toc a{display:block; color:var(--slate); text-decoration:none; font-size:13.5px; padding:6px 10px; border-radius:8px;}
+  nav.toc a:hover{background:var(--blue-soft); color:var(--blue-dark);}
+  nav.toc .lead{font-weight:700; margin-top:14px;}
+  /* 本文 */
+  main{flex:1; min-width:0; padding:40px 48px 120px;}
+  header.hero{
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+    color:#fff; border-radius:18px; padding:34px 38px; margin-bottom:36px;
+  }
+  header.hero h1{margin:0 0 8px; font-size:26px;}
+  header.hero p{margin:0; opacity:.92; font-size:14px;}
+  header.hero .meta{margin-top:16px; font-size:12.5px; opacity:.85;}
+  h2.sec{font-size:21px; color:var(--blue-dark); border-bottom:2px solid var(--blue-soft); padding-bottom:8px; margin:48px 0 18px;}
+  h3{font-size:16.5px; color:var(--slate); margin:28px 0 10px;}
+  p{margin:10px 0;}
+  code{background:#f1f5f9; padding:2px 7px; border-radius:6px; font-size:13px; color:#0f172a;}
+  figure{margin:18px 0 26px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff;}
+  figure img{display:block; width:100%; height:auto;}
+  figcaption{font-size:12.5px; color:var(--slate-light); padding:9px 14px; background:#fafcff; border-top:1px solid var(--line);}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px; background:#fff;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top;}
+  th{background:var(--blue-soft); color:var(--blue-dark); font-weight:700;}
+  .callout{border-radius:12px; padding:14px 18px; margin:18px 0; font-size:13.5px;}
+  .callout.info{background:var(--blue-soft); border-left:4px solid var(--blue);}
+  .callout.ok{background:var(--green-soft); border-left:4px solid var(--green);}
+  .callout.warn{background:var(--amber-soft); border-left:4px solid var(--amber);}
+  .callout.danger{background:var(--rose-soft); border-left:4px solid var(--rose);}
+  .callout b{color:#0f172a;}
+  .steps{counter-reset:step; list-style:none; padding:0; margin:14px 0;}
+  .steps li{position:relative; padding:6px 0 6px 42px; margin-bottom:6px;}
+  .steps li::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:4px; width:28px; height:28px; border-radius:50%;
+    background:var(--blue); color:#fff; font-weight:700; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; vertical-align:middle;}
+  .tag.teams{background:#ede9fe; color:#6d28d9;}
+  .tag.email{background:#dbeafe; color:#1d4ed8;}
+  .tag.phone{background:#dcfce7; color:#15803d;}
+  .pill{display:inline-block; background:#0f172a; color:#fff; font-size:12px; padding:3px 10px; border-radius:6px;}
+  footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); font-size:12px; color:var(--slate-light);}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <h2>目次</h2>
+    <a href="#overview" class="lead">1. 通知の全体像</a>
+    <a href="#types">2. 通知の種類と方法</a>
+    <a href="#settings" class="lead">3. 通知設定の管理画面</a>
+    <a href="#settings-create">　3-1. 新規作成の手順</a>
+    <a href="#settings-edit">　3-2. 編集・有効/無効・テスト</a>
+    <a href="#checkin" class="lead">4. 受付完了通知（参加メンバー）</a>
+    <a href="#email">5. アポイント登録メール</a>
+    <a href="#dept" class="lead">6. 部署電話番号（アポなし来訪）</a>
+    <a href="#notes">7. 運用上の注意</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>受付管理システム　通知設定 説明書</h1>
+      <p>来訪・納品・面接などの各通知を、誰に・どの方法で届けるかを設定・管理するための手引きです。</p>
+      <div class="meta">対象：株式会社アキオカ 受付管理システム（reception-app）／管理画面 <code>/admin</code>　・　作成日：2026-06-17</div>
+    </header>
+
+    <!-- 1 -->
+    <h2 class="sec" id="overview">1. 通知の全体像</h2>
+    <p>本システムは、受付で発生する各種イベント（来訪・納品・集荷・面接など）をトリガーに、担当者へ自動で通知を送ります。通知は <b>管理画面の「通知設定」</b> と <b>「部署電話番号」</b> の2か所で管理します。</p>
+    <table>
+      <tr><th>通知</th><th>トリガー</th><th>通知方法</th><th>宛先の決まり方</th></tr>
+      <tr><td>来訪者チェックイン（アポあり）</td><td>QR／受付番号でチェックイン</td><td><span class="tag teams">Teams</span></td><td>担当スタッフ＋施設予約の参加メンバー</td></tr>
+      <tr><td>来訪者到着（アポなし）</td><td>部署を選択して受付</td><td><span class="tag teams">Teams</span><span class="tag phone">電話</span></td><td>選択した部署の全員＋部署代表電話</td></tr>
+      <tr><td>納品書・受領書受信</td><td>画像保存</td><td><span class="tag teams">Teams</span></td><td>通知設定の受信者</td></tr>
+      <tr><td>集荷伝票受信</td><td>画像保存</td><td><span class="tag teams">Teams</span></td><td>通知設定の受信者</td></tr>
+      <tr><td>面接来訪者到着</td><td>「担当者を呼ぶ」ボタン</td><td><span class="tag teams">Teams</span><span class="tag phone">電話</span></td><td>通知設定の受信者</td></tr>
+      <tr><td>アポイント確認メール</td><td>管理画面でアポ登録時</td><td><span class="tag email">メール</span></td><td>来訪者のメールアドレス</td></tr>
+    </table>
+    <figure>
+      <img src="img/01_dashboard.png" alt="管理画面ダッシュボード">
+      <figcaption>管理画面トップ。上部メニューの「通知設定」「部署電話番号」から各設定に進みます。</figcaption>
+    </figure>
+
+    <!-- 2 -->
+    <h2 class="sec" id="types">2. 通知の種類と方法</h2>
+    <p>通知の「方法（タイプ）」は3種類です。それぞれ役割がはっきり分かれており、<b>「通知データ」欄に入力する内容も異なります</b>。</p>
+    <table>
+      <tr><th>通知方法</th><th>役割</th><th>「通知データ」に入れるもの</th></tr>
+      <tr><td><span class="tag teams">Teams</span></td><td>Teamsチャネルへメンション付き投稿</td><td>メンションしたい相手の<b>メールアドレス</b></td></tr>
+      <tr><td><span class="tag email">メール</span></td><td>実際にメールを送信</td><td>メールの<b>送信先アドレス</b></td></tr>
+      <tr><td><span class="tag phone">電話</span></td><td>受付端末から電話発信（Twilio）</td><td>発信する<b>電話番号</b></td></tr>
+    </table>
+    <div class="callout info">
+      <b>トリガーイベントの一覧</b><br>
+      納品書・受領書受信 ／ 集荷伝票受信 ／ 面接時通話 ／ 来訪者チェックイン ／ アポイントリマインダー
+    </div>
+
+    <!-- 3 -->
+    <h2 class="sec" id="settings">3. 通知設定の管理画面</h2>
+    <p>メニューの <span class="pill">通知設定</span>（<code>/admin/notification-settings</code>）で、各通知の宛先を一覧・追加・編集できます。</p>
+    <figure>
+      <img src="img/02_notification_index.png" alt="通知設定一覧">
+      <figcaption>通知設定一覧。「状態」で有効/無効、各行の「テスト」でTeamsへ試し送信、「無効化」でトグルできます。右上「Teams テスト送信」は接続確認用です。</figcaption>
+    </figure>
+
+    <h3 id="settings-create">3-1. 新規作成の手順</h3>
+    <p>右上の <b>「新規作成」</b> から、通知名・トリガー・受信者を登録します。</p>
+    <ol class="steps">
+      <li><b>通知名</b>と<b>説明</b>（任意）を入力します。</li>
+      <li><b>トリガーイベント</b>を選びます（例：来訪者チェックイン）。</li>
+      <li><b>有効にする</b>にチェックが入っていることを確認します。</li>
+      <li><b>通知受信者</b>でスタッフを選び、<b>通知方法</b>（Teams／メール／電話）を選択します。</li>
+      <li>選んだ方法に応じて<b>通知データ</b>（メールアドレスや電話番号）を入力します。入力欄の下にヒントが表示されます。</li>
+      <li>複数人へ送る場合は「受信者を追加」で行を増やし、最後に<b>「作成」</b>を押します。</li>
+    </ol>
+    <figure>
+      <img src="img/03_notification_create.png" alt="通知設定の新規作成画面">
+      <figcaption>新規作成画面。通知方法を選ぶと「通知データ」欄の下に入力すべき内容のヒントが出ます。</figcaption>
+    </figure>
+    <div class="callout warn">
+      <b>通知方法ごとの入力内容に注意</b><br>
+      ・<span class="tag teams">Teams</span>：メンションする相手の<b>メールアドレス</b>（@username ではなくメール推奨）<br>
+      ・<span class="tag email">メール</span>：<b>送信先メールアドレス</b>（ここに実際にメールが届きます）<br>
+      ・<span class="tag phone">電話</span>：<b>発信先の電話番号</b>
+    </div>
+
+    <h3 id="settings-edit">3-2. 編集・有効/無効・テスト送信</h3>
+    <p>一覧の「編集」から受信者の追加・変更・削除ができます。設定を一時的に止めたいときは「無効化」、配信内容を確認したいときは「テスト」を使います。</p>
+    <figure>
+      <img src="img/04_notification_edit.png" alt="通知設定の編集画面">
+      <figcaption>編集画面。受信者の通知方法・通知データをいつでも変更できます。</figcaption>
+    </figure>
+
+    <!-- 4 -->
+    <h2 class="sec" id="checkin">4. 受付完了通知と「参加メンバー」</h2>
+    <p>アポありの来訪者がチェックインすると、Teams で担当者へメンション通知が飛びます。今回の改修で、<b>担当スタッフに加えて「同席する参加メンバー」全員にもメンション</b>が届くようになりました。</p>
+    <div class="callout ok">
+      <b>参加メンバーはどこで決まる？</b><br>
+      アポイント登録時に<b>会議室（施設）予約</b>を行い、その予約の「参加者」に同席者を選んでおくと、その全員がチェックイン通知のメンション対象になります。会議室予約を行わなかったアポイントは、従来どおり担当スタッフのみに通知されます。
+    </div>
+    <p>つまり、参加メンバーへも通知したい場合は <b>アポイント登録時に施設予約を付け、参加者を選ぶ</b> だけで設定完了です。通知設定画面での追加作業は不要です。</p>
+
+    <!-- 5 -->
+    <h2 class="sec" id="email">5. アポイント登録時のメール送信（デフォルトON）</h2>
+    <p>管理画面からアポイントを登録すると、来訪者へ受付番号・QRコード入りの確認メールを送れます。今回の改修で <b>メール送信は初期状態でON</b> になりました。</p>
+    <ol class="steps">
+      <li>メニュー「アポイント」→「新規登録」でアポイント情報を入力します（メールアドレスを入れると送信対象になります）。</li>
+      <li>施設予約・確認ステップを進め、最後に登録すると<b>メール送信確認ダイアログ</b>が表示されます。</li>
+      <li>そのまま<b>「メール送信」</b>を押せば送信。送りたくない場合のみ<b>「送信しない」</b>を選びます。</li>
+    </ol>
+    <figure>
+      <img src="img/07_appointment_create.png" alt="アポイント新規登録画面">
+      <figcaption>アポイント新規登録（ステップ1）。メールアドレス未入力の場合は送信されません（自動スキップ）。</figcaption>
+    </figure>
+    <div class="callout info">
+      <b>ポイント</b>：メールアドレスが空のときは確認ダイアログを出さずに送信をスキップします。誤送信の心配はありません。
+    </div>
+
+    <!-- 6 -->
+    <h2 class="sec" id="dept">6. 部署電話番号（アポなし来訪の電話通知）</h2>
+    <p>アポイントなしの来訪者が受付で部署を選ぶと、Teams 通知に加えて<b>受付端末からその部署の代表電話へ自動で発信</b>します。発信先となる電話番号は、新設の <span class="pill">部署電話番号</span>（<code>/admin/departments</code>）で管理します。</p>
+    <figure>
+      <img src="img/05_departments_index.png" alt="部署電話番号一覧">
+      <figcaption>部署電話番号の一覧。番号が登録済みの部署は緑のバッジ、未登録は「未登録」と表示されます。</figcaption>
+    </figure>
+    <ol class="steps">
+      <li>メニュー「部署電話番号」を開き、設定したい部署の「編集」を押します。</li>
+      <li>代表電話番号を入力して「更新」を押します。</li>
+    </ol>
+    <figure>
+      <img src="img/06_departments_edit.png" alt="部署電話番号の編集画面">
+      <figcaption>編集画面。数字・<code>+</code>・<code>-</code>・空白で入力します（例：090-1234-5678）。</figcaption>
+    </figure>
+    <div class="callout danger">
+      <b>重要</b>：電話番号が<b>未登録の部署は、受付の部署選択画面に表示されません</b>。アポなし来訪を受け付けたい部署には、必ず代表電話番号を登録してください。
+    </div>
+
+    <!-- 7 -->
+    <h2 class="sec" id="notes">7. 運用上の注意</h2>
+    <table>
+      <tr><th>項目</th><th>内容</th></tr>
+      <tr><td>電話発信の仕組み</td><td>電話は<b>受付端末（ブラウザ）から Twilio で発信</b>します。サーバーからの自動発信は行いません。発信させるには受付画面が開いている必要があります。</td></tr>
+      <tr><td>Teams 通知</td><td>Teams への投稿は Webhook 経由です。メンションは「通知データ」に入れた<b>メールアドレス</b>で行われます。社内で使っているアドレスを正確に入力してください。</td></tr>
+      <tr><td>メール送信</td><td>「メール」タイプの通知、およびアポイント確認メールは<b>実際に送信</b>されます。テスト時は送信先にご注意ください。</td></tr>
+      <tr><td>設定を止めたいとき</td><td>通知設定一覧の「無効化」で、設定を消さずに一時停止できます。</td></tr>
+      <tr><td>動作確認</td><td>Teams への配信内容は各設定の「テスト」ボタンで確認できます。実際のメンション挙動（担当＋参加メンバー）は実チェックインでの確認が必要です。</td></tr>
+    </table>
+
+    <footer>
+      受付管理システム 通知設定 説明書　|　作成日 2026-06-17　|　システム開発部門<br>
+      画面イメージは開発環境（<code>http://127.0.0.1:8005</code>）で取得したものです。実環境とは一部表示が異なる場合があります。
+    </footer>
+  </main>
+</div>
+</body>
+</html>
