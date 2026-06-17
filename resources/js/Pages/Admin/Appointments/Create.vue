@@ -88,8 +88,20 @@
               </p>
             </div>
 
-            <!-- 電話番号 -->
+            <!-- 詳細入力トグル（電話番号） -->
             <div>
+              <button
+                type="button"
+                @click="showVisitorDetails = !showVisitorDetails"
+                class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+              >
+                <span class="mr-1">{{ showVisitorDetails ? '▼' : '▶' }}</span>
+                詳細入力
+              </button>
+            </div>
+
+            <!-- 電話番号（詳細入力） -->
+            <div v-show="showVisitorDetails">
               <label for="visitor_phone" class="block text-sm font-medium text-gray-700 mb-1">
                 電話番号
               </label>
@@ -169,22 +181,6 @@
               </div>
             </template>
 
-            <!-- 訪問目的 -->
-            <div>
-              <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">
-                訪問目的
-              </label>
-              <textarea
-                id="purpose"
-                v-model="form.purpose"
-                rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              ></textarea>
-              <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
-                {{ form.errors.purpose }}
-              </p>
-            </div>
-
             <!-- お客様宛てメッセージ -->
             <div>
               <label for="customer_message" class="block text-sm font-medium text-gray-700 mb-1">
@@ -199,6 +195,22 @@
               ></textarea>
               <p v-if="form.errors.customer_message" class="mt-1 text-sm text-red-600">
                 {{ form.errors.customer_message }}
+              </p>
+            </div>
+
+            <!-- 訪問メモ -->
+            <div>
+              <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">
+                訪問メモ
+              </label>
+              <textarea
+                id="purpose"
+                v-model="form.purpose"
+                rows="4"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              ></textarea>
+              <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
+                {{ form.errors.purpose }}
               </p>
             </div>
 
@@ -280,8 +292,20 @@
                 />
               </div>
 
-              <!-- バッジ -->
+              <!-- 詳細入力トグル（バッジ・説明URL） -->
               <div>
+                <button
+                  type="button"
+                  @click="showFacilityDetails = !showFacilityDetails"
+                  class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                >
+                  <span class="mr-1">{{ showFacilityDetails ? '▼' : '▶' }}</span>
+                  詳細入力
+                </button>
+              </div>
+
+              <!-- バッジ（詳細入力） -->
+              <div v-show="showFacilityDetails">
                 <label for="badge" class="block text-sm font-medium text-gray-700 mb-1">
                   バッジ（ラベル）
                 </label>
@@ -294,8 +318,8 @@
                 />
               </div>
 
-              <!-- 説明URL -->
-              <div>
+              <!-- 説明URL（詳細入力） -->
+              <div v-show="showFacilityDetails">
                 <label for="description_url" class="block text-sm font-medium text-gray-700 mb-1">
                   説明URL
                 </label>
@@ -504,7 +528,7 @@
                   <div class="text-gray-900 font-medium">{{ form.visit_date }}</div>
                   <div class="text-gray-600">訪問時刻:</div>
                   <div class="text-gray-900 font-medium">{{ form.visit_time }}</div>
-                  <div class="text-gray-600">訪問目的:</div>
+                  <div class="text-gray-600">訪問メモ:</div>
                   <div class="text-gray-900 font-medium">{{ form.purpose || '（未入力）' }}</div>
                   <div class="text-gray-600">お客様宛てメッセージ:</div>
                   <div class="text-gray-900 font-medium whitespace-pre-wrap">{{ form.customer_message || '（未入力 → デフォルト文言を表示）' }}</div>
@@ -701,6 +725,10 @@ const selectedParticipants = ref([]);
 const participantSchedules = ref([]);
 
 const showEmailDialog = ref(false);
+
+// 詳細入力の開閉トグル
+const showVisitorDetails = ref(false); // アポイント情報：電話番号
+const showFacilityDetails = ref(false); // 施設予約：バッジ・説明URL
 
 // カレンダーの選択が変更されたら、facilityForm と訪問日時を更新
 watch(calendarSelection, (newValue) => {
