@@ -13,14 +13,14 @@
               <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 1 ? 'bg-blue-600' : 'bg-blue-400']">
                 1
               </div>
-              <span class="ml-2 text-sm font-medium text-gray-700">アポイント情報</span>
+              <span class="ml-2 text-sm font-medium text-gray-700">施設予約</span>
             </div>
             <div class="w-16 h-1 bg-gray-300"></div>
             <div class="flex items-center">
               <div :class="['w-10 h-10 rounded-full flex items-center justify-center text-white font-bold', currentStep === 2 ? 'bg-blue-600' : currentStep > 2 ? 'bg-blue-400' : 'bg-gray-300']">
                 2
               </div>
-              <span class="ml-2 text-sm font-medium text-gray-700">施設予約</span>
+              <span class="ml-2 text-sm font-medium text-gray-700">アポイント情報</span>
             </div>
             <div class="w-16 h-1 bg-gray-300"></div>
             <div class="flex items-center">
@@ -34,8 +34,8 @@
 
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
           <form @submit.prevent="handleFormSubmit" class="p-6 space-y-6">
-            <!-- ステップ1: アポイント情報 -->
-            <div v-show="currentStep === 1" class="space-y-6">
+            <!-- ステップ2: アポイント情報 -->
+            <div v-show="currentStep === 2" class="space-y-6">
               <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">アポイント情報</h3>
             
             <!-- 会社名 -->
@@ -104,89 +104,70 @@
               </p>
             </div>
 
-            <!-- 担当スタッフ -->
-            <div>
-              <label for="staff_member_id" class="block text-sm font-medium text-gray-700 mb-1">
-                担当スタッフ <span class="text-red-500">*</span>
-              </label>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <!-- 部署で絞り込み -->
-                <select
-                  v-model="staffGroupId"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">すべての部署</option>
-                  <option v-for="group in groups" :key="group.id" :value="group.id">
-                    {{ group.name }}
-                  </option>
-                </select>
-                <!-- 担当者を選択 -->
-                <select
-                  id="staff_member_id"
-                  v-model="form.staff_member_id"
-                  required
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">選択してください（{{ filteredStaffMembers.length }}名）</option>
-                  <option v-for="staff in filteredStaffMembers" :key="staff.id" :value="staff.id">
-                    {{ staff.name }}
-                  </option>
-                </select>
-              </div>
-              <p class="mt-1 text-xs text-gray-500">部署を選ぶと担当者を絞り込めます。</p>
-              <p v-if="form.errors.staff_member_id" class="mt-1 text-sm text-red-600">
-                {{ form.errors.staff_member_id }}
-              </p>
-            </div>
-
-            <!-- 訪問日 -->
-            <div>
-              <label for="visit_date" class="block text-sm font-medium text-gray-700 mb-1">
-                訪問日 <span class="text-red-500">*</span>
-              </label>
-              <input
-                id="visit_date"
-                v-model="form.visit_date"
-                type="date"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-              <p v-if="form.errors.visit_date" class="mt-1 text-sm text-red-600">
-                {{ form.errors.visit_date }}
-              </p>
-            </div>
-
-            <!-- 訪問時刻（分は10分単位で選択） -->
-            <div>
+            <!-- 訪問日・訪問時刻（施設予約から自動設定） -->
+            <div v-if="calendarSelection">
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                訪問時刻 <span class="text-red-500">*</span>
+                訪問日時（施設予約から自動設定）
               </label>
-              <div class="mt-1 flex items-center gap-2">
-                <select
-                  id="visit_time_hour"
-                  v-model="visitTimeHour"
-                  required
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">--</option>
-                  <option v-for="h in hourOptions" :key="h" :value="h">{{ h }}</option>
-                </select>
-                <span class="text-gray-700">時</span>
-                <select
-                  id="visit_time_minute"
-                  v-model="visitTimeMinute"
-                  required
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">--</option>
-                  <option v-for="m in minuteOptions" :key="m" :value="m">{{ m }}</option>
-                </select>
-                <span class="text-gray-700">分</span>
+              <div class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 font-medium">
+                {{ form.visit_date }} {{ form.visit_time }}
               </div>
-              <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
-                {{ form.errors.visit_time }}
+              <p class="mt-1 text-xs text-gray-500">
+                施設予約で選択した開始日時が設定されます。変更する場合は前の画面（施設予約）でカレンダーを選び直してください。
+              </p>
+              <p v-if="form.errors.visit_date || form.errors.visit_time" class="mt-1 text-sm text-red-600">
+                {{ form.errors.visit_date || form.errors.visit_time }}
               </p>
             </div>
+
+            <!-- 訪問日・訪問時刻（施設予約なしの場合は手動入力） -->
+            <template v-else>
+              <!-- 訪問日 -->
+              <div>
+                <label for="visit_date" class="block text-sm font-medium text-gray-700 mb-1">
+                  訪問日 <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="visit_date"
+                  v-model="form.visit_date"
+                  type="date"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+                <p v-if="form.errors.visit_date" class="mt-1 text-sm text-red-600">
+                  {{ form.errors.visit_date }}
+                </p>
+              </div>
+
+              <!-- 訪問時刻（分は10分単位で選択） -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  訪問時刻 <span class="text-red-500">*</span>
+                </label>
+                <div class="mt-1 flex items-center gap-2">
+                  <select
+                    id="visit_time_hour"
+                    v-model="visitTimeHour"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">--</option>
+                    <option v-for="h in hourOptions" :key="h" :value="h">{{ h }}</option>
+                  </select>
+                  <span class="text-gray-700">時</span>
+                  <select
+                    id="visit_time_minute"
+                    v-model="visitTimeMinute"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">--</option>
+                    <option v-for="m in minuteOptions" :key="m" :value="m">{{ m }}</option>
+                  </select>
+                  <span class="text-gray-700">分</span>
+                </div>
+                <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
+                  {{ form.errors.visit_time }}
+                </p>
+              </div>
+            </template>
 
             <!-- 訪問目的 -->
             <div>
@@ -221,32 +202,67 @@
               </p>
             </div>
 
-            <!-- ステップ1のボタン -->
-            <div class="flex justify-end space-x-3 pt-4">
-              <Link 
-                :href="route('admin.appointments.index')" 
-                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md"
-              >
-                キャンセル
-              </Link>
+            <!-- ステップ2（アポイント情報）のボタン -->
+            <div class="flex justify-between pt-4">
               <button
                 type="button"
-                @click="goToFacilityReservation"
+                @click="currentStep = 1"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md"
+              >
+                戻る（施設予約）
+              </button>
+              <button
+                type="button"
+                @click="goToConfirmation"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
               >
-                次へ（施設予約）
+                次へ（確認）
               </button>
             </div>
             </div>
 
-            <!-- ステップ2: 施設予約情報 -->
-            <div v-show="currentStep === 2" class="space-y-6">
+            <!-- ステップ1: 施設予約情報 -->
+            <div v-show="currentStep === 1" class="space-y-6">
               <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">施設予約情報</h3>
-              
+
               <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
                 <p class="text-sm text-blue-800">
-                  会議室などの施設を予約する場合は、まず予定の詳細情報を入力してから、カレンダーで施設と時間帯を選択してください。<br>
+                  まず担当スタッフを選び、予定の詳細情報を入力してから、カレンダーで施設と時間帯を選択してください。選択した開始日時が次のアポイント情報の訪問日時に自動設定されます。<br>
                   施設予約が不要な場合は、「施設予約なしで次へ」をクリックしてください。
+                </p>
+              </div>
+
+              <!-- 担当スタッフ -->
+              <div>
+                <label for="staff_member_id" class="block text-sm font-medium text-gray-700 mb-1">
+                  担当スタッフ <span class="text-red-500">*</span>
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <!-- 部署で絞り込み -->
+                  <select
+                    v-model="staffGroupId"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">すべての部署</option>
+                    <option v-for="group in groups" :key="group.id" :value="group.id">
+                      {{ group.name }}
+                    </option>
+                  </select>
+                  <!-- 担当者を選択 -->
+                  <select
+                    id="staff_member_id"
+                    v-model="form.staff_member_id"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">選択してください（{{ filteredStaffMembers.length }}名）</option>
+                    <option v-for="staff in filteredStaffMembers" :key="staff.id" :value="staff.id">
+                      {{ staff.name }}
+                    </option>
+                  </select>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">部署を選ぶと担当者を絞り込めます。担当者は予定参加者にも自動追加されます。</p>
+                <p v-if="form.errors.staff_member_id" class="mt-1 text-sm text-red-600">
+                  {{ form.errors.staff_member_id }}
                 </p>
               </div>
 
@@ -438,15 +454,14 @@
                 />
               </div>
 
-              <!-- ステップ2のボタン -->
+              <!-- ステップ1（施設予約）のボタン -->
               <div class="flex justify-between pt-4">
-                <button
-                  type="button"
-                  @click="currentStep = 1"
+                <Link
+                  :href="route('admin.appointments.index')"
                   class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md"
                 >
-                  戻る
-                </button>
+                  キャンセル
+                </Link>
                 <div class="flex space-x-3">
                   <button
                     type="button"
@@ -457,11 +472,11 @@
                   </button>
                   <button
                     type="button"
-                    @click="goToConfirmation"
+                    @click="goToAppointmentInfo"
                     :disabled="!calendarSelection"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
                   >
-                    次へ（確認）
+                    次へ（アポイント情報）
                   </button>
                 </div>
               </div>
@@ -603,7 +618,7 @@
 
 <script setup>
 import { useForm, Link, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import FacilityScheduleCalendar from '@/Components/FacilityScheduleCalendar.vue';
 
@@ -687,7 +702,7 @@ const participantSchedules = ref([]);
 
 const showEmailDialog = ref(false);
 
-// カレンダーの選択が変更されたら、facilityFormを更新
+// カレンダーの選択が変更されたら、facilityForm と訪問日時を更新
 watch(calendarSelection, (newValue) => {
   if (newValue) {
     facilityForm.value.facility_id = newValue.facility_id;
@@ -695,7 +710,14 @@ watch(calendarSelection, (newValue) => {
     facilityForm.value.start_time = newValue.start_time;
     facilityForm.value.end_date = newValue.end_date;
     facilityForm.value.end_time = newValue.end_time;
-    
+
+    // 施設予約で選択した開始日時を、アポイント情報の訪問日・訪問時刻に自動設定
+    form.visit_date = newValue.start_date;
+    form.visit_time = newValue.start_time;
+    const [h, m] = (newValue.start_time || '').split(':');
+    visitTimeHour.value = h || '';
+    visitTimeMinute.value = m || '';
+
     // 予定タイトルが未入力で訪問目的が入力されている場合、デフォルト値として設定
     if (!facilityForm.value.title && form.purpose) {
       facilityForm.value.title = form.purpose;
@@ -708,53 +730,74 @@ watch(selectedParticipants, async (newValue) => {
   await loadParticipantSchedules();
 }, { deep: true });
 
-// 担当者が変更されたら、ユーザー予定を再取得
+// 担当者が変更されたら、ユーザー予定を再取得（施設予約ステップで）
 watch(() => form.staff_member_id, async (newValue) => {
-  if (currentStep.value === 2) {
+  if (currentStep.value === 1) {
     await loadParticipantSchedules();
   }
 });
 
-// ステップ1からステップ2へ
-const goToFacilityReservation = async () => {
-  // 必須項目のバリデーション
-  if (!form.company_name || !form.visitor_name || !form.staff_member_id || !form.visit_date || !form.visit_time) {
-    alert('必須項目を入力してください。');
+// マウント時、初期担当者（ログインユーザー）の予定を読み込む
+onMounted(() => {
+  loadParticipantSchedules();
+});
+
+// ステップ1（施設予約）→ ステップ2（アポイント情報）：施設予約あり
+const goToAppointmentInfo = () => {
+  // 担当スタッフのバリデーション
+  if (!form.staff_member_id) {
+    alert('担当スタッフを選択してください。');
     return;
   }
-  
-  // 訪問目的が入力されている場合、予定タイトルのデフォルト値として設定
-  if (form.purpose && !facilityForm.value.title) {
-    facilityForm.value.title = form.purpose;
-  }
-  
-  currentStep.value = 2;
-  
-  // 担当者の予定を初期読み込み
-  await loadParticipantSchedules();
-};
 
-// 施設予約をスキップ
-const skipFacilityReservation = () => {
-  facilityForm.value.needs_facility = false;
-  currentStep.value = 3;
-};
-
-// ステップ2からステップ3へ
-const goToConfirmation = () => {
   // 予定タイトルのバリデーション
   if (!facilityForm.value.title) {
     alert('予定タイトルを入力してください。');
     return;
   }
-  
+
   // 施設と時間の選択チェック
   if (!calendarSelection.value) {
     alert('カレンダーから施設と時間帯を選択してください。\n施設予約が不要な場合は「施設予約なしで次へ」をクリックしてください。');
     return;
   }
-  
+
   facilityForm.value.needs_facility = true;
+  currentStep.value = 2;
+};
+
+// ステップ1（施設予約）→ ステップ2（アポイント情報）：施設予約なし
+const skipFacilityReservation = () => {
+  // 担当スタッフのバリデーション
+  if (!form.staff_member_id) {
+    alert('担当スタッフを選択してください。');
+    return;
+  }
+
+  facilityForm.value.needs_facility = false;
+
+  // 施設予約なしの場合は訪問日時を手動入力させるため、自動設定値をクリア
+  calendarSelection.value = null;
+  form.visit_date = '';
+  form.visit_time = '';
+  visitTimeHour.value = '';
+  visitTimeMinute.value = '';
+
+  currentStep.value = 2;
+};
+
+// ステップ2（アポイント情報）→ ステップ3（確認）
+const goToConfirmation = () => {
+  if (!form.company_name || !form.visitor_name) {
+    alert('会社名・訪問者名を入力してください。');
+    return;
+  }
+
+  if (!form.visit_date || !form.visit_time) {
+    alert('訪問日・訪問時刻を入力してください。');
+    return;
+  }
+
   currentStep.value = 3;
 };
 
