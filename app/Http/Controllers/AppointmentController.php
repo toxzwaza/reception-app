@@ -52,7 +52,9 @@ class AppointmentController extends Controller
         // アポイント通知を送信
         $this->sendAppointmentNotification($visitor);
 
-        return redirect()->route('visitor.complete');
+        // 完了画面でアポイント情報（施設・時間・担当者・メッセージ）を表示するためIDを渡す
+        return redirect()->route('visitor.complete')
+            ->with('completed_appointment_id', $preRegisteredVisitor['id']);
     }
 
     // 受付番号でチェックイン
@@ -82,19 +84,22 @@ class AppointmentController extends Controller
         // アポイント通知を送信
         $this->sendAppointmentNotification($visitor);
 
-        return redirect()->route('visitor.complete');
+        // 完了画面でアポイント情報（施設・時間・担当者・メッセージ）を表示するためIDを渡す
+        return redirect()->route('visitor.complete')
+            ->with('completed_appointment_id', $preRegisteredVisitor['id']);
     }
 
     // 事前登録訪問者をIDで検索
     private function findPreRegisteredVisitor($visitorId)
     {
         $appointment = \App\Models\Appointment::find($visitorId);
-        
+
         if (!$appointment) {
             return null;
         }
-        
+
         return [
+            'id' => $appointment->id,
             'company_name' => $appointment->company_name,
             'visitor_name' => $appointment->visitor_name,
             'staff_member_id' => $appointment->staff_member_id,
@@ -117,8 +122,9 @@ class AppointmentController extends Controller
             'is_checked_in' => true,
             'checked_in_at' => now(),
         ]);
-        
+
         return [
+            'id' => $appointment->id,
             'company_name' => $appointment->company_name,
             'visitor_name' => $appointment->visitor_name,
             'staff_member_id' => $appointment->staff_member_id,

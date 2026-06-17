@@ -103,6 +103,7 @@ class AppointmentController extends Controller
             'visit_date' => 'required|date',
             'visit_time' => 'required|date_format:H:i',
             'purpose' => 'nullable|string|max:1000',
+            'customer_message' => 'nullable|string|max:1000',
             'send_email' => 'nullable|boolean',
             // 施設予約のバリデーション
             'facility_reservation' => 'nullable|array',
@@ -291,6 +292,7 @@ class AppointmentController extends Controller
             'visit_date' => 'required|date',
             'visit_time' => 'required|date_format:H:i',
             'purpose' => 'nullable|string|max:1000',
+            'customer_message' => 'nullable|string|max:1000',
         ]);
 
         $appointment->update($validated);

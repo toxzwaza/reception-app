@@ -156,18 +156,33 @@
               </p>
             </div>
 
-            <!-- 訪問時刻 -->
+            <!-- 訪問時刻（分は10分単位で選択） -->
             <div>
-              <label for="visit_time" class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
                 訪問時刻 <span class="text-red-500">*</span>
               </label>
-              <input
-                id="visit_time"
-                v-model="form.visit_time"
-                type="time"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <div class="mt-1 flex items-center gap-2">
+                <select
+                  id="visit_time_hour"
+                  v-model="visitTimeHour"
+                  required
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">--</option>
+                  <option v-for="h in hourOptions" :key="h" :value="h">{{ h }}</option>
+                </select>
+                <span class="text-gray-700">時</span>
+                <select
+                  id="visit_time_minute"
+                  v-model="visitTimeMinute"
+                  required
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">--</option>
+                  <option v-for="m in minuteOptions" :key="m" :value="m">{{ m }}</option>
+                </select>
+                <span class="text-gray-700">分</span>
+              </div>
               <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
                 {{ form.errors.visit_time }}
               </p>
@@ -186,6 +201,23 @@
               ></textarea>
               <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
                 {{ form.errors.purpose }}
+              </p>
+            </div>
+
+            <!-- お客様宛てメッセージ -->
+            <div>
+              <label for="customer_message" class="block text-sm font-medium text-gray-700 mb-1">
+                お客様宛てメッセージ
+              </label>
+              <textarea
+                id="customer_message"
+                v-model="form.customer_message"
+                rows="3"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="受付完了時に来訪者へ表示する案内文（未入力の場合はデフォルト文言を表示）"
+              ></textarea>
+              <p v-if="form.errors.customer_message" class="mt-1 text-sm text-red-600">
+                {{ form.errors.customer_message }}
               </p>
             </div>
 
@@ -459,6 +491,8 @@
                   <div class="text-gray-900 font-medium">{{ form.visit_time }}</div>
                   <div class="text-gray-600">訪問目的:</div>
                   <div class="text-gray-900 font-medium">{{ form.purpose || '（未入力）' }}</div>
+                  <div class="text-gray-600">お客様宛てメッセージ:</div>
+                  <div class="text-gray-900 font-medium whitespace-pre-wrap">{{ form.customer_message || '（未入力 → デフォルト文言を表示）' }}</div>
                 </div>
               </div>
 
@@ -597,7 +631,19 @@ const form = useForm({
   visit_date: '',
   visit_time: '',
   purpose: '',
+  customer_message: '',
   send_email: true, // デフォルトON（確認ダイアログで「送信しない」を選べば外せる）
+});
+
+// 訪問時刻（分は10分単位で選択）
+const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const minuteOptions = ['00', '10', '20', '30', '40', '50'];
+const visitTimeHour = ref('');
+const visitTimeMinute = ref('');
+
+// 時・分のどちらかが変わったら form.visit_time を "HH:MM" 形式で更新
+watch([visitTimeHour, visitTimeMinute], ([hour, minute]) => {
+  form.visit_time = (hour && minute) ? `${hour}:${minute}` : '';
 });
 
 // 施設予約フォーム

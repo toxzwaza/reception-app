@@ -28,6 +28,7 @@ class Appointment extends Model
         'visit_date',
         'visit_time',
         'purpose',
+        'customer_message',
         'qr_code',
         'is_checked_in',
         'checked_in_at',
