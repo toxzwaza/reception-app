@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Visitor;
-use App\Models\StaffMember;
 use App\Models\Appointment;
 use App\Models\ScheduleEvent;
 use App\Services\NotificationService;
@@ -141,9 +140,10 @@ class AppointmentController extends Controller
             return;
         }
 
-        // スタッフメンバー情報を取得
-        $staffMember = StaffMember::with('user')->find($appointment->staff_member_id);
-        $staffEmail = $staffMember && $staffMember->user ? $staffMember->user->email : '';
+        // 担当スタッフ情報を取得
+        // staff_member_id は users テーブルのIDを指す（Appointment::staffMember は belongsTo(User::class)）
+        $staffUser = $appointment->staffMember;
+        $staffEmail = $staffUser->email ?? '';
 
         // 通知データを準備
         $data = [
@@ -151,7 +151,7 @@ class AppointmentController extends Controller
             'reception_number' => $visitor->reception_number,
             'company_name' => $visitor->company_name,
             'visitor_name' => $visitor->visitor_name,
-            'staff_member_name' => $staffMember ? $staffMember->user->name : '未設定',
+            'staff_member_name' => $staffUser->name ?? '未設定',
             'check_in_time' => $visitor->check_in_time->format('Y年m月d日 H:i'),
             'appointment_info' => $appointment->appointment_info ?? '',
         ];
