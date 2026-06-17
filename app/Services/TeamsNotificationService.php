@@ -273,7 +273,9 @@ class TeamsNotificationService
     }
 
     /**
-     * notification_settings.trigger_event に紐づく email type recipient の ID を取得
+     * notification_settings.trigger_event に紐づく teams type recipient の
+     * メンション先 email を取得する。
+     * （teams = Teams メンション先 / email = メール送信先 / phone = 電話発信先 と役割を分離）
      */
     private function getMentionIdsForTrigger(string $triggerEvent): \Illuminate\Support\Collection
     {
@@ -283,10 +285,10 @@ class TeamsNotificationService
             ->get();
 
         foreach ($settings as $setting) {
-            $emailRecipients = $setting->activeRecipients()
-                ->where('notification_type', 'email')
+            $teamsRecipients = $setting->activeRecipients()
+                ->where('notification_type', 'teams')
                 ->get();
-            foreach ($emailRecipients as $recipient) {
+            foreach ($teamsRecipients as $recipient) {
                 if (!empty($recipient->notification_data)) {
                     $ids->push($recipient->notification_data);
                 }

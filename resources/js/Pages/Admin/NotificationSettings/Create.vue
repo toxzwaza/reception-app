@@ -138,6 +138,9 @@
                           {{ label }}
                         </option>
                       </select>
+                      <p v-if="recipient.notification_type" class="mt-1 text-xs text-gray-500">
+                        {{ { teams: 'Teamsでメンションする相手のメールアドレスを入力', email: '通知メールの送信先アドレスを入力（実際にメールを送信）', phone: '発信する電話番号を入力（受付端末から発信）' }[recipient.notification_type] }}
+                      </p>
                     </div>
 
                     <div>

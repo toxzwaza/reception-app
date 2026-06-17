@@ -188,13 +188,46 @@ class NotificationService
      */
     private static function sendEmailNotification(NotificationRecipient $recipient, array $data): void
     {
-        // メール通知の実装
-        // ここではログに記録するのみ
-        Log::info('メール通知送信', [
-            'recipient' => $recipient->user->name,
-            'email' => $recipient->notification_data,
-            'data' => $data
-        ]);
+        // email 型の notification_data は「メール送信先アドレス」
+        $to = $recipient->notification_data;
+        if (empty($to)) {
+            Log::warning('メール通知: 宛先が空のためスキップ', ['recipient_id' => $recipient->id]);
+            return;
+        }
+
+        $subject = self::subjectForData($data);
+        $body = self::formatTeamsMessage($data);
+        if ($body === '') {
+            $body = '受付システムから通知が届きました。';
+        }
+
+        try {
+            Mail::to($to)->send(new \App\Mail\GenericNotificationMail($subject, $body));
+            Log::info('メール通知送信成功', [
+                'recipient' => $recipient->user->name ?? $to,
+                'email' => $to,
+                'type' => $data['type'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('メール通知送信失敗', [
+                'email' => $to,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * トリガー種別からメール件名を組み立てる
+     */
+    private static function subjectForData(array $data): string
+    {
+        return match ($data['type'] ?? '') {
+            'delivery_received' => '【受付】納品書・受領書を受信しました',
+            'pickup_received'   => '【受付】集荷伝票を受信しました',
+            'visitor_checkin'   => '【受付】来訪者がチェックインしました',
+            'interview_call'    => '【受付】面接来訪者が到着しました',
+            default             => '【受付】通知',
+        };
     }
 
     /**

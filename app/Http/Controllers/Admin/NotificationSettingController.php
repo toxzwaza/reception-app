@@ -191,7 +191,7 @@ class NotificationSettingController extends Controller
             if ($setting) {
                 $title = '🧪 テスト通知: ' . $setting->name;
                 $mentionIds = $setting->activeRecipients
-                    ->where('notification_type', 'email')
+                    ->where('notification_type', 'teams')
                     ->pluck('notification_data')
                     ->filter()
                     ->values()
