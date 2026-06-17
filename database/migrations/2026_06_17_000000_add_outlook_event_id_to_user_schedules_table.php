@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::connection('akioka_db')->hasTable('user_schedules')) {
+        if (!Schema::hasTable('user_schedules')) {
             return;
         }
 
-        if (Schema::connection('akioka_db')->hasColumn('user_schedules', 'outlook_event_id')) {
+        if (Schema::hasColumn('user_schedules', 'outlook_event_id')) {
             return;
         }
 
         // 参加者の予定をOutlook（Microsoft Graph）からリアルタイム同期する際の
         // 突き合わせキー。施設予定（schedule_events.outlook_event_id）と同じ役割。
-        Schema::connection('akioka_db')->table('user_schedules', function (Blueprint $table) {
+        Schema::table('user_schedules', function (Blueprint $table) {
             $table->string('outlook_event_id')->nullable()->after('status');
             $table->index(['user_id', 'outlook_event_id']);
         });
@@ -32,15 +32,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (!Schema::connection('akioka_db')->hasTable('user_schedules')) {
+        if (!Schema::hasTable('user_schedules')) {
             return;
         }
 
-        if (!Schema::connection('akioka_db')->hasColumn('user_schedules', 'outlook_event_id')) {
+        if (!Schema::hasColumn('user_schedules', 'outlook_event_id')) {
             return;
         }
 
-        Schema::connection('akioka_db')->table('user_schedules', function (Blueprint $table) {
+        Schema::table('user_schedules', function (Blueprint $table) {
             $table->dropIndex(['user_id', 'outlook_event_id']);
             $table->dropColumn('outlook_event_id');
         });
