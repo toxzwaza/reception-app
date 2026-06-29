@@ -83,156 +83,8 @@
 
         <!-- カメラ表示またはプレビュー -->
         <div v-if="form.delivery_type" class="max-w-4xl mx-auto">
-          <!-- スキャン中表示 -->
-          <div v-if="showCamera">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">
-              {{ form.delivery_type }}をスキャン中...
-            </h3>
-            <div class="relative bg-gray-900 rounded-2xl overflow-hidden mb-6">
-              <!-- ビデオフィード表示 -->
-              <img 
-                :src="videoFeedUrl" 
-                alt="スキャン映像"
-                class="w-full h-auto"
-                @error="handleVideoFeedError"
-              />
-              <!-- ビデオフィードエラー時のフォールバック表示 -->
-              <div v-if="videoFeedError" class="absolute inset-0 flex items-center justify-center bg-gray-100">
-                <div class="text-center">
-                  <div class="mb-4">
-                    <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                  <div class="text-2xl font-semibold text-gray-700">スキャン中...</div>
-                  <div class="text-sm text-gray-500 mt-2">書類をスキャナーにセットしてください</div>
-                </div>
-              </div>
-              <!-- スキャン枠オーバーレイ -->
-              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="border-4 border-indigo-500 border-dashed rounded-xl opacity-50" style="width: 85%; height: 85%;"></div>
-              </div>
-            </div>
-            
-            <!-- ヒント -->
-            <div class="bg-blue-50 rounded-lg p-4 mb-6">
-              <div class="flex">
-                <svg class="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                </svg>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-blue-800">スキャンのヒント</h3>
-                  <ul class="mt-2 text-sm text-blue-700 list-disc pl-5 space-y-1">
-                    <li>書類をスキャナーに正しくセットしてください</li>
-                    <li>書類が曲がっていないか確認してください</li>
-                    <li>スキャン完了までお待ちください</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex gap-4">
-              <button
-                type="button"
-                @click="handleCancel"
-                :disabled="isScanning"
-                class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-
-          <!-- プレビュー -->
-          <div v-else-if="form.document_preview">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">こちらの画像でよろしいですか？</h3>
-            <div class="relative mb-4 overflow-hidden">
-              <img
-                :src="form.document_preview"
-                :alt="form.delivery_type"
-                class="w-full rounded-lg shadow-lg transition-transform duration-200"
-                :style="{ transform: `rotate(${rotationDegrees}deg)` }"
-              />
-            </div>
-
-            <!-- 回転コントロール -->
-            <div class="flex gap-2 mb-6 justify-center">
-              <button
-                type="button"
-                @click="rotateLeft"
-                :disabled="processing"
-                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base flex items-center justify-center gap-2"
-                aria-label="左に90度回転"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                </svg>
-                左に90°
-              </button>
-              <button
-                type="button"
-                @click="rotate180"
-                :disabled="processing"
-                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base"
-                aria-label="180度回転"
-              >
-                180°
-              </button>
-              <button
-                type="button"
-                @click="rotateRight"
-                :disabled="processing"
-                class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 text-base flex items-center justify-center gap-2"
-                aria-label="右に90度回転"
-              >
-                右に90°
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- 注意文 -->
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div class="flex">
-                <svg class="h-5 w-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-red-800">撮影内容の確認</h3>
-                  <ul class="mt-2 text-sm text-red-700 list-disc pl-5 space-y-1">
-                    <li>テキストがきちんと可読可能か確認してください</li>
-                    <li>手や指で隠れていないか確認してください</li>
-                    <li>書類全体が写っているか確認してください</li>
-                    <li>明るさが適切か確認してください</li>
-                    <li>向きが正しくない場合は回転ボタンで調整してください</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex gap-4">
-              <button
-                type="button"
-                @click="retakeImage"
-                :disabled="processing"
-                class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 text-lg"
-              >
-                撮り直す
-              </button>
-              <button
-                type="submit"
-                :disabled="processing"
-                class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
-              >
-                {{ processing ? '処理中...' : '確定' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- スキャン開始ボタン -->
-          <div v-else class="text-center">
+          <!-- スキャン開始ボタン（スキャン中・プレビュー確認はモーダルで表示） -->
+          <div v-if="!showCamera && !form.document_preview" class="text-center">
             <button
               type="button"
               @click="startCamera"
@@ -246,6 +98,204 @@
         <!-- エラーメッセージ -->
         <div v-if="cameraError" class="mt-4 text-center text-sm text-red-600" role="alert">
           {{ cameraError }}
+        </div>
+
+        <!-- ====== スキャンモーダル ====== -->
+        <!-- スキャン開始（showCamera）からスキャン完了プレビュー（document_preview）まで
+             一連の流れを全画面モーダルで表示。1画面で完結しスクロール不要。 -->
+        <div
+          v-if="showCamera || form.document_preview"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="form.document_preview ? 'スキャン画像の確認' : 'スキャン中'"
+        >
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+            <!-- ヘッダー -->
+            <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+              <h3 v-if="!form.document_preview" class="text-xl font-semibold text-gray-900 text-center">
+                {{ form.delivery_type }}をスキャン中...
+              </h3>
+              <h3 v-else class="text-xl font-semibold text-gray-900 text-center">こちらの画像でよろしいですか？</h3>
+            </div>
+
+            <!-- ========== スキャン中（ライブ映像） ========== -->
+            <template v-if="!form.document_preview">
+              <!-- ライブ映像エリア -->
+              <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-900 p-4 overflow-hidden">
+                <div class="relative max-h-full">
+                  <!-- ビデオフィード表示 -->
+                  <img
+                    :src="videoFeedUrl"
+                    alt="スキャン映像"
+                    class="max-h-[60vh] max-w-full object-contain rounded-lg"
+                    @error="handleVideoFeedError"
+                  />
+                  <!-- ビデオフィードエラー時のフォールバック表示 -->
+                  <div v-if="videoFeedError" class="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                    <div class="text-center">
+                      <div class="mb-4">
+                        <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      <div class="text-2xl font-semibold text-gray-700">スキャン中...</div>
+                      <div class="text-sm text-gray-500 mt-2">書類をスキャナーにセットしてください</div>
+                    </div>
+                  </div>
+                  <!-- スキャン枠オーバーレイ -->
+                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="border-4 border-indigo-500 border-dashed rounded-xl opacity-50" style="width: 85%; height: 85%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 固定フッター（ヒント・キャンセル） -->
+              <div class="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
+                <!-- ヒント（折りたたみ） -->
+                <details class="bg-blue-50 rounded-lg px-4 py-2 text-sm">
+                  <summary class="cursor-pointer select-none font-medium text-blue-800 flex items-center gap-2">
+                    <svg class="h-4 w-4 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    スキャンのヒント（タップで開く）
+                  </summary>
+                  <ul class="mt-2 text-blue-700 list-disc pl-5 space-y-1">
+                    <li>書類をスキャナーに正しくセットしてください</li>
+                    <li>書類が曲がっていないか確認してください</li>
+                    <li>スキャン完了までお待ちください</li>
+                  </ul>
+                </details>
+
+                <!-- 検出状態バナー -->
+                <div
+                  class="rounded-lg px-4 py-2 text-sm font-medium text-center"
+                  :class="documentDetected ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
+                >
+                  <span v-if="documentDetected">書類を認識しました（赤枠）。「スキャン」で撮影してください。</span>
+                  <span v-else>書類を認識していません。位置を調整するか「手動撮影」で撮影してください。</span>
+                </div>
+
+                <!-- 操作ボタン -->
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    @click="handleCancel"
+                    :disabled="isCapturing"
+                    class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:opacity-50 text-lg"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    @click="captureManual"
+                    :disabled="isCapturing"
+                    class="flex-1 py-4 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 disabled:opacity-50 text-lg"
+                  >
+                    手動撮影
+                  </button>
+                  <button
+                    type="button"
+                    @click="captureScan"
+                    :disabled="!documentDetected || isCapturing"
+                    class="flex-1 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
+                  >
+                    {{ isCapturing ? '撮影中...' : 'スキャン' }}
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- ========== スキャン完了プレビュー（確認） ========== -->
+            <template v-else>
+            <!-- 画像プレビュー（中央配置・はみ出し時は縮小） -->
+            <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
+              <img
+                :src="form.document_preview"
+                :alt="form.delivery_type"
+                class="max-h-full max-w-full object-contain rounded-lg shadow transition-transform duration-200"
+                :style="{ transform: `rotate(${rotationDegrees}deg)` }"
+              />
+            </div>
+
+            <!-- 固定フッター（回転・注意文・操作ボタン） -->
+            <div class="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
+              <!-- 回転コントロール -->
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  @click="rotateLeft"
+                  :disabled="processing"
+                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
+                  aria-label="左に90度回転"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                  </svg>
+                  左に90°
+                </button>
+                <button
+                  type="button"
+                  @click="rotate180"
+                  :disabled="processing"
+                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base"
+                  aria-label="180度回転"
+                >
+                  180°
+                </button>
+                <button
+                  type="button"
+                  @click="rotateRight"
+                  :disabled="processing"
+                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
+                  aria-label="右に90度回転"
+                >
+                  右に90°
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                  </svg>
+                </button>
+              </div>
+
+              <!-- 注意文（折りたたみ。既定は閉じてスクロール不要に） -->
+              <details class="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm">
+                <summary class="cursor-pointer select-none font-medium text-red-800 flex items-center gap-2">
+                  <svg class="h-4 w-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  撮影内容の確認（タップで開く）
+                </summary>
+                <ul class="mt-2 text-red-700 list-disc pl-5 space-y-1">
+                  <li>テキストが可読か</li>
+                  <li>手や指で隠れていないか</li>
+                  <li>書類全体が写っているか</li>
+                  <li>明るさが適切か</li>
+                  <li>向きが正しいか（回転で調整）</li>
+                </ul>
+              </details>
+
+              <!-- 操作ボタン -->
+              <div class="flex gap-4">
+                <button
+                  type="button"
+                  @click="retakeImage"
+                  :disabled="processing"
+                  class="flex-1 py-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 disabled:opacity-50 text-lg"
+                >
+                  撮り直す
+                </button>
+                <button
+                  type="submit"
+                  :disabled="processing"
+                  class="flex-1 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
+                >
+                  {{ processing ? '処理中...' : '確定' }}
+                </button>
+              </div>
+            </div>
+            </template>
+          </div>
         </div>
       </form>
     </div>
@@ -293,6 +343,9 @@ const getProtocol = () => {
 
 const PROTOCOL = getProtocol();
 const START_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/start_scan`;
+const STOP_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/stop_scan`;
+const CAPTURE_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/capture`;
+const CAPTURE_MANUAL_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/capture_manual`;
 const GET_IMAGE_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/get_scan_image`;
 const VIDEO_FEED_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}/video_feed`;
 const WS_URL = `${PROTOCOL}://${RASPI_IP}:${PORT}`;
@@ -322,6 +375,8 @@ const countdown = ref(0);
 const isCountingDown = ref(false);
 const isScanning = ref(false);  // スキャン中フラグ
 const videoFeedError = ref(false);  // ビデオフィードエラーフラグ
+const documentDetected = ref(false);  // スキャナー側で書類（赤枠）を検出中か
+const isCapturing = ref(false);  // 撮影リクエスト送信中フラグ（二重押下防止）
 const videoFeedUrl = ref(VIDEO_FEED_URL);  // ビデオフィードURL
 const rotationDegrees = ref(0);  // スキャン画像の回転角度（0/90/180/270）
 let stream = null;
@@ -455,7 +510,14 @@ const initializeSocket = () => {
     // スキャン完了イベント
     socket.on('scan_completed', async (data) => {
       console.log('📩 スキャン完了通知を受信:', data);
+      isCapturing.value = false;
+      documentDetected.value = false;
       await handleScanCompleted();
+    });
+
+    // 書類検出状態（赤枠の有無）の通知
+    socket.on('detection_state', (data) => {
+      documentDetected.value = !!(data && data.detected);
     });
 
     // トランスポートの変更を監視
@@ -548,6 +610,8 @@ const startCamera = async () => {
     isScanning.value = true;
     cameraError.value = '';
     videoFeedError.value = false;  // ビデオフィードエラーをリセット
+    documentDetected.value = false;  // 検出状態をリセット（detection_stateで更新される）
+    isCapturing.value = false;
     
     // /start_scan にPOSTリクエストを送信
     // ブラウザ環境ではSSL検証の無効化はできないため、サーバー側でCORSとSSL証明書の設定が必要
@@ -630,6 +694,45 @@ const handleScanCompleted = async () => {
   }
 };
 
+// 「スキャン」ボタン：検出済み書類を確定（未検出時はサーバー側で生フレームにフォールバック）
+const captureScan = async () => {
+  await sendCapture(CAPTURE_URL, 'スキャン');
+};
+
+// 「手動撮影」ボタン：書類認識に頼らずカメラ映像をそのまま撮影
+const captureManual = async () => {
+  await sendCapture(CAPTURE_MANUAL_URL, '手動撮影');
+};
+
+// 撮影リクエスト送信（成功時はサーバーが scan_completed を emit → handleScanCompleted で取得）
+const sendCapture = async (url, label) => {
+  if (isCapturing.value) return;
+  isCapturing.value = true;
+  cameraError.value = '';
+  try {
+    console.log(`▶ ${label}: ${url} を送信`);
+    const response = await axios.post(url, {}, {
+      timeout: 10000,
+      validateStatus: (status) => status < 500,
+    });
+    if (response.status !== 200 || (response.data && response.data.status === 'error')) {
+      throw new Error(response.data?.message || `${label}に失敗しました (${response.status})`);
+    }
+    // 完了通知（scan_completed）を待機。万一来ない場合に備えフォールバック取得。
+    setTimeout(async () => {
+      if (isCapturing.value && !form.value.document_preview) {
+        console.warn('scan_completed 未受信 → 画像を直接取得します');
+        await handleScanCompleted();
+        isCapturing.value = false;
+      }
+    }, 2500);
+  } catch (error) {
+    console.error(`${label}エラー:`, error);
+    isCapturing.value = false;
+    cameraError.value = `${label}に失敗しました: ${error.message}`;
+  }
+};
+
 // Base64文字列をFileオブジェクトに変換
 const base64ToFile = (base64String, filename) => {
   try {
@@ -671,9 +774,13 @@ const handleCancel = () => {
   isCountingDown.value = false;
   countdown.value = 0;
   isScanning.value = false;
+  isCapturing.value = false;
+  documentDetected.value = false;
   videoFeedError.value = false;  // ビデオフィードエラーをリセット
   stopCamera();
   showCamera.value = false;
+  // スキャナーを待機モードへ戻す（失敗しても致命的ではないため握りつぶす）
+  axios.post(STOP_URL, {}, { timeout: 5000, validateStatus: () => true }).catch(() => {});
 };
 
 // 撮り直し
