@@ -344,7 +344,6 @@
                       type="text"
                       placeholder="注文Noを入力"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      @keyup.enter="handleSearch"
                     />
                   </div>
 
@@ -386,9 +385,8 @@
                         v-model="filters.comName"
                         list="com_name_list"
                         type="text"
-                        placeholder="注文先を入力または選択）"
+                        placeholder="注文先を入力または選択"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        @keyup.enter="handleSearch"
                       />
                       <datalist id="com_name_list">
                         <option
@@ -413,20 +411,30 @@
                     <input
                       id="filter_product"
                       v-model="filters.product"
+                      list="product_list"
                       type="text"
-                      placeholder="品名・品番を入力"
+                      placeholder="品名・品番を入力または選択"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      @keyup.enter="handleSearch"
                     />
+                    <datalist id="product_list">
+                      <option
+                        v-for="product in productOptions"
+                        :key="product"
+                        :value="product"
+                      >
+                        {{ product }}
+                      </option>
+                    </datalist>
                   </div>
                 </div>
-                <div class="mt-4 flex justify-end">
+                <div class="mt-4 flex justify-between items-center">
+                  <span v-if="isSearching" class="text-sm text-gray-500">発注データを読み込み中...</span>
+                  <span v-else class="text-sm text-gray-500">入力・選択すると自動で絞り込まれます</span>
                   <button
-                    @click="handleSearch"
-                    :disabled="isSearching"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    @click="clearFilters"
+                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
                   >
-                    {{ isSearching ? "検索中..." : "絞り込み" }}
+                    条件クリア
                   </button>
                 </div>
               </div>
@@ -698,31 +706,75 @@ const signageDisplaySelection = ref("show"); // デフォルト: サイネージ
 const rotationAngle = ref(0);
 
 // 発注データ紐づけ関連
-const searchResults = ref([]);
 const allInitialOrders = ref([]);
 const isSearching = ref(false);
-
-// 注文先リスト（APIから取得）
-const comNames = ref([]);
 
 // 絞り込み条件
 const filters = ref({
   orderNo: "",
   orderUser: "",
   comName: "",
-  comNameSelect: "",
   product: "",
 });
 
-// ユニークな注文者リスト
+// 紐づけ済み発注データのIDセット（検索候補から除外）
+const linkedOrderIds = computed(() => props.linkedOrders.map((o) => o.id));
+
+// 各絞り込み条件のマッチ判定（個別）
+const matchOrderNo = (o) => {
+  if (!filters.value.orderNo) return true;
+  return (o.order_no?.toString() || "")
+    .toLowerCase()
+    .includes(filters.value.orderNo.toLowerCase());
+};
+const matchOrderUser = (o) =>
+  !filters.value.orderUser || o.order_user === filters.value.orderUser;
+const matchComName = (o) => {
+  if (!filters.value.comName) return true;
+  return (o.com_name || "").toLowerCase().includes(filters.value.comName.toLowerCase());
+};
+const matchProduct = (o) => {
+  if (!filters.value.product) return true;
+  const q = filters.value.product.toLowerCase();
+  return `${o.name || ""} ${o.s_name || ""}`.toLowerCase().includes(q);
+};
+
+// 紐づけ済みを除いた候補
+const baseOrders = computed(() =>
+  allInitialOrders.value.filter((o) => !linkedOrderIds.value.includes(o.id))
+);
+
+// 絞り込み結果（フィルタ変更で自動的に再計算）
+const searchResults = computed(() =>
+  baseOrders.value.filter(
+    (o) => matchOrderNo(o) && matchOrderUser(o) && matchComName(o) && matchProduct(o)
+  )
+);
+
+// 絞り込み条件の選択肢（自分以外の条件で絞った結果から生成 = faceted）
 const uniqueOrderUsers = computed(() => {
-  const users = new Set();
-  allInitialOrders.value.forEach((order) => {
-    if (order.order_user) {
-      users.add(order.order_user);
-    }
-  });
-  return Array.from(users).sort();
+  const set = new Set();
+  baseOrders.value
+    .filter((o) => matchOrderNo(o) && matchComName(o) && matchProduct(o))
+    .forEach((o) => o.order_user && set.add(o.order_user));
+  return Array.from(set).sort();
+});
+const comNames = computed(() => {
+  const set = new Set();
+  baseOrders.value
+    .filter((o) => matchOrderNo(o) && matchOrderUser(o) && matchProduct(o))
+    .forEach((o) => o.com_name && set.add(o.com_name));
+  return Array.from(set).sort();
+});
+const productOptions = computed(() => {
+  const set = new Set();
+  baseOrders.value
+    .filter((o) => matchOrderNo(o) && matchOrderUser(o) && matchComName(o))
+    .forEach((o) => {
+      if (o.name) set.add(o.name);
+      if (o.s_name) set.add(o.s_name);
+    });
+  return Array.from(set).sort();
 });
 
 // 電子印済み書類画像のURL
@@ -815,91 +867,28 @@ const loadInitialOrders = async () => {
     }
     const data = await response.json();
     allInitialOrders.value = data || [];
-    searchResults.value = allInitialOrders.value;
   } catch (error) {
     console.error("発注データ取得エラー:", error);
     alert("❌ 発注データの取得に失敗しました。");
     allInitialOrders.value = [];
-    searchResults.value = [];
   } finally {
     isSearching.value = false;
   }
 };
 
-// 注文先リストを取得
-const loadComNames = async () => {
-  try {
-    const response = await fetch("/api/com-names");
-    if (!response.ok) {
-      throw new Error("APIリクエストに失敗しました");
-    }
-    const data = await response.json();
-    console.log(data);
-    comNames.value = data || [];
-  } catch (error) {
-    console.error("注文先リスト取得エラー:", error);
-    comNames.value = [];
-  }
-};
-
-// コンポーネントマウント時に注文先リストを取得
+// コンポーネントマウント時に発注データを取得（以降はフロント側で自動絞り込み）
 onMounted(() => {
-  loadComNames();
+  loadInitialOrders();
 });
 
-// 絞り込み検索を実行（データ取得 + フィルタリング）
-const handleSearch = async () => {
-  await loadInitialOrders();
-  applyFilters();
-};
-
-// 絞り込みを適用
-const applyFilters = () => {
-  // 既に紐づけられている発注データのIDリストを取得
-  const linkedOrderIds = props.linkedOrders.map(order => order.id);
-  
-  searchResults.value = allInitialOrders.value.filter((order) => {
-    // 既に紐づけられている発注データは除外
-    if (linkedOrderIds.includes(order.id)) {
-      return false;
-    }
-
-    // 注文Noで絞り込み
-    if (filters.value.orderNo) {
-      const orderNo = order.order_no?.toString() || "";
-      if (!orderNo.toLowerCase().includes(filters.value.orderNo.toLowerCase())) {
-        return false;
-      }
-    }
-
-    // 注文者で絞り込み
-    if (filters.value.orderUser) {
-      if (order.order_user !== filters.value.orderUser) {
-        return false;
-      }
-    }
-
-    // 注文先で絞り込み
-    if (filters.value.comName) {
-      const comName = order.com_name || "";
-      if (!comName.toLowerCase().includes(filters.value.comName.toLowerCase())) {
-        return false;
-      }
-    }
-
-    // 品名・品番で絞り込み
-    if (filters.value.product) {
-      const productQuery = filters.value.product.toLowerCase();
-      const name = order.name || "";
-      const sName = order.s_name || "";
-      const searchableText = `${name} ${sName}`.toLowerCase();
-      if (!searchableText.includes(productQuery)) {
-        return false;
-      }
-    }
-
-    return true;
-  });
+// 絞り込み条件をクリア
+const clearFilters = () => {
+  filters.value = {
+    orderNo: "",
+    orderUser: "",
+    comName: "",
+    product: "",
+  };
 };
 
 // 画像モーダル表示
@@ -952,10 +941,8 @@ const confirmLinkOrder = async () => {
             orderNo: "",
             orderUser: "",
             comName: "",
-            comNameSelect: "",
             product: "",
           };
-          searchResults.value = [];
           // ページをリロード
           router.visit(route("admin.deliveries.show", props.delivery.id), {
             method: "get",
