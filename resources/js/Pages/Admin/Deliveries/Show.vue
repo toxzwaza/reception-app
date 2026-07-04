@@ -261,6 +261,7 @@
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文者</th>
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文日</th>
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">希望納期</th>
+                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">納品日</th>
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文先</th>
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品名</th>
                         <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品番</th>
@@ -304,6 +305,15 @@
                                   linkedOrder.desire_delivery_date
                                 ).toLocaleDateString("ja-JP")
                               : "未指定"
+                          }}
+                        </td>
+                        <td class="px-4 py-6 whitespace-nowrap">
+                          {{
+                            linkedOrder.delivery_date
+                              ? new Date(
+                                  linkedOrder.delivery_date
+                                ).toLocaleDateString("ja-JP")
+                              : "-"
                           }}
                         </td>
                         <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.com_name || "-" }}</td>
@@ -513,7 +523,7 @@
                         </td>
                         <td class="px-4 py-6 whitespace-nowrap">
                           <button
-                            @click="linkOrder(order.id)"
+                            @click="linkOrder(order)"
                             class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs"
                           >
                             追加
@@ -662,6 +672,66 @@
             </div>
           </div>
 
+          <!-- 在庫加算（格納先・数量） -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              在庫加算
+            </label>
+
+            <!-- 格納先の読み込み中 -->
+            <p v-if="loadingStorages" class="text-sm text-gray-500">
+              格納先を確認中...
+            </p>
+
+            <!-- 格納先が未登録 -->
+            <p
+              v-else-if="storageOptions.length === 0"
+              class="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded p-3"
+            >
+              この物品には格納先が登録されていないため、在庫加算は行いません。
+            </p>
+
+            <!-- 格納先あり -->
+            <div v-else class="space-y-3">
+              <div>
+                <span class="block text-xs text-gray-500 mb-1">格納先</span>
+                <!-- 単一の場合は自動選択（選択済みを表示） -->
+                <div
+                  v-if="storageOptions.length === 1"
+                  class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-md text-sm text-gray-700"
+                >
+                  {{ storageOptions[0].label }}
+                  <span class="text-gray-400">（現在庫: {{ storageOptions[0].current_quantity }}）</span>
+                </div>
+                <!-- 複数の場合は選択 -->
+                <select
+                  v-else
+                  v-model="selectedStorageId"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">格納先を選択してください</option>
+                  <option
+                    v-for="s in storageOptions"
+                    :key="s.storage_address_id"
+                    :value="s.storage_address_id"
+                  >
+                    {{ s.label }}（現在庫: {{ s.current_quantity }}）
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <span class="block text-xs text-gray-500 mb-1">加算数量</span>
+                <input
+                  v-model.number="linkQuantity"
+                  type="number"
+                  min="1"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           <!-- 確定ボタン -->
           <div class="pt-4 border-t">
             <button
@@ -701,6 +771,12 @@ const showDeliveryTypeModal = ref(false);
 const selectedOrderId = ref(null);
 const deliveryTypeSelection = ref("complete"); // デフォルト: 完納
 const signageDisplaySelection = ref("show"); // デフォルト: サイネージ表示あり
+
+// 在庫加算（格納先・数量）
+const storageOptions = ref([]); // 選択中発注データの物品に登録された格納先一覧
+const loadingStorages = ref(false);
+const selectedStorageId = ref(""); // 加算先の格納先ID
+const linkQuantity = ref(null); // 加算数量
 
 // 画像回転のプレビュー角度（累積）
 const rotationAngle = ref(0);
@@ -909,18 +985,66 @@ const modalImage = (imgElement) => {
 };
 
 // 発注データを紐づける（モーダルを表示）
-const linkOrder = (orderId) => {
-  selectedOrderId.value = orderId;
+const linkOrder = (order) => {
+  selectedOrderId.value = order.id;
   // デフォルト値をリセット
   deliveryTypeSelection.value = "complete";
   signageDisplaySelection.value = "show";
+  // 在庫加算関連のリセット
+  storageOptions.value = [];
+  selectedStorageId.value = "";
+  linkQuantity.value = order.quantity ?? null; // 加算数量の初期値は発注数量
   showDeliveryTypeModal.value = true;
+  // 物品の格納先候補を取得
+  loadStorageOptions(order.stock_id);
+};
+
+// 物品(stock)の格納先候補を取得
+const loadStorageOptions = async (stockId) => {
+  if (!stockId) {
+    storageOptions.value = [];
+    return;
+  }
+  loadingStorages.value = true;
+  try {
+    const response = await fetch(`/api/stocks/${stockId}/storages`);
+    if (!response.ok) {
+      throw new Error("格納先の取得に失敗しました");
+    }
+    const data = await response.json();
+    storageOptions.value = data || [];
+    // 格納先が1件のみの場合は自動選択
+    if (storageOptions.value.length === 1) {
+      selectedStorageId.value = storageOptions.value[0].storage_address_id;
+    }
+  } catch (error) {
+    console.error("格納先取得エラー:", error);
+    storageOptions.value = [];
+  } finally {
+    loadingStorages.value = false;
+  }
 };
 
 // 納品種別を選択して紐づけを実行
 const confirmLinkOrder = async () => {
   if (!selectedOrderId.value) {
     return;
+  }
+
+  // 在庫加算のバリデーション（格納先が登録されている場合のみ）
+  let storageAddressId = null;
+  let quantity = null;
+  if (storageOptions.value.length > 0) {
+    if (!selectedStorageId.value) {
+      alert("在庫を加算する格納先を選択してください。");
+      return;
+    }
+    if (!linkQuantity.value || linkQuantity.value < 1) {
+      alert("加算数量を1以上で入力してください。");
+      return;
+    }
+    storageAddressId = selectedStorageId.value;
+    quantity = linkQuantity.value;
   }
 
   try {
@@ -930,6 +1054,8 @@ const confirmLinkOrder = async () => {
         order_id: selectedOrderId.value,
         delivery_type: deliveryTypeSelection.value, // 'partial' or 'complete'
         signage_display: signageDisplaySelection.value, // 'show' or 'hide'
+        storage_address_id: storageAddressId, // 在庫加算先（未登録物品はnull）
+        quantity: quantity, // 加算数量（未登録物品はnull）
       },
       {
         onSuccess: (page) => {

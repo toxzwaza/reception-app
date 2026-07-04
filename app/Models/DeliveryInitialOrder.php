@@ -14,5 +14,7 @@ class DeliveryInitialOrder extends Pivot
     protected $fillable = [
         'delivery_id',
         'initial_order_id',
+        'storage_address_id',
+        'added_quantity',
     ];
 }

@@ -34,3 +34,5 @@ Route::post('/set-session-user', [LocalStorageAuthController::class, 'setSession
 // 納品関連API
 Route::get('/initial-orders', [ReceiveController::class, 'getInitialOrders'])->name('api.initial-orders');
 Route::get('/com-names', [ReceiveController::class, 'getComNames'])->name('api.com-names');
+// 物品(stock)の格納先候補取得API（在庫加算先の選択用）
+Route::get('/stocks/{stock}/storages', [ReceiveController::class, 'getStockStorages'])->name('api.stock-storages');

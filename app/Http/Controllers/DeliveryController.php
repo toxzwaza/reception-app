@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Delivery;
 use App\Models\InitialOrder;
+use App\Models\StockStorage;
 use App\Services\PrintServerService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -282,6 +283,9 @@ class DeliveryController extends Controller
             'order_id' => 'required|exists:initial_orders,id',
             'delivery_type' => 'required|in:partial,complete',
             'signage_display' => 'required|in:show,hide',
+            // 在庫加算する格納先と数量（格納先が登録されていない物品の場合は未指定）
+            'storage_address_id' => 'nullable|integer',
+            'quantity' => 'nullable|integer|min:1|required_with:storage_address_id',
         ]);
 
         try {
@@ -295,27 +299,57 @@ class DeliveryController extends Controller
                 ]);
             }
 
-            // delifile_pathを設定: https://akioka-reception.cloud/ + delivery.document_image
-            $order->delifile_path = $delivery->document_image;
-
-            // 完納の場合はreceive_flgを1に設定
-            if ($validated['delivery_type'] === 'complete') {
-                $order->receive_flg = 1;
-            }
-            // 分納の場合はreceive_flgを2に設定
-            if ($validated['delivery_type'] === 'partial') {
-                $order->receive_flg = 2;
-            }
-            // サイネージディスプレイの設定
-            $signageDisplay = $validated['signage_display']; // 'show' or 'hide'
-            if ($signageDisplay === 'hide') {
-                $order->receipt_flg = 1;
+            // 在庫加算対象の格納先を特定（指定があり、かつ当該物品に登録済みの格納先のみ）
+            $stockStorage = null;
+            if (!empty($validated['storage_address_id'])) {
+                $stockStorage = StockStorage::where('stock_id', $order->stock_id)
+                    ->where('storage_address_id', $validated['storage_address_id'])
+                    ->first();
+                if (!$stockStorage) {
+                    return redirect()->back()->withErrors([
+                        'error' => '指定された格納先がこの物品に登録されていません。'
+                    ]);
+                }
             }
 
-            $order->save();
+            DB::transaction(function () use ($delivery, $order, $validated, $stockStorage) {
+                // delifile_pathを設定: https://akioka-reception.cloud/ + delivery.document_image
+                $order->delifile_path = $delivery->document_image;
 
-            // 中間テーブルに紐づけを追加
-            $delivery->initialOrders()->attach($validated['order_id']);
+                // 完納の場合はreceive_flgを1に設定
+                if ($validated['delivery_type'] === 'complete') {
+                    $order->receive_flg = 1;
+                }
+                // 分納の場合はreceive_flgを2に設定
+                if ($validated['delivery_type'] === 'partial') {
+                    $order->receive_flg = 2;
+                }
+                // サイネージディスプレイの設定
+                if ($validated['signage_display'] === 'hide') {
+                    $order->receipt_flg = 1;
+                }
+
+                // 納品日を記録（紐づけを実施したタイミングの日付）
+                $order->delivery_date = now()->toDateString();
+
+                $order->save();
+
+                // 在庫加算（格納先が指定されている場合のみ）
+                $addedQuantity = null;
+                $storageAddressId = null;
+                if ($stockStorage) {
+                    $addedQuantity = (int) $validated['quantity'];
+                    $storageAddressId = $stockStorage->storage_address_id;
+                    $stockStorage->quantity += $addedQuantity;
+                    $stockStorage->save();
+                }
+
+                // 中間テーブルに紐づけを追加（巻き戻し用に加算量・格納先を保存）
+                $delivery->initialOrders()->attach($validated['order_id'], [
+                    'storage_address_id' => $storageAddressId,
+                    'added_quantity' => $addedQuantity,
+                ]);
+            });
 
             return redirect()->back()->with('success', '発注データを紐づけました。');
         } catch (\Exception $e) {
@@ -335,19 +369,44 @@ class DeliveryController extends Controller
         try {
             $order = InitialOrder::findOrFail($validated['order_id']);
 
-            // 中間テーブルから紐づけを削除
-            $delivery->initialOrders()->detach($validated['order_id']);
+            DB::transaction(function () use ($delivery, $order, $validated) {
+                // 解除対象の紐づけレコード（在庫巻き戻し用に加算量・格納先を保持）
+                $pivot = DB::table('delivery_initial_order')
+                    ->where('delivery_id', $delivery->id)
+                    ->where('initial_order_id', $validated['order_id'])
+                    ->first();
 
-            // delifile_pathをリセット（他のdeliveryに紐づけられていない場合のみ）
-            $otherDeliveries = DB::table('delivery_initial_order')
-                ->where('initial_order_id', $validated['order_id'])
-                ->where('delivery_id', '!=', $delivery->id)
-                ->exists();
+                // 加算していた在庫を巻き戻す（減算）
+                if ($pivot && $pivot->storage_address_id && $pivot->added_quantity) {
+                    $stockStorage = StockStorage::where('stock_id', $order->stock_id)
+                        ->where('storage_address_id', $pivot->storage_address_id)
+                        ->first();
+                    if ($stockStorage) {
+                        // 在庫がマイナスにならないようクランプ
+                        $stockStorage->quantity = max(0, $stockStorage->quantity - (int) $pivot->added_quantity);
+                        $stockStorage->save();
+                    }
+                }
 
-            if (!$otherDeliveries) {
-                $order->delifile_path = null;
-                $order->save();
-            }
+                // 中間テーブルから紐づけを削除
+                $delivery->initialOrders()->detach($validated['order_id']);
+
+                // 他のdeliveryに紐づけが残っていない場合のみ発注データ側をリセット
+                $otherDeliveries = DB::table('delivery_initial_order')
+                    ->where('initial_order_id', $validated['order_id'])
+                    ->where('delivery_id', '!=', $delivery->id)
+                    ->exists();
+
+                if (!$otherDeliveries) {
+                    $order->delifile_path = null;
+                    // 納品日をクリア（紐づけ時に設定したもの）
+                    $order->delivery_date = null;
+                    // 受入フラグを未納品に戻す（解除後に検索候補へ再表示させるため）
+                    $order->receive_flg = 0;
+                    $order->receipt_flg = 0;
+                    $order->save();
+                }
+            });
 
             return redirect()->back()->with('success', '発注データの紐づけを解除しました。');
         } catch (\Exception $e) {

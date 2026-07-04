@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\InitialOrder;
 use App\Models\Stock;
+use App\Models\StockStorage;
 use Illuminate\Http\Request;
 
 class ReceiveController extends Controller
@@ -54,6 +55,32 @@ class ReceiveController extends Controller
           ->values();
 
         return response()->json($com_names);
+    }
+
+    /**
+     * 物品(stock)の格納先候補取得API
+     *
+     * 在庫加算先の選択肢として、指定 stock に登録された格納先一覧を返す。
+     * 格納先が未登録の場合は空配列（フロント側で在庫加算をスキップ）。
+     *
+     * @param  int  $stock  stock_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStockStorages($stock)
+    {
+        $storages = StockStorage::with('storageAddress')
+            ->where('stock_id', $stock)
+            ->get()
+            ->map(function ($ss) {
+                return [
+                    'storage_address_id' => $ss->storage_address_id,
+                    'current_quantity'   => $ss->quantity,
+                    'label'              => $ss->storageAddress ? $ss->storageAddress->label : ('#' . $ss->storage_address_id),
+                ];
+            })
+            ->values();
+
+        return response()->json($storages);
     }
 }
 
