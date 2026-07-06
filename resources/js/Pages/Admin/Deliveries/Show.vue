@@ -24,7 +24,7 @@
     </template>
 
     <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+      <div class="max-w-[1800px] mx-auto sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- 書類情報 -->
           <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -119,50 +119,78 @@
           </div>
         </div>
 
-        <!-- 書類画像（電子印済み画像がある場合はそちらを優先表示） -->
-        <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <!-- 発注紐づけ作業エリア：左=紐づけ操作 / 右=書類画像(sticky) を横並び -->
+        <div class="mt-8 flex flex-col-reverse lg:flex-row lg:items-start gap-6">
+
+          <!-- 書類画像（電子印済み画像を優先）：右カラム・スクロール追従(sticky) -->
+          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full lg:w-[560px] lg:flex-shrink-0 lg:order-2 lg:sticky lg:top-6">
           <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
               {{ displayImageTitle }}
             </h3>
             <div class="text-center">
-              <!-- プレビュー表示用の画像コンテナ（回転を考慮したサイズ） -->
+              <!-- ズーム＋ドラッグ移動できる画像ビューア（ダブルクリックで拡大モーダル） -->
               <div
-                class="inline-block mx-auto"
-                :style="{
-                  width: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : 'auto',
-                  height: (rotationAngle === 90 || rotationAngle === 270) ? 'auto' : '600px',
-                  maxWidth: '100%',
-                  maxHeight: (rotationAngle === 90 || rotationAngle === 270) ? '800px' : '600px',
-                  minHeight: '200px',
-                  minWidth: (rotationAngle === 90 || rotationAngle === 270) ? '600px' : 'auto',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  padding: (rotationAngle === 90 || rotationAngle === 270) ? '50px 0' : '0',
-                  boxSizing: 'border-box',
-                }"
+                class="relative mx-auto overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center"
+                :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
+                style="height: 58vh;"
+                @mousedown.prevent="startDrag"
+                @mousemove="onDrag"
+                @mouseup="endDrag"
+                @mouseleave="endDrag"
+                @dblclick="openImageModal"
+                title="ドラッグで移動 / ダブルクリックで拡大表示"
               >
-                <div
-                  class="mx-auto rounded-lg shadow-lg transition-transform duration-300"
+                <img
+                  :src="displayImageUrl"
+                  :alt="displayImageTitle"
+                  class="rounded shadow-lg select-none"
                   :style="{
-                    transform: `rotate(${rotationAngle}deg)`,
+                    transform: `translate(${panX}px, ${panY}px) rotate(${rotationAngle}deg) scale(${imageScale})`,
                     transformOrigin: 'center center',
-                    display: 'inline-block',
-                    verticalAlign: 'middle',
+                    maxWidth: '100%',
+                    maxHeight: '54vh',
+                    transition: isDragging ? 'none' : 'transform 0.15s ease',
                   }"
-                >
-                  <img
-                    :src="displayImageUrl"
-                    :alt="displayImageTitle"
-                    class="max-w-full h-auto rounded-lg"
-                    style="max-height: 600px; max-width: 600px; display: block;"
-                  />
-                </div>
+                  draggable="false"
+                />
               </div>
-              <div v-if="rotationAngle !== 0" class="mt-2 text-sm text-orange-600">
-                回転角度: {{ rotationAngle }}°（プレビュー）
+              <div class="mt-2 flex items-center justify-center gap-x-2 gap-y-1 text-sm text-gray-500 flex-wrap">
+                <span>拡大率 {{ Math.round(imageScale * 100) }}%</span>
+                <span v-if="rotationAngle !== 0" class="text-orange-600">/ 回転 {{ rotationAngle }}°</span>
+                <span class="text-gray-400">｜ドラッグで移動・ダブルクリックで拡大表示</span>
               </div>
               <div class="mt-4 flex justify-center gap-2 flex-wrap" style="position: relative; z-index: 10;">
+                <!-- ズームボタン -->
+                <button
+                  @click="zoomIn"
+                  class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="拡大"
+                >
+                  ＋ 拡大
+                </button>
+                <button
+                  @click="zoomOut"
+                  class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="縮小"
+                >
+                  － 縮小
+                </button>
+                <button
+                  v-if="imageScale !== 1 || panX !== 0 || panY !== 0"
+                  @click="resetZoom"
+                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="拡大率・位置を元に戻す"
+                >
+                  等倍
+                </button>
+                <button
+                  @click="openImageModal"
+                  class="bg-slate-700 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded text-sm"
+                  title="中央に大きく表示して確認"
+                >
+                  🔍 拡大表示
+                </button>
                 <!-- 画像回転ボタン（プレビュー用） -->
                 <button
                   @click="previewRotate(90)"
@@ -222,8 +250,8 @@
           </div>
         </div>
 
-        <!-- 発注データ紐づけ -->
-        <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <!-- 発注データ紐づけ：左カラム（広め） -->
+          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full lg:flex-1 min-w-0 lg:order-1">
           <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
               発注データ紐づけ
@@ -550,7 +578,58 @@
               </div>
             </div>
           </div>
+          </div>
+          <!-- /左右分割ラッパー -->
         </div>
+      </div>
+    </div>
+
+    <!-- 書類画像 拡大モーダル（中央・大きめ・ズーム/ドラッグ/ホイール対応） -->
+    <div
+      v-if="showImageModal"
+      class="fixed inset-0 z-50 bg-black/80 flex flex-col"
+      @mousemove="onDrag"
+      @mouseup="endDrag"
+    >
+      <!-- 操作バー -->
+      <div class="flex items-center justify-between px-4 py-3 text-white bg-black/40">
+        <span class="text-sm font-medium truncate">
+          {{ displayImageTitle }}　拡大率 {{ Math.round(imageScale * 100) }}%
+          <span v-if="rotationAngle !== 0">/ 回転 {{ rotationAngle }}°</span>
+        </span>
+        <div class="flex items-center gap-2">
+          <button @click="zoomOut" class="bg-white/10 hover:bg-white/25 px-3 py-1.5 rounded text-sm" title="縮小">－</button>
+          <button @click="zoomIn" class="bg-white/10 hover:bg-white/25 px-3 py-1.5 rounded text-sm" title="拡大">＋</button>
+          <button @click="resetZoom" class="bg-white/10 hover:bg-white/25 px-3 py-1.5 rounded text-sm" title="等倍に戻す">等倍</button>
+          <button @click="previewRotate(90)" class="bg-white/10 hover:bg-white/25 px-3 py-1.5 rounded text-sm" title="90°回転">↻</button>
+          <button @click="closeImageModal" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded text-sm font-semibold">✕ 閉じる</button>
+        </div>
+      </div>
+      <!-- ビューア本体 -->
+      <div
+        class="flex-1 overflow-hidden flex items-center justify-center"
+        :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
+        style="touch-action: none;"
+        @mousedown.prevent="startDrag"
+        @wheel.prevent="onWheelZoom"
+        @dblclick="resetZoom"
+      >
+        <img
+          :src="displayImageUrl"
+          :alt="displayImageTitle"
+          class="select-none"
+          :style="{
+            transform: `translate(${panX}px, ${panY}px) rotate(${rotationAngle}deg) scale(${imageScale})`,
+            transformOrigin: 'center center',
+            maxHeight: '82vh',
+            maxWidth: '92vw',
+            transition: isDragging ? 'none' : 'transform 0.15s ease',
+          }"
+          draggable="false"
+        />
+      </div>
+      <div class="text-center text-white/70 text-xs py-2 bg-black/40">
+        ドラッグで移動 ・ ホイールで拡大縮小 ・ ダブルクリックで等倍
       </div>
     </div>
 
@@ -780,6 +859,12 @@ const linkQuantity = ref(null); // 加算数量
 
 // 画像回転のプレビュー角度（累積）
 const rotationAngle = ref(0);
+const imageScale = ref(1); // 書類画像の拡大率（＋/－・ホイールで変更・0.25〜5倍）
+const panX = ref(0); // ドラッグ移動量X
+const panY = ref(0); // ドラッグ移動量Y
+const isDragging = ref(false);
+let dragOrigin = { x: 0, y: 0 };
+const showImageModal = ref(false); // 中央の拡大モーダル表示
 
 // 発注データ紐づけ関連
 const allInitialOrders = ref([]);
@@ -1142,6 +1227,47 @@ const previewRotate = (angle) => {
 // 回転をリセット
 const resetRotation = () => {
   rotationAngle.value = 0;
+};
+
+// 画像ズーム（＋/－・等倍）
+const zoomIn = () => {
+  imageScale.value = Math.min(4, Math.round((imageScale.value + 0.25) * 100) / 100);
+};
+const zoomOut = () => {
+  imageScale.value = Math.max(0.25, Math.round((imageScale.value - 0.25) * 100) / 100);
+};
+const resetZoom = () => {
+  imageScale.value = 1;
+  panX.value = 0;
+  panY.value = 0;
+};
+
+// ドラッグで画像を移動（マウス）
+const startDrag = (e) => {
+  isDragging.value = true;
+  dragOrigin = { x: e.clientX - panX.value, y: e.clientY - panY.value };
+};
+const onDrag = (e) => {
+  if (!isDragging.value) return;
+  panX.value = e.clientX - dragOrigin.x;
+  panY.value = e.clientY - dragOrigin.y;
+};
+const endDrag = () => {
+  isDragging.value = false;
+};
+
+// ホイールで拡大縮小（拡大モーダル内）
+const onWheelZoom = (e) => {
+  const delta = e.deltaY < 0 ? 0.15 : -0.15;
+  imageScale.value = Math.min(5, Math.max(0.25, Math.round((imageScale.value + delta) * 100) / 100));
+};
+
+// 中央の拡大モーダル
+const openImageModal = () => {
+  showImageModal.value = true;
+};
+const closeImageModal = () => {
+  showImageModal.value = false;
 };
 
 // 画像回転を保存
