@@ -9,6 +9,7 @@ use App\Services\PrintServerService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -48,15 +49,16 @@ class DeliveryController extends Controller
         $publicUrl = config('app.url') . '/storage/' . ltrim($documentPath, '/');
         $validated['document_image'] = $publicUrl;
 
-        // 納品記録の作成
+        // 納品記録の作成（アクセス用トークンを付与）
         $delivery = Delivery::create([
             'delivery_type' => $validated['delivery_type'],
             'document_image' => $publicUrl,
             'received_at' => now(),
+            'token' => Str::random(40),
         ]);
 
-        // QRコードURLの生成と保存
-        $qrCodeUrl = route('delivery.show', $delivery);
+        // QRコードURLの生成と保存（?token=xxx を含め、QRを読んだ人だけが閲覧可能に）
+        $qrCodeUrl = route('delivery.show', ['delivery' => $delivery, 'token' => $delivery->token]);
         $delivery->update(['qr_code_url' => $qrCodeUrl]);
 
         // QRコード画像ファイルの生成と保存
@@ -82,9 +84,17 @@ class DeliveryController extends Controller
         ]);
     }
 
-    // 納品書類の表示
-    public function show(Delivery $delivery): Response
+    // 納品書類の表示（お客様用・QRのトークンが一致した場合のみ閲覧可能）
+    public function show(Delivery $delivery, Request $request): Response
     {
+        // QR に埋め込まれたトークンと一致しなければ閲覧不可（ID直打ちでの他書類閲覧を防止）
+        $token = (string) $request->query('token', '');
+        abort_unless(
+            $token !== '' && $delivery->token !== null && hash_equals((string) $delivery->token, $token),
+            403,
+            'このページにアクセスする権限がありません。'
+        );
+
         // sealed_document_imageが存在する場合はそれを、なければdocument_imageを使用
         $documentImage = $delivery->sealed_document_image ?? $delivery->document_image;
         

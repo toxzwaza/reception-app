@@ -13,6 +13,7 @@ class Delivery extends Model
         'document_image',
         'sealed_document_image',
         'qr_code_url',
+        'token',
         'qr_code_file_path',
         'staff_member_id',
         'received_at',
