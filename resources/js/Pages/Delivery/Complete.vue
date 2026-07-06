@@ -140,7 +140,7 @@ const printQR = async () => {
   
   try {
     // プリントサーバーに送信（Flask側でURLを受け取って印刷）
-    const response = await axios.post('https://192.168.210.91:5000/print', {
+    const response = await axios.post('https://192.168.210.90:5000/print', {
       url: printUrl, // 印刷用URL（qr_code_url）
     }, {
       headers: { 'Content-Type': 'application/json' },
@@ -169,7 +169,7 @@ const printQR = async () => {
     if (error.code === 'ECONNABORTED') {
       alert('⏳ 接続がタイムアウトしました。プリントサーバーが起動中か確認してください。');
     } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      alert('❌ ネットワークエラー\n\n考えられる原因:\n• プリントサーバー(192.168.210.91:5000)が起動していない\n• ファイアウォールでブロックされている\n• CORS設定の問題\n• SSL証明書の問題');
+      alert('❌ ネットワークエラー\n\n考えられる原因:\n• プリントサーバー(192.168.210.90:5000)が起動していない\n• ファイアウォールでブロックされている\n• CORS設定の問題\n• SSL証明書の問題');
     } else if (error.response) {
       alert(`⚠️ サーバーエラー: ${error.response.status} - ${error.response.statusText}`);
     } else if (error.request) {
