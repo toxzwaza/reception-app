@@ -27,9 +27,10 @@ class ReceiveController extends Controller
             if ($stock) {
                 $order->img_path = $stock->img_path;
                 $order->stock_id = $stock->id;
+                $order->quantity_per_org = $stock->quantity_per_org; // 換算値（発注単位あたりの個数）
             } else {
                 $order->not_found_flg = 1;
-            
+
             }
         }
 

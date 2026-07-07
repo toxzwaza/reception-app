@@ -799,6 +799,40 @@
                 </select>
               </div>
 
+              <!-- 換算（換算値を使用するか） -->
+              <div>
+                <span class="block text-xs text-gray-500 mb-1">換算</span>
+                <div class="flex gap-4">
+                  <label class="flex items-center">
+                    <input
+                      type="radio"
+                      v-model="conversionSelection"
+                      value="use"
+                      @change="applyConversion"
+                      class="mr-2"
+                    />
+                    <span class="text-sm text-gray-700">使用する</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      type="radio"
+                      v-model="conversionSelection"
+                      value="unuse"
+                      @change="applyConversion"
+                      class="mr-2"
+                    />
+                    <span class="text-sm text-gray-700">使用しない</span>
+                  </label>
+                </div>
+                <p
+                  v-if="conversionSelection === 'use'"
+                  class="text-xs text-gray-400 mt-1"
+                >
+                  発注数量 {{ currentOrderQuantity ?? 0 }} × 換算値
+                  {{ currentQuantityPerOrg ?? 1 }}
+                </p>
+              </div>
+
               <div>
                 <span class="block text-xs text-gray-500 mb-1">加算数量</span>
                 <input
@@ -856,6 +890,22 @@ const storageOptions = ref([]); // 選択中発注データの物品に登録さ
 const loadingStorages = ref(false);
 const selectedStorageId = ref(""); // 加算先の格納先ID
 const linkQuantity = ref(null); // 加算数量
+const conversionSelection = ref("use"); // 換算: 'use'(使用する) / 'unuse'(使用しない)、デフォルトは使用する
+const currentOrderQuantity = ref(null); // 選択中発注データの発注数量
+const currentQuantityPerOrg = ref(null); // 選択中物品の換算値（発注単位あたりの個数）
+
+// 換算選択に応じて加算数量を再計算する
+const applyConversion = () => {
+  const qty = Number(currentOrderQuantity.value) || 0;
+  if (conversionSelection.value === "use") {
+    // 換算値（発注単位あたりの個数）× 発注数量。換算値が未設定なら1として扱う
+    const per = Number(currentQuantityPerOrg.value) || 1;
+    linkQuantity.value = qty * per;
+  } else {
+    // 換算を使用しない場合は発注数量をそのまま加算数量とする
+    linkQuantity.value = qty;
+  }
+};
 
 // 画像回転のプレビュー角度（累積）
 const rotationAngle = ref(0);
@@ -1078,7 +1128,11 @@ const linkOrder = (order) => {
   // 在庫加算関連のリセット
   storageOptions.value = [];
   selectedStorageId.value = "";
-  linkQuantity.value = order.quantity ?? null; // 加算数量の初期値は発注数量
+  // 換算関連の初期化（デフォルトは換算を使用する）
+  conversionSelection.value = "use";
+  currentOrderQuantity.value = order.quantity ?? null;
+  currentQuantityPerOrg.value = order.quantity_per_org ?? null;
+  applyConversion(); // 加算数量の初期値を換算設定に従って算出
   showDeliveryTypeModal.value = true;
   // 物品の格納先候補を取得
   loadStorageOptions(order.stock_id);
