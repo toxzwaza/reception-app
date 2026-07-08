@@ -1,99 +1,101 @@
 <template>
   <AdminLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">事前アポイント編集</h2>
+      <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+        事前アポイント編集
+      </h2>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="py-8">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <form @submit.prevent="submit" class="p-6 space-y-6">
             <!-- 受付番号（表示のみ） -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-slate-700 mb-1">
                 受付番号
               </label>
-              <div class="mt-1 block w-full px-3 py-2 bg-gray-100 rounded-md text-gray-700">
+              <div class="mt-1 block w-full px-3 py-2 bg-slate-100 rounded-lg text-slate-700">
                 {{ appointment.reception_number }}
               </div>
             </div>
 
             <!-- 会社名 -->
             <div>
-              <label for="company_name" class="block text-sm font-medium text-gray-700 mb-1">
-                会社名 <span class="text-red-500">*</span>
+              <label for="company_name" class="block text-sm font-medium text-slate-700 mb-1">
+                会社名 <span class="text-rose-500">*</span>
               </label>
               <input
                 id="company_name"
                 v-model="form.company_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.company_name" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.company_name" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.company_name }}
               </p>
             </div>
 
             <!-- 訪問者名 -->
             <div>
-              <label for="visitor_name" class="block text-sm font-medium text-gray-700 mb-1">
-                訪問者名 <span class="text-red-500">*</span>
+              <label for="visitor_name" class="block text-sm font-medium text-slate-700 mb-1">
+                訪問者名 <span class="text-rose-500">*</span>
               </label>
               <input
                 id="visitor_name"
                 v-model="form.visitor_name"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.visitor_name" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.visitor_name" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.visitor_name }}
               </p>
             </div>
 
             <!-- メールアドレス -->
             <div>
-              <label for="visitor_email" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="visitor_email" class="block text-sm font-medium text-slate-700 mb-1">
                 メールアドレス
               </label>
               <input
                 id="visitor_email"
                 v-model="form.visitor_email"
                 type="email"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.visitor_email" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.visitor_email" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.visitor_email }}
               </p>
             </div>
 
             <!-- 電話番号 -->
             <div>
-              <label for="visitor_phone" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="visitor_phone" class="block text-sm font-medium text-slate-700 mb-1">
                 電話番号
               </label>
               <input
                 id="visitor_phone"
                 v-model="form.visitor_phone"
                 type="tel"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.visitor_phone" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.visitor_phone" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.visitor_phone }}
               </p>
             </div>
 
             <!-- 担当スタッフ -->
             <div>
-              <label for="staff_member_id" class="block text-sm font-medium text-gray-700 mb-1">
-                担当スタッフ <span class="text-red-500">*</span>
+              <label for="staff_member_id" class="block text-sm font-medium text-slate-700 mb-1">
+                担当スタッフ <span class="text-rose-500">*</span>
               </label>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <!-- 部署で絞り込み -->
                 <select
                   v-model="staffGroupId"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">すべての部署</option>
                   <option v-for="group in groups" :key="group.id" :value="group.id">
@@ -105,7 +107,7 @@
                   id="staff_member_id"
                   v-model="form.staff_member_id"
                   required
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">選択してください（{{ filteredStaffMembers.length }}名）</option>
                   <option v-for="staff in filteredStaffMembers" :key="staff.id" :value="staff.id">
@@ -113,81 +115,81 @@
                   </option>
                 </select>
               </div>
-              <p class="mt-1 text-xs text-gray-500">部署を選ぶと担当者を絞り込めます。</p>
-              <p v-if="form.errors.staff_member_id" class="mt-1 text-sm text-red-600">
+              <p class="mt-1 text-xs text-slate-500">部署を選ぶと担当者を絞り込めます。</p>
+              <p v-if="form.errors.staff_member_id" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.staff_member_id }}
               </p>
             </div>
 
             <!-- 訪問日 -->
             <div>
-              <label for="visit_date" class="block text-sm font-medium text-gray-700 mb-1">
-                訪問日 <span class="text-red-500">*</span>
+              <label for="visit_date" class="block text-sm font-medium text-slate-700 mb-1">
+                訪問日 <span class="text-rose-500">*</span>
               </label>
               <input
                 id="visit_date"
                 v-model="form.visit_date"
                 type="date"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.visit_date" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.visit_date" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.visit_date }}
               </p>
             </div>
 
             <!-- 訪問時刻 -->
             <div>
-              <label for="visit_time" class="block text-sm font-medium text-gray-700 mb-1">
-                訪問時刻 <span class="text-red-500">*</span>
+              <label for="visit_time" class="block text-sm font-medium text-slate-700 mb-1">
+                訪問時刻 <span class="text-rose-500">*</span>
               </label>
               <input
                 id="visit_time"
                 v-model="form.visit_time"
                 type="time"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p v-if="form.errors.visit_time" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.visit_time" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.visit_time }}
               </p>
             </div>
 
             <!-- 訪問目的 -->
             <div>
-              <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="purpose" class="block text-sm font-medium text-slate-700 mb-1">
                 訪問目的
               </label>
               <textarea
                 id="purpose"
                 v-model="form.purpose"
                 rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               ></textarea>
-              <p v-if="form.errors.purpose" class="mt-1 text-sm text-red-600">
+              <p v-if="form.errors.purpose" class="mt-1 text-sm text-rose-600">
                 {{ form.errors.purpose }}
               </p>
             </div>
 
             <!-- チェックイン状態 -->
-            <div v-if="appointment.is_checked_in" class="bg-green-50 border border-green-200 rounded-md p-4">
-              <p class="text-sm text-green-800">
+            <div v-if="appointment.is_checked_in" class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+              <p class="text-sm text-emerald-800">
                 <strong>チェックイン済み:</strong> {{ formatDateTime(appointment.checked_in_at) }}
               </p>
             </div>
 
             <!-- ボタン -->
-            <div class="flex justify-end space-x-3 pt-4">
-              <Link 
-                :href="route('admin.appointments.index')" 
-                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md"
+            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+              <Link
+                :href="route('admin.appointments.index')"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2 rounded-lg font-medium transition"
               >
                 キャンセル
               </Link>
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold disabled:opacity-50 transition"
               >
                 更新
               </button>
