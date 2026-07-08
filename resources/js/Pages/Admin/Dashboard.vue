@@ -46,6 +46,34 @@
           </StatCard>
         </div>
 
+        <!-- あなたの本日の予定（ログインユーザー） -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <SectionHeader title="あなたの本日の予定" :subtitle="loadingMySchedules ? '' : `${mySchedules.length}件`">
+            <template #icon>🗓️</template>
+          </SectionHeader>
+          <div v-if="loadingMySchedules" class="text-center py-8 text-slate-400">読み込み中...</div>
+          <div v-else-if="mySchedules.length" class="space-y-2 max-h-96 overflow-y-auto">
+            <div
+              v-for="s in mySchedules"
+              :key="s.id"
+              class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-blue-50/50 transition"
+            >
+              <div class="shrink-0 w-24 text-sm font-bold text-blue-700 tabular-nums">{{ scheduleTimeRange(s) }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-slate-800 truncate">{{ s.title || '（無題）' }}</div>
+              </div>
+              <Badge v-if="s.badge" variant="info">{{ s.badge }}</Badge>
+              <a
+                v-if="s.description_url"
+                :href="s.description_url"
+                target="_blank"
+                class="shrink-0 text-sm text-blue-600 hover:text-blue-800"
+              >開く</a>
+            </div>
+          </div>
+          <div v-else class="text-center py-8 text-slate-400">本日の予定はありません</div>
+        </div>
+
         <!-- 2カラム：本日のアポイント / 会議室スケジュール -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- 本日のアポイント -->
@@ -304,7 +332,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
+import axios from 'axios';
 import { Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import StatCard from '@/Components/UI/StatCard.vue';
@@ -327,6 +356,34 @@ const props = defineProps({
 const todayLabel = new Intl.DateTimeFormat('ja-JP', {
   year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
 }).format(new Date());
+
+// ログインユーザーの本日の予定（Outlook同期済みの予定をAPIで取得）
+const mySchedules = ref([]);
+const loadingMySchedules = ref(true);
+onMounted(async () => {
+  try {
+    const { data } = await axios.get(route('admin.my-schedules.get'));
+    mySchedules.value = data.schedules || [];
+  } catch (e) {
+    console.error('本日の予定の取得に失敗しました', e);
+    mySchedules.value = [];
+  } finally {
+    loadingMySchedules.value = false;
+  }
+});
+
+// 予定の時刻表示（start_datetime/end_datetime から HH:mm を抽出）
+const scheduleTimeRange = (s) => {
+  const t = (v) => {
+    if (!v) return '';
+    const m = String(v).match(/(\d{1,2}):(\d{2})/);
+    return m ? `${m[1].padStart(2, '0')}:${m[2]}` : '';
+  };
+  const start = t(s.start_datetime);
+  const end = t(s.end_datetime);
+  if (!start && !end) return '終日';
+  return end ? `${start}-${end}` : start;
+};
 
 // チェックイン進捗（%）
 const checkinPercent = computed(() => {
