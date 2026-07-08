@@ -44,7 +44,7 @@
 
     <!-- メインコンテンツ -->
     <main class="relative z-10 flex-1">
-      <div class="mx-auto max-w-7xl px-6 py-5">
+      <div class="page-enter mx-auto max-w-7xl px-6 py-5">
         <!-- ページタイトル（サブ画面用） -->
         <div v-if="title" class="mb-6">
           <div class="flex items-center justify-between">
@@ -232,5 +232,25 @@ onUnmounted(() => {
 <style scoped>
 .reception-shell {
   min-height: 100vh;
+}
+
+/* ページ遷移時のエントランス（各画面がふわっと表示される） */
+.page-enter {
+  animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
 }
 </style>

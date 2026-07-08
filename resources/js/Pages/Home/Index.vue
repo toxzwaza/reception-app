@@ -3,11 +3,11 @@
     <div class="flex min-h-[calc(100vh-13rem)] flex-col gap-6">
       <!-- ヒーロー見出し -->
       <div class="fade-up text-center">
-        <p class="reception-script text-3xl text-sky-400 leading-none">Welcome to AKIOKA Co., Ltd.</p>
-        <h1 class="mt-1 text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">
-          受付システム
+        <p class="reception-script text-2xl text-sky-400/90 sm:text-3xl">Welcome to</p>
+        <h1 class="mt-1 bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-500 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent drop-shadow-sm">
+          AKIOKA Co., Ltd.
         </h1>
-        <p class="mt-2 text-base font-medium text-slate-500">ご用件を選択してください</p>
+        <p class="mt-3 text-base font-medium text-slate-500">ご用件を選択してください</p>
       </div>
 
       <!-- 用件カード 2×2 -->
