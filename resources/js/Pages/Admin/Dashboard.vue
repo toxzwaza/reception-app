@@ -1,11 +1,11 @@
 <template>
   <AdminLayout>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex items-baseline gap-3">
         <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
           ダッシュボード
         </h2>
-        <span class="text-sm text-slate-400">{{ todayLabel }}</span>
+        <span class="hidden sm:inline text-sm text-slate-400">{{ todayLabel }}</span>
       </div>
     </template>
 
