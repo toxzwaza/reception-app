@@ -2,57 +2,59 @@
   <AdminLayout>
     <template #header>
       <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">通知設定作成</h2>
-        <Link 
+        <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+          通知設定作成
+        </h2>
+        <Link
           :href="route('admin.notification-settings.index')"
-          class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
-          一覧に戻る
+          ← 一覧に戻る
         </Link>
       </div>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <form @submit.prevent="submit">
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-6">
               <!-- 基本情報 -->
               <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">基本情報</h3>
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">基本情報</h3>
                 <div class="grid grid-cols-1 gap-6">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      通知名 <span class="text-red-500">*</span>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                      通知名 <span class="text-rose-500">*</span>
                     </label>
                     <input 
                       type="text" 
                       v-model="form.name"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       placeholder="例: 納品書受信通知"
                       required
                     >
-                    <div v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</div>
+                    <div v-if="errors.name" class="mt-1 text-sm text-rose-600">{{ errors.name }}</div>
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">説明</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">説明</label>
                     <textarea 
                       v-model="form.description"
                       rows="3"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       placeholder="通知の詳細説明（任意）"
                     ></textarea>
-                    <div v-if="errors.description" class="mt-1 text-sm text-red-600">{{ errors.description }}</div>
+                    <div v-if="errors.description" class="mt-1 text-sm text-rose-600">{{ errors.description }}</div>
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      トリガーイベント <span class="text-red-500">*</span>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                      トリガーイベント <span class="text-rose-500">*</span>
                     </label>
                     <select 
                       v-model="form.trigger_event"
-                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       required
                     >
                       <option value="">選択してください</option>
@@ -60,17 +62,17 @@
                         {{ label }}
                       </option>
                     </select>
-                    <div v-if="errors.trigger_event" class="mt-1 text-sm text-red-600">{{ errors.trigger_event }}</div>
+                    <div v-if="errors.trigger_event" class="mt-1 text-sm text-rose-600">{{ errors.trigger_event }}</div>
                   </div>
 
                   <div>
                     <label class="flex items-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         v-model="form.is_active"
-                        class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        class="rounded border-slate-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
-                      <span class="ml-2 text-sm text-gray-700">有効にする</span>
+                      <span class="ml-2 text-sm text-slate-700">有効にする</span>
                     </label>
                   </div>
                 </div>
@@ -79,27 +81,27 @@
               <!-- 通知受信者 -->
               <div class="mb-8">
                 <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold text-gray-900">通知受信者</h3>
-                  <button 
+                  <h3 class="text-lg font-semibold text-slate-800">通知受信者</h3>
+                  <button
                     type="button"
                     @click="addRecipient"
-                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   >
-                    受信者を追加
+                    ＋ 受信者を追加
                   </button>
                 </div>
 
-                <div v-if="form.recipients.length === 0" class="text-center py-8 text-gray-500">
+                <div v-if="form.recipients.length === 0" class="text-center py-8 text-slate-500">
                   通知受信者が設定されていません
                 </div>
 
-                <div v-for="(recipient, index) in form.recipients" :key="index" class="border border-gray-200 rounded-lg p-4 mb-4">
+                <div v-for="(recipient, index) in form.recipients" :key="index" class="border border-slate-200 rounded-xl p-4 mb-4">
                   <div class="flex justify-between items-start mb-4">
-                    <h4 class="font-medium text-gray-900">受信者 {{ index + 1 }}</h4>
-                    <button 
+                    <h4 class="font-medium text-slate-800">受信者 {{ index + 1 }}</h4>
+                    <button
                       type="button"
                       @click="removeRecipient(index)"
-                      class="text-red-600 hover:text-red-800 text-sm"
+                      class="text-rose-600 hover:text-rose-800 text-sm"
                     >
                       削除
                     </button>
@@ -107,13 +109,13 @@
 
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        スタッフメンバー <span class="text-red-500">*</span>
+                      <label class="block text-sm font-medium text-slate-700 mb-1">
+                        スタッフメンバー <span class="text-rose-500">*</span>
                       </label>
                       <select 
                         v-model="recipient.staff_member_id"
                         @change="onStaffMemberChange(index)"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required
                       >
                         <option value="">選択してください</option>
@@ -124,13 +126,13 @@
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        通知方法 <span class="text-red-500">*</span>
+                      <label class="block text-sm font-medium text-slate-700 mb-1">
+                        通知方法 <span class="text-rose-500">*</span>
                       </label>
                       <select 
                         v-model="recipient.notification_type"
                         @change="onNotificationTypeChange(index)"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required
                       >
                         <option value="">選択してください</option>
@@ -138,19 +140,19 @@
                           {{ label }}
                         </option>
                       </select>
-                      <p v-if="recipient.notification_type" class="mt-1 text-xs text-gray-500">
+                      <p v-if="recipient.notification_type" class="mt-1 text-xs text-slate-500">
                         {{ { teams: 'Teamsでメンションする相手のメールアドレスを入力', email: '通知メールの送信先アドレスを入力（実際にメールを送信）', phone: '発信する電話番号を入力（受付端末から発信）' }[recipient.notification_type] }}
                       </p>
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
-                        通知データ <span class="text-red-500">*</span>
+                      <label class="block text-sm font-medium text-slate-700 mb-1">
+                        通知データ <span class="text-rose-500">*</span>
                       </label>
                       <input 
                         type="text" 
                         v-model="recipient.notification_data"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         :placeholder="getNotificationDataPlaceholder(recipient.notification_type)"
                         required
                       >
@@ -160,17 +162,17 @@
               </div>
 
               <!-- 送信ボタン -->
-              <div class="flex justify-end space-x-4">
-                <Link 
+              <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+                <Link
                   :href="route('admin.notification-settings.index')"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2 rounded-lg font-medium transition"
                 >
                   キャンセル
                 </Link>
-                <button 
+                <button
                   type="submit"
                   :disabled="processing"
-                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold disabled:opacity-50 transition"
                 >
                   {{ processing ? '作成中...' : '作成' }}
                 </button>

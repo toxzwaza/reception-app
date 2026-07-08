@@ -1,68 +1,70 @@
 <template>
   <AdminLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">施設予約登録</h2>
+      <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+        施設予約登録
+      </h2>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="py-8">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <form @submit.prevent="submit" class="p-6 space-y-6">
-            <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">施設予約情報</h3>
+            <h3 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">施設予約情報</h3>
 
             <!-- タイトル -->
             <div>
-              <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
-                予定タイトル <span class="text-red-500">*</span>
+              <label for="title" class="block text-sm font-medium text-slate-700 mb-1">
+                予定タイトル <span class="text-rose-500">*</span>
               </label>
               <input
                 id="title"
                 v-model="form.title"
                 type="text"
                 required
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="例: 営業会議"
               />
             </div>
 
             <!-- バッジ -->
             <div>
-              <label for="badge" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="badge" class="block text-sm font-medium text-slate-700 mb-1">
                 バッジ
               </label>
               <input
                 id="badge"
                 v-model="form.badge"
                 type="text"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="例: 重要"
               />
             </div>
 
             <!-- 説明URL -->
             <div>
-              <label for="description_url" class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="description_url" class="block text-sm font-medium text-slate-700 mb-1">
                 説明URL
               </label>
               <input
                 id="description_url"
                 v-model="form.description_url"
                 type="url"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="https://example.com"
               />
             </div>
 
             <!-- 予定参加者 -->
-            <div class="border-t border-gray-300 pt-4">
-              <h4 class="text-md font-semibold text-gray-900 mb-3">予定参加者</h4>
-              <p class="text-sm text-gray-600 mb-4">
+            <div class="border-t border-slate-200 pt-4">
+              <h4 class="text-md font-semibold text-slate-800 mb-3">予定参加者</h4>
+              <p class="text-sm text-slate-600 mb-4">
                 この予定に参加するメンバーを選択してください。
               </p>
 
               <!-- メンバー絞り込み選択 -->
               <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
                   メンバーを絞り込み
                 </label>
                 
@@ -72,7 +74,7 @@
                     <select
                       v-model="selectedGroupId"
                       @change="loadGroupUsers"
-                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
                       <option value="">部署を選択...</option>
                       <option v-for="group in groups" :key="group.id" :value="group.id">
@@ -96,7 +98,7 @@
                   </div>
                 </div>
                 
-                <p class="text-xs text-gray-600">
+                <p class="text-xs text-slate-500">
                   部署またはプロジェクトグループを選択すると、そのメンバーが下に表示されます
                 </p>
               </div>
@@ -104,7 +106,7 @@
               <!-- 部署のユーザー一覧 -->
               <div v-if="groupUsers.length > 0" class="mb-3">
                 <div class="flex items-center justify-between mb-2">
-                  <label class="block text-sm font-medium text-gray-700">
+                  <label class="block text-sm font-medium text-slate-700">
                     ユーザーを選択
                   </label>
                   <div class="flex gap-2">
@@ -118,27 +120,27 @@
                     <button
                       type="button"
                       @click="deselectAllUsers"
-                      class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md"
+                      class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-md"
                     >
                       全解除
                     </button>
                   </div>
                 </div>
-                <div class="max-h-48 overflow-y-auto border border-gray-300 rounded-md bg-white">
+                <div class="max-h-48 overflow-y-auto border border-slate-300 rounded-lg bg-white">
                   <label
                     v-for="user in groupUsers"
                     :key="user.id"
-                    class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    class="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
                   >
                     <input
                       type="checkbox"
                       :value="user.id"
                       v-model="selectedParticipants"
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
+                      class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mr-3"
                     />
                     <div class="flex-1">
-                      <div class="font-medium text-gray-900">{{ user.name }}</div>
-                      <div v-if="user.email" class="text-xs text-gray-500">{{ user.email }}</div>
+                      <div class="font-medium text-slate-800">{{ user.name }}</div>
+                      <div v-if="user.email" class="text-xs text-slate-500">{{ user.email }}</div>
                     </div>
                   </label>
                 </div>
@@ -146,7 +148,7 @@
 
               <!-- 選択済み参加者の表示 -->
               <div v-if="allParticipants.length > 0" class="mt-3">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
                   選択済み参加者 ({{ allParticipants.length }}名)
                 </label>
                 <div class="flex flex-wrap gap-2">
@@ -172,9 +174,9 @@
             </div>
 
             <!-- 施設と時間選択 -->
-            <div class="border-t border-gray-300 pt-4">
-              <h4 class="text-md font-semibold text-gray-900 mb-3">施設と時間を選択</h4>
-              <p class="text-sm text-gray-600 mb-4">
+            <div class="border-t border-slate-200 pt-4">
+              <h4 class="text-md font-semibold text-slate-800 mb-3">施設と時間を選択</h4>
+              <p class="text-sm text-slate-600 mb-4">
                 カレンダーから施設と時間帯を選択してください。
               </p>
 
@@ -189,17 +191,17 @@
             </div>
 
             <!-- ボタン -->
-            <div class="flex justify-between pt-4">
+            <div class="flex justify-between pt-4 border-t border-slate-200">
               <Link
                 :href="route('admin.facility-reservations.index')"
-                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2 rounded-lg font-medium transition"
               >
                 キャンセル
               </Link>
               <button
                 type="submit"
                 :disabled="form.processing || !calendarSelection"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md disabled:opacity-50 font-semibold"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 font-semibold transition"
               >
                 登録
               </button>

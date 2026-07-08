@@ -2,146 +2,126 @@
   <AdminLayout>
     <template #header>
       <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">通知設定管理</h2>
-        <div class="flex space-x-2">
+        <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+          通知設定管理
+        </h2>
+        <div class="flex gap-2">
           <button
             type="button"
             @click="sendTestGeneral"
             :disabled="testSending"
-            class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
             title="メンションなしのシンプルなテスト通知を Teams に送信"
           >
             {{ testSending ? '送信中...' : '🧪 Teams テスト送信' }}
           </button>
           <Link
             :href="route('admin.dashboard')"
-            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
-            ダッシュボードに戻る
+            ← ダッシュボード
           </Link>
           <Link
             :href="route('admin.notification-settings.create')"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition"
           >
-            新規作成
+            ＋ 新規作成
           </Link>
         </div>
       </div>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- 通知設定一覧 -->
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div class="p-6">
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      通知名
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      トリガーイベント
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      受信者数
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      状態
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      作成日
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="setting in notificationSettings" :key="setting.id" class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm font-medium text-gray-900">{{ setting.name }}</div>
-                      <div v-if="setting.description" class="text-sm text-gray-500">{{ setting.description }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {{ triggerEvents[setting.trigger_event] }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ setting.recipients.length }}名
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span :class="[
-                        'px-2 py-1 text-xs font-semibold rounded-full',
-                        setting.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      ]">
-                        {{ setting.is_active ? '有効' : '無効' }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ formatDate(setting.created_at) }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div class="flex space-x-2">
-                        <Link 
-                          :href="route('admin.notification-settings.show', setting.id)"
-                          class="text-blue-600 hover:text-blue-900"
-                        >
-                          詳細
-                        </Link>
-                        <Link 
-                          :href="route('admin.notification-settings.edit', setting.id)"
-                          class="text-blue-600 hover:text-blue-900"
-                        >
-                          編集
-                        </Link>
-                        <button
-                          @click="toggleSetting(setting.id)"
-                          :class="[
-                            'text-sm',
-                            setting.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
-                          ]"
-                        >
-                          {{ setting.is_active ? '無効化' : '有効化' }}
-                        </button>
-                        <button
-                          @click="sendTestForSetting(setting.id, setting.name)"
-                          :disabled="testSending"
-                          class="text-purple-600 hover:text-purple-900 disabled:text-gray-400"
-                          title="この設定の受信者にテスト通知を送信"
-                        >
-                          🧪 テスト
-                        </button>
-                        <button
-                          @click="deleteSetting(setting.id)"
-                          class="text-red-600 hover:text-red-900"
-                        >
-                          削除
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">通知名</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">トリガーイベント</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">受信者数</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">状態</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">作成日</th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-100">
+                <tr v-for="setting in notificationSettings" :key="setting.id" class="hover:bg-blue-50/50 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-slate-800">{{ setting.name }}</div>
+                    <div v-if="setting.description" class="text-sm text-slate-500">{{ setting.description }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <Badge variant="info">{{ triggerEvents[setting.trigger_event] }}</Badge>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                    {{ setting.recipients.length }}名
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <Badge :variant="setting.is_active ? 'success' : 'danger'" dot>
+                      {{ setting.is_active ? '有効' : '無効' }}
+                    </Badge>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                    {{ formatDate(setting.created_at) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                    <div class="flex justify-end gap-3">
+                      <Link
+                        :href="route('admin.notification-settings.show', setting.id)"
+                        class="text-blue-600 hover:text-blue-800"
+                      >
+                        詳細
+                      </Link>
+                      <Link
+                        :href="route('admin.notification-settings.edit', setting.id)"
+                        class="text-blue-600 hover:text-blue-800"
+                      >
+                        編集
+                      </Link>
+                      <button
+                        @click="toggleSetting(setting.id)"
+                        :class="setting.is_active ? 'text-rose-600 hover:text-rose-800' : 'text-emerald-600 hover:text-emerald-800'"
+                      >
+                        {{ setting.is_active ? '無効化' : '有効化' }}
+                      </button>
+                      <button
+                        @click="sendTestForSetting(setting.id, setting.name)"
+                        :disabled="testSending"
+                        class="text-purple-600 hover:text-purple-800 disabled:text-slate-400"
+                        title="この設定の受信者にテスト通知を送信"
+                      >
+                        🧪 テスト
+                      </button>
+                      <button
+                        @click="deleteSetting(setting.id)"
+                        class="text-rose-600 hover:text-rose-800"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-            <!-- 空の状態 -->
-            <div v-if="notificationSettings.length === 0" class="text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
-              </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">通知設定がありません</h3>
-              <p class="mt-1 text-sm text-gray-500">新しい通知設定を作成してください。</p>
-              <div class="mt-6">
-                <Link 
-                  :href="route('admin.notification-settings.create')"
-                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  新規作成
-                </Link>
-              </div>
+          <!-- 空の状態 -->
+          <div v-if="notificationSettings.length === 0" class="text-center py-16">
+            <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-slate-700">通知設定がありません</h3>
+            <p class="mt-1 text-sm text-slate-500">新しい通知設定を作成してください。</p>
+            <div class="mt-6">
+              <Link
+                :href="route('admin.notification-settings.create')"
+                class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
+              >
+                ＋ 新規作成
+              </Link>
             </div>
           </div>
         </div>
@@ -155,6 +135,7 @@ import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Badge from '@/Components/UI/Badge.vue';
 
 const props = defineProps({
   notificationSettings: Array,

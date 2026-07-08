@@ -460,4 +460,42 @@ class AppointmentController extends Controller
             'schedules' => $schedules,
         ]);
     }
+
+    /**
+     * ログイン中のユーザーの本日の予定を取得
+     *
+     * UserSchedule（Outlook 同期済みの予定）から本日分を返す。
+     * 表示直前に Outlook からリアルタイム同期し、失敗しても DB の内容で表示を続行する。
+     */
+    public function getMySchedules(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['schedules' => []]);
+        }
+
+        $todayStr = today()->toDateString();
+
+        // 本日分を Outlook からリアルタイム同期（施設予定・参加者予定と同じ挙動）
+        $outlook = app(OutlookCalendarService::class);
+        if ($outlook->isConfigured() && ! empty($user->email)) {
+            try {
+                $outlook->syncUser($user, $todayStr, $todayStr);
+            } catch (\Throwable $e) {
+                Log::warning('本日の予定のリアルタイム同期に失敗（DB内容で表示）', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $schedules = UserSchedule::where('user_id', $user->id)
+            ->where('date', $todayStr)
+            ->orderBy('start_datetime')
+            ->get(['id', 'date', 'title', 'start_datetime', 'end_datetime', 'badge', 'description_url']);
+
+        return response()->json([
+            'schedules' => $schedules,
+        ]);
+    }
 }

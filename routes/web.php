@@ -63,6 +63,9 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // ユーザー予定取得API
     Route::post('/user-schedules', [AdminAppointmentController::class, 'getUserSchedules'])->name('user-schedules.get');
+
+    // ログインユーザーの本日の予定取得API
+    Route::get('/my-schedules', [AdminAppointmentController::class, 'getMySchedules'])->name('my-schedules.get');
     
     // 通知設定管理
     Route::resource('staff-members', StaffMemberController::class);
