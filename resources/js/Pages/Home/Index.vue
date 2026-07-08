@@ -2,7 +2,7 @@
   <ReceptionLayout :show-back-button="false">
     <div class="flex min-h-[calc(100vh-13rem)] flex-col gap-6">
       <!-- ヒーロー見出し -->
-      <div class="text-center">
+      <div class="fade-up text-center">
         <p class="reception-script text-3xl text-sky-400 leading-none">Welcome</p>
         <h1 class="mt-1 text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">
           受付システム
@@ -13,10 +13,11 @@
       <!-- 用件カード 2×2 -->
       <div class="grid flex-1 grid-cols-2 gap-5">
         <Link
-          v-for="item in menuItems"
+          v-for="(item, index) in menuItems"
           :key="item.title"
           :href="item.href"
-          class="group block h-full"
+          class="fade-up group block h-full"
+          :style="{ animationDelay: `${120 + index * 90}ms` }"
         >
           <div
             class="relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-lg shadow-sky-900/5 backdrop-blur-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-2xl group-hover:shadow-sky-900/10"
@@ -116,5 +117,27 @@ const menuItems = [
 .reception-script {
   font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", "Brush Script MT", cursive;
   font-style: italic;
+}
+
+/* 読み込み時のフェードアップ（順次出現） */
+.fade-up {
+  opacity: 0;
+  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    opacity: 1;
+    animation: none;
+  }
 }
 </style>

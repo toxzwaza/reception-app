@@ -19,3 +19,6 @@ yarn-error.log
 
 # Twilio 運用ガイド（APIキー含有のためリモート管理しない）
 TWILIO/
+
+# スクリーンセーバー動画（大容量のためGit管理外。本番へは別途配置）
+/public/videos/

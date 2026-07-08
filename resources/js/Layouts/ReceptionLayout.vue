@@ -102,12 +102,41 @@
         © {{ new Date().getFullYear() }} Reception System. All rights reserved.
       </div>
     </footer>
+
+    <!-- スクリーンセーバー（無操作時のPR動画。タップで受付トップへ復帰） -->
+    <transition
+      enter-active-class="transition-opacity duration-500"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-500"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showSaver"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black"
+        @click="dismissSaver"
+        @touchstart="dismissSaver"
+      >
+        <video
+          :src="videoSrc"
+          class="h-full w-full object-cover"
+          autoplay
+          muted
+          loop
+          playsinline
+        ></video>
+        <div class="pointer-events-none absolute inset-x-0 bottom-12 text-center">
+          <span class="inline-block animate-pulse rounded-full bg-white/15 px-6 py-2.5 text-lg font-medium text-white backdrop-blur-sm">
+            画面をタップして受付を開始
+          </span>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 
 // public 配下の背景素材（Vite の静的解決を避けるため実行時バインド）
 const bgSrc = '/images/reception/background.png';
@@ -119,6 +148,34 @@ const props = defineProps({
   steps: { type: Array, default: () => [] },
   currentStep: { type: Number, default: null },
 });
+
+// ── スクリーンセーバー（無操作時のPR動画再生） ──────────
+const videoSrc = '/videos/akioka_pr.mp4';
+const IDLE_MS = 10 * 60 * 1000; // 10分間無操作で起動
+const showSaver = ref(false);
+let idleTimer = null;
+
+// 無操作タイマーを開始/再開
+const startIdleTimer = () => {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    showSaver.value = true;
+  }, IDLE_MS);
+};
+
+// 操作を検知したらタイマーをリセット（セーバー表示中は無視）
+const onActivity = () => {
+  if (!showSaver.value) startIdleTimer();
+};
+
+// セーバーを閉じて受付トップへ戻す
+const dismissSaver = () => {
+  showSaver.value = false;
+  startIdleTimer();
+  router.visit(route('home'));
+};
+
+const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel', 'click'];
 
 // 現在時刻の管理
 const currentTime = ref(formatDateTime(new Date()));
@@ -135,10 +192,16 @@ onMounted(() => {
   timeInterval = setInterval(() => {
     currentTime.value = formatDateTime(new Date());
   }, 1000);
+
+  // 無操作検知の開始
+  activityEvents.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+  startIdleTimer();
 });
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
+  activityEvents.forEach((e) => window.removeEventListener(e, onActivity));
+  clearTimeout(idleTimer);
 });
 </script>
 
