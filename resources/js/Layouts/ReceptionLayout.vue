@@ -16,12 +16,28 @@
           <span class="text-lg font-bold tracking-tight text-slate-800">受付システム</span>
         </Link>
 
-        <!-- 現在時刻 -->
-        <div class="flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-1.5 backdrop-blur-sm">
-          <svg class="h-4 w-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span class="text-sm font-medium tabular-nums text-slate-600">{{ currentTime }}</span>
+        <!-- 右側：スクリーンセーバー起動ボタン + 現在時刻 -->
+        <div class="flex items-center gap-3">
+          <button
+            v-if="showScreensaverButton"
+            type="button"
+            @click="startSaver"
+            title="スクリーンセーバーを起動"
+            aria-label="スクリーンセーバーを起動"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/60 text-slate-500 backdrop-blur-sm transition-colors hover:bg-white hover:text-blue-600"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 15.75V8.25l6 3.75-6 3.75z" />
+            </svg>
+          </button>
+
+          <div class="flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-1.5 backdrop-blur-sm">
+            <svg class="h-4 w-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm font-medium tabular-nums text-slate-600">{{ currentTime }}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -147,6 +163,8 @@ const props = defineProps({
   showBackButton: { type: Boolean, default: true },
   steps: { type: Array, default: () => [] },
   currentStep: { type: Number, default: null },
+  // 受付トップ用：スクリーンセーバー手動起動ボタンを表示するか
+  showScreensaverButton: { type: Boolean, default: false },
 });
 
 // ── スクリーンセーバー（無操作時のPR動画再生） ──────────
@@ -166,6 +184,12 @@ const startIdleTimer = () => {
 // 操作を検知したらタイマーをリセット（セーバー表示中は無視）
 const onActivity = () => {
   if (!showSaver.value) startIdleTimer();
+};
+
+// ボタンから即座にセーバーを起動
+const startSaver = () => {
+  clearTimeout(idleTimer);
+  showSaver.value = true;
 };
 
 // セーバーを閉じて受付トップへ戻す

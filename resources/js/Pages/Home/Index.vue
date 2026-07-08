@@ -1,5 +1,5 @@
 <template>
-  <ReceptionLayout :show-back-button="false">
+  <ReceptionLayout :show-back-button="false" :show-screensaver-button="true">
     <div class="flex min-h-[calc(100vh-13rem)] flex-col gap-6">
       <!-- ヒーロー見出し -->
       <div class="fade-up text-center">
