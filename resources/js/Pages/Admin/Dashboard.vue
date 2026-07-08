@@ -98,22 +98,6 @@
           </div>
         </div>
 
-        <!-- クイックアクション -->
-        <div>
-          <SectionHeader title="クイックアクション" />
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <Link
-              v-for="q in quickActions"
-              :key="q.route"
-              :href="route(q.route)"
-              class="group bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-3"
-            >
-              <span :class="['w-10 h-10 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition-transform', q.chip]">{{ q.icon }}</span>
-              <span class="text-sm font-medium text-slate-700">{{ q.label }}</span>
-            </Link>
-          </div>
-        </div>
-
       </div>
     </div>
   </AdminLayout>
@@ -136,17 +120,6 @@ defineProps({
 const todayLabel = new Intl.DateTimeFormat('ja-JP', {
   year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
 }).format(new Date());
-
-const quickActions = [
-  { label: 'アポイント', route: 'admin.appointments.index', icon: '📅', chip: 'bg-blue-100' },
-  { label: '施設予約', route: 'admin.facility-reservations.index', icon: '🗓️', chip: 'bg-purple-100' },
-  { label: '施設管理', route: 'admin.facilities.index', icon: '🏢', chip: 'bg-cyan-100' },
-  { label: 'スタッフ', route: 'admin.staff-members.index', icon: '👥', chip: 'bg-emerald-100' },
-  { label: 'お知らせ', route: 'admin.announcements.index', icon: '📢', chip: 'bg-amber-100' },
-  { label: '通知設定', route: 'admin.notification-settings.index', icon: '🔔', chip: 'bg-rose-100' },
-  { label: '納品書', route: 'admin.deliveries.index', icon: '📦', chip: 'bg-blue-100' },
-  { label: '集荷伝票', route: 'admin.pickups.index', icon: '🚚', chip: 'bg-purple-100' },
-];
 
 const alertClass = (type) =>
   type === 'error' ? 'bg-rose-50 border-rose-500'

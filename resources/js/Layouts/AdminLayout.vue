@@ -39,6 +39,34 @@ const navItems = [
     },
 ];
 
+// 副ナビ（設定・マスタ系）
+const secondaryNavItems = [
+    {
+        label: '施設予約', route: 'admin.facility-reservations.index', pattern: 'admin.facility-reservations.*',
+        icon: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z',
+    },
+    {
+        label: '施設管理', route: 'admin.facilities.index', pattern: 'admin.facilities.*',
+        icon: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21',
+    },
+    {
+        label: 'スタッフ', route: 'admin.staff-members.index', pattern: 'admin.staff-members.*',
+        icon: 'M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
+    },
+    {
+        label: '通知設定', route: 'admin.notification-settings.index', pattern: 'admin.notification-settings.*',
+        icon: 'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
+    },
+    {
+        label: '部署電話番号', route: 'admin.departments.index', pattern: 'admin.departments.*',
+        icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z',
+    },
+    {
+        label: 'お知らせ', route: 'admin.announcements.index', pattern: 'admin.announcements.*',
+        icon: 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.51l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.34 1.125a23.74 23.74 0 0 1 1.202 4.463M19.48 8.588a24.014 24.014 0 0 1 1.052 4.463m0 0a48.309 48.309 0 0 0-2.244-.194c-1.86-.088-3.63.354-5.108 1.203m6.352-1.009c-.22-1.484-.578-2.925-1.052-4.463',
+    },
+];
+
 const isActive = (item) => route().current(item.pattern);
 
 // ルート遷移でモバイルサイドバーを閉じる
@@ -105,6 +133,33 @@ onUnmounted(() => {
             <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
                 <Link
                     v-for="item in navItems"
+                    :key="item.route"
+                    :href="route(item.route)"
+                    @click="closeSidebar"
+                    :class="[
+                        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                        isActive(item)
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                    ]"
+                >
+                    <svg
+                        class="h-5 w-5 shrink-0 transition-colors"
+                        :class="isActive(item) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'"
+                        fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
+                    </svg>
+                    <span class="truncate">{{ item.label }}</span>
+                </Link>
+
+                <!-- 区切り：その他（設定・マスタ系） -->
+                <div class="px-3 pb-2 pt-5">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">その他</span>
+                </div>
+
+                <Link
+                    v-for="item in secondaryNavItems"
                     :key="item.route"
                     :href="route(item.route)"
                     @click="closeSidebar"
