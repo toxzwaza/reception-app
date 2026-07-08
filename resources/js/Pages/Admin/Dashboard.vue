@@ -46,6 +46,64 @@
           </StatCard>
         </div>
 
+        <!-- 2カラム：本日のアポイント / 会議室スケジュール -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 本日のアポイント -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <SectionHeader title="本日のアポイント" :subtitle="`${todayAppointmentList.length}件`">
+              <template #action>
+                <Link :href="route('admin.appointments.index')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">すべて見る →</Link>
+              </template>
+            </SectionHeader>
+            <div v-if="todayAppointmentList.length" class="space-y-2 max-h-96 overflow-y-auto">
+              <div
+                v-for="ap in todayAppointmentList"
+                :key="ap.id"
+                class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-blue-50/50 transition"
+              >
+                <div class="flex-shrink-0 w-14 text-center">
+                  <div class="text-lg font-bold text-blue-700 tabular-nums">{{ formatTime(ap.visit_time) }}</div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-slate-800 truncate">{{ ap.company_name }}</div>
+                  <div class="text-xs text-slate-500 truncate">{{ ap.visitor_name }}様 ／ 担当: {{ ap.staff_member?.name || '—' }}</div>
+                </div>
+                <Badge :variant="ap.is_checked_in ? 'success' : 'warning'" dot>
+                  {{ ap.is_checked_in ? 'チェックイン済' : '未' }}
+                </Badge>
+              </div>
+            </div>
+            <div v-else class="text-center py-10 text-slate-400">本日のアポイントはありません</div>
+          </div>
+
+          <!-- 会議室スケジュール -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <SectionHeader title="本日の会議室スケジュール">
+              <template #action>
+                <Link :href="route('admin.facilities.index')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">施設管理 →</Link>
+              </template>
+            </SectionHeader>
+            <div class="space-y-4 max-h-96 overflow-y-auto">
+              <div v-for="room in roomSchedules" :key="room.id">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                  <span class="font-semibold text-slate-700 text-sm">{{ room.name }}</span>
+                  <span class="text-xs text-slate-400">{{ room.schedule_events.length }}件</span>
+                </div>
+                <div v-if="room.schedule_events.length" class="pl-4 space-y-1">
+                  <div v-for="ev in room.schedule_events" :key="ev.id" class="flex items-center gap-2 text-sm">
+                    <span class="text-blue-700 font-medium tabular-nums whitespace-nowrap">{{ ev.start_datetime }}-{{ ev.end_datetime }}</span>
+                    <span class="text-slate-700 truncate">{{ cleanTitle(ev.title) }}</span>
+                    <Badge v-if="ev.badge" variant="info">{{ ev.badge }}</Badge>
+                  </div>
+                </div>
+                <div v-else class="pl-4 text-xs text-slate-400">予定なし</div>
+              </div>
+              <div v-if="!roomSchedules.length" class="text-center py-6 text-slate-400">施設が登録されていません</div>
+            </div>
+          </div>
+        </div>
+
         <!-- 本日のチェックイン進捗 -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
           <div class="flex items-center justify-between mb-2">
@@ -164,64 +222,6 @@
                 </Link>
               </div>
               <p v-else class="text-sm text-slate-400 px-3 py-2">なし</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2カラム：本日のアポイント / 会議室スケジュール -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- 本日のアポイント -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <SectionHeader title="本日のアポイント" :subtitle="`${todayAppointmentList.length}件`">
-              <template #action>
-                <Link :href="route('admin.appointments.index')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">すべて見る →</Link>
-              </template>
-            </SectionHeader>
-            <div v-if="todayAppointmentList.length" class="space-y-2 max-h-96 overflow-y-auto">
-              <div
-                v-for="ap in todayAppointmentList"
-                :key="ap.id"
-                class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-blue-50/50 transition"
-              >
-                <div class="flex-shrink-0 w-14 text-center">
-                  <div class="text-lg font-bold text-blue-700 tabular-nums">{{ formatTime(ap.visit_time) }}</div>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium text-slate-800 truncate">{{ ap.company_name }}</div>
-                  <div class="text-xs text-slate-500 truncate">{{ ap.visitor_name }}様 ／ 担当: {{ ap.staff_member?.name || '—' }}</div>
-                </div>
-                <Badge :variant="ap.is_checked_in ? 'success' : 'warning'" dot>
-                  {{ ap.is_checked_in ? 'チェックイン済' : '未' }}
-                </Badge>
-              </div>
-            </div>
-            <div v-else class="text-center py-10 text-slate-400">本日のアポイントはありません</div>
-          </div>
-
-          <!-- 会議室スケジュール -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <SectionHeader title="本日の会議室スケジュール">
-              <template #action>
-                <Link :href="route('admin.facilities.index')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">施設管理 →</Link>
-              </template>
-            </SectionHeader>
-            <div class="space-y-4 max-h-96 overflow-y-auto">
-              <div v-for="room in roomSchedules" :key="room.id">
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span class="font-semibold text-slate-700 text-sm">{{ room.name }}</span>
-                  <span class="text-xs text-slate-400">{{ room.schedule_events.length }}件</span>
-                </div>
-                <div v-if="room.schedule_events.length" class="pl-4 space-y-1">
-                  <div v-for="ev in room.schedule_events" :key="ev.id" class="flex items-center gap-2 text-sm">
-                    <span class="text-blue-700 font-medium tabular-nums whitespace-nowrap">{{ ev.start_datetime }}-{{ ev.end_datetime }}</span>
-                    <span class="text-slate-700 truncate">{{ cleanTitle(ev.title) }}</span>
-                    <Badge v-if="ev.badge" variant="info">{{ ev.badge }}</Badge>
-                  </div>
-                </div>
-                <div v-else class="pl-4 text-xs text-slate-400">予定なし</div>
-              </div>
-              <div v-if="!roomSchedules.length" class="text-center py-6 text-slate-400">施設が登録されていません</div>
             </div>
           </div>
         </div>
