@@ -2,20 +2,20 @@
   <AdminLayout>
     <template #header>
       <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
           集荷伝票詳細 (ID: {{ pickup.id }})
         </h2>
-        <div class="flex space-x-2">
-          <Link 
+        <div class="flex gap-2">
+          <Link
             :href="route('admin.pickups.index')"
-            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
-            一覧に戻る
+            ← 一覧に戻る
           </Link>
-          <button 
+          <button
             v-if="!pickup.sealed_at"
             @click="showSealOverlay = true"
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
           >
             電子印押下
           </button>
@@ -23,73 +23,68 @@
       </div>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- 伝票情報 -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">伝票情報</h3>
+              <h3 class="text-lg font-semibold text-slate-800 mb-4">伝票情報</h3>
               <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">ID</dt>
-                  <dd class="mt-1 text-sm text-gray-900">{{ pickup.id }}</dd>
+                  <dt class="text-sm font-medium text-slate-500">ID</dt>
+                  <dd class="mt-1 text-sm text-slate-800">{{ pickup.id }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">書類種別</dt>
+                  <dt class="text-sm font-medium text-slate-500">書類種別</dt>
                   <dd class="mt-1">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                      集荷伝票
-                    </span>
+                    <Badge variant="purple">集荷伝票</Badge>
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">集荷日時</dt>
-                  <dd class="mt-1 text-sm text-gray-900">{{ formatDate(pickup.picked_up_at) }}</dd>
+                  <dt class="text-sm font-medium text-slate-500">集荷日時</dt>
+                  <dd class="mt-1 text-sm text-slate-800">{{ formatDate(pickup.picked_up_at) }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">電子印状態</dt>
+                  <dt class="text-sm font-medium text-slate-500">電子印状態</dt>
                   <dd class="mt-1">
-                    <span :class="[
-                      'px-2 py-1 text-xs font-semibold rounded-full',
-                      pickup.sealed_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    ]">
+                    <Badge :variant="pickup.sealed_at ? 'success' : 'warning'" dot>
                       {{ pickup.sealed_at ? '電子印済み' : '未押印' }}
-                    </span>
+                    </Badge>
                   </dd>
                 </div>
                 <div v-if="pickup.sealed_at">
-                  <dt class="text-sm font-medium text-gray-500">電子印押下日時</dt>
-                  <dd class="mt-1 text-sm text-gray-900">{{ formatDate(pickup.sealed_at) }}</dd>
+                  <dt class="text-sm font-medium text-slate-500">電子印押下日時</dt>
+                  <dd class="mt-1 text-sm text-slate-800">{{ formatDate(pickup.sealed_at) }}</dd>
                 </div>
                 <div v-if="pickup.staff_member_id">
-                  <dt class="text-sm font-medium text-gray-500">押印者ID</dt>
-                  <dd class="mt-1 text-sm text-gray-900">{{ pickup.staff_member_id }}</dd>
+                  <dt class="text-sm font-medium text-slate-500">押印者ID</dt>
+                  <dd class="mt-1 text-sm text-slate-800">{{ pickup.staff_member_id }}</dd>
                 </div>
               </dl>
             </div>
           </div>
 
           <!-- QRコード情報 -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">QRコード情報</h3>
+              <h3 class="text-lg font-semibold text-slate-800 mb-4">QRコード情報</h3>
               <div v-if="qrCodeUrl" class="text-center">
-                <img 
-                  :src="qrCodeUrl" 
-                  alt="QRコード" 
+                <img
+                  :src="qrCodeUrl"
+                  alt="QRコード"
                   class="w-48 h-48 object-contain mx-auto mb-4"
                 />
-                <p class="text-sm text-gray-600 mb-2">QRコードから伝票を確認できます</p>
-                <a 
-                  :href="qrCodeUrl" 
+                <p class="text-sm text-slate-600 mb-2">QRコードから伝票を確認できます</p>
+                <a
+                  :href="qrCodeUrl"
                   target="_blank"
                   class="text-blue-600 hover:text-blue-800 text-sm"
                 >
                   QRコードを別ウィンドウで開く
                 </a>
               </div>
-              <div v-else class="text-center text-gray-500">
+              <div v-else class="text-center text-slate-500">
                 <p>QRコードが生成されていません</p>
               </div>
             </div>
@@ -97,9 +92,9 @@
         </div>
 
         <!-- 伝票画像（電子印済み画像がある場合はそちらを優先表示） -->
-        <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div class="mt-8 bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">
               {{ displayImageTitle }}
             </h3>
             <div class="text-center">
@@ -136,28 +131,28 @@
                   />
                 </div>
               </div>
-              <div v-if="rotationAngle !== 0" class="mt-2 text-sm text-orange-600">
+              <div v-if="rotationAngle !== 0" class="mt-2 text-sm text-amber-600">
                 回転角度: {{ rotationAngle }}°（プレビュー）
               </div>
               <div class="mt-4 flex justify-center gap-2 flex-wrap" style="position: relative; z-index: 10;">
                 <!-- 画像回転ボタン（プレビュー用） -->
                 <button
                   @click="previewRotate(90)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   title="時計回りに90度回転（プレビュー）"
                 >
                   ↻ 90°回転
                 </button>
                 <button
                   @click="previewRotate(-90)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   title="反時計回りに90度回転（プレビュー）"
                 >
                   ↺ 90°回転
                 </button>
                 <button
                   @click="previewRotate(180)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   title="180度回転（プレビュー）"
                 >
                   ↻ 180°回転
@@ -165,7 +160,7 @@
                 <button
                   v-if="rotationAngle !== 0"
                   @click="resetRotation"
-                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   title="回転をリセット"
                 >
                   リセット
@@ -173,7 +168,7 @@
                 <button
                   v-if="rotationAngle !== 0"
                   @click="saveRotation"
-                  class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   title="回転を保存"
                 >
                   保存
@@ -182,10 +177,10 @@
                   :href="displayImageUrl"
                   target="_blank"
                   :class="[
-                    'text-white font-bold py-2 px-4 rounded',
+                    'text-white font-semibold py-2 px-4 rounded-lg transition',
                     pickup.sealed_slip_image
-                      ? 'bg-green-500 hover:bg-green-700'
-                      : 'bg-blue-500 hover:bg-blue-700',
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-blue-600 hover:bg-blue-700',
                   ]"
                 >
                   {{
@@ -203,10 +198,10 @@
 
     <!-- 電子印配置モーダル -->
     <div v-if="showSealOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-6xl max-h-[90vh] overflow-auto">
+      <div class="bg-white rounded-2xl p-6 max-w-6xl max-h-[90vh] overflow-auto">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">電子印配置</h3>
-          <button @click="showSealOverlay = false" class="text-gray-500 hover:text-gray-700">
+          <h3 class="text-lg font-semibold text-slate-800">電子印配置</h3>
+          <button @click="showSealOverlay = false" class="text-slate-500 hover:text-slate-700">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -228,6 +223,7 @@ import { computed, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SealOverlay from '@/Components/SealOverlay.vue';
+import Badge from '@/Components/UI/Badge.vue';
 
 const props = defineProps({
   pickup: Object,

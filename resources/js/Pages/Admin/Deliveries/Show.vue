@@ -2,20 +2,20 @@
   <AdminLayout>
     <template #header>
       <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
           納品書・受領書詳細 (ID: {{ delivery.id }})
         </h2>
-        <div class="flex space-x-2">
+        <div class="flex gap-2">
           <Link
             :href="route('admin.deliveries.index')"
-            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
-            一覧に戻る
+            ← 一覧に戻る
           </Link>
           <button
             v-if="!delivery.sealed_at"
             @click="showSealOverlay = true"
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
           >
             電子印押下
           </button>
@@ -23,65 +23,51 @@
       </div>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-[1800px] mx-auto sm:px-6 lg:px-8">
+    <div class="py-8">
+      <div class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- 書類情報 -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">書類情報</h3>
+              <h3 class="text-lg font-semibold text-slate-800 mb-4">書類情報</h3>
               <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">ID</dt>
-                  <dd class="mt-1 text-sm text-gray-900">{{ delivery.id }}</dd>
+                  <dt class="text-sm font-medium text-slate-500">ID</dt>
+                  <dd class="mt-1 text-sm text-slate-800">{{ delivery.id }}</dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">書類種別</dt>
+                  <dt class="text-sm font-medium text-slate-500">書類種別</dt>
                   <dd class="mt-1">
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-semibold rounded-full',
-                        delivery.delivery_type === '納品書'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800',
-                      ]"
-                    >
+                    <Badge :variant="delivery.delivery_type === '納品書' ? 'info' : 'success'">
                       {{ delivery.delivery_type }}
-                    </span>
+                    </Badge>
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">受付日時</dt>
-                  <dd class="mt-1 text-sm text-gray-900">
+                  <dt class="text-sm font-medium text-slate-500">受付日時</dt>
+                  <dd class="mt-1 text-sm text-slate-800">
                     {{ formatDate(delivery.received_at) }}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">電子印状態</dt>
+                  <dt class="text-sm font-medium text-slate-500">電子印状態</dt>
                   <dd class="mt-1">
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-semibold rounded-full',
-                        delivery.sealed_at
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800',
-                      ]"
-                    >
+                    <Badge :variant="delivery.sealed_at ? 'success' : 'warning'" dot>
                       {{ delivery.sealed_at ? "電子印済み" : "未押印" }}
-                    </span>
+                    </Badge>
                   </dd>
                 </div>
                 <div v-if="delivery.sealed_at">
-                  <dt class="text-sm font-medium text-gray-500">
+                  <dt class="text-sm font-medium text-slate-500">
                     電子印押下日時
                   </dt>
-                  <dd class="mt-1 text-sm text-gray-900">
+                  <dd class="mt-1 text-sm text-slate-800">
                     {{ formatDate(delivery.sealed_at) }}
                   </dd>
                 </div>
                 <div v-if="delivery.staff_member_id">
-                  <dt class="text-sm font-medium text-gray-500">押印者ID</dt>
-                  <dd class="mt-1 text-sm text-gray-900">
+                  <dt class="text-sm font-medium text-slate-500">押印者ID</dt>
+                  <dd class="mt-1 text-sm text-slate-800">
                     {{ delivery.staff_member_id }}
                   </dd>
                 </div>
@@ -90,9 +76,9 @@
           </div>
 
           <!-- QRコード情報 -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <h3 class="text-lg font-semibold text-slate-800 mb-4">
                 QRコード情報
               </h3>
               <div v-if="qrCodeUrl" class="text-center">
@@ -101,7 +87,7 @@
                   alt="QRコード"
                   class="w-48 h-48 object-contain mx-auto mb-4"
                 />
-                <p class="text-sm text-gray-600 mb-2">
+                <p class="text-sm text-slate-600 mb-2">
                   QRコードから書類を確認できます
                 </p>
                 <a
@@ -112,7 +98,7 @@
                   QRコードを別ウィンドウで開く
                 </a>
               </div>
-              <div v-else class="text-center text-gray-500">
+              <div v-else class="text-center text-slate-500">
                 <p>QRコードが生成されていません</p>
               </div>
             </div>
@@ -123,15 +109,15 @@
         <div class="mt-8 flex flex-col-reverse lg:flex-row lg:items-start gap-6">
 
           <!-- 書類画像（電子印済み画像を優先）：右カラム・スクロール追従(sticky) -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full lg:w-[560px] lg:flex-shrink-0 lg:order-2 lg:sticky lg:top-6">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm w-full lg:w-[560px] lg:flex-shrink-0 lg:order-2 lg:sticky lg:top-6">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">
               {{ displayImageTitle }}
             </h3>
             <div class="text-center">
               <!-- ズーム＋ドラッグ移動できる画像ビューア（ダブルクリックで拡大モーダル） -->
               <div
-                class="relative mx-auto overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center"
+                class="relative mx-auto overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center"
                 :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
                 style="height: 58vh;"
                 @mousedown.prevent="startDrag"
@@ -155,23 +141,23 @@
                   draggable="false"
                 />
               </div>
-              <div class="mt-2 flex items-center justify-center gap-x-2 gap-y-1 text-sm text-gray-500 flex-wrap">
+              <div class="mt-2 flex items-center justify-center gap-x-2 gap-y-1 text-sm text-slate-500 flex-wrap">
                 <span>拡大率 {{ Math.round(imageScale * 100) }}%</span>
-                <span v-if="rotationAngle !== 0" class="text-orange-600">/ 回転 {{ rotationAngle }}°</span>
-                <span class="text-gray-400">｜ドラッグで移動・ダブルクリックで拡大表示</span>
+                <span v-if="rotationAngle !== 0" class="text-amber-600">/ 回転 {{ rotationAngle }}°</span>
+                <span class="text-slate-400">｜ドラッグで移動・ダブルクリックで拡大表示</span>
               </div>
               <div class="mt-4 flex justify-center gap-2 flex-wrap" style="position: relative; z-index: 10;">
                 <!-- ズームボタン -->
                 <button
                   @click="zoomIn"
-                  class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="拡大"
                 >
                   ＋ 拡大
                 </button>
                 <button
                   @click="zoomOut"
-                  class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="縮小"
                 >
                   － 縮小
@@ -179,14 +165,14 @@
                 <button
                   v-if="imageScale !== 1 || panX !== 0 || panY !== 0"
                   @click="resetZoom"
-                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="拡大率・位置を元に戻す"
                 >
                   等倍
                 </button>
                 <button
                   @click="openImageModal"
-                  class="bg-slate-700 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-700 hover:bg-slate-900 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="中央に大きく表示して確認"
                 >
                   🔍 拡大表示
@@ -194,21 +180,21 @@
                 <!-- 画像回転ボタン（プレビュー用） -->
                 <button
                   @click="previewRotate(90)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="時計回りに90度回転（プレビュー）"
                 >
                   ↻ 90°回転
                 </button>
                 <button
                   @click="previewRotate(-90)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="反時計回りに90度回転（プレビュー）"
                 >
                   ↺ 90°回転
                 </button>
                 <button
                   @click="previewRotate(180)"
-                  class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="180度回転（プレビュー）"
                 >
                   ↻ 180°回転
@@ -216,7 +202,7 @@
                 <button
                   v-if="rotationAngle !== 0"
                   @click="resetRotation"
-                  class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="回転をリセット"
                 >
                   リセット
@@ -224,7 +210,7 @@
                 <button
                   v-if="rotationAngle !== 0"
                   @click="saveRotation"
-                  class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
                   title="回転を保存"
                 >
                   保存
@@ -235,8 +221,8 @@
                   :class="[
                     'text-white font-bold py-2 px-4 rounded',
                     delivery.sealed_document_image
-                      ? 'bg-green-500 hover:bg-green-700'
-                      : 'bg-blue-500 hover:bg-blue-700',
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-blue-600 hover:bg-blue-700',
                   ]"
                 >
                   {{
@@ -251,51 +237,51 @@
         </div>
 
           <!-- 発注データ紐づけ：左カラム（広め） -->
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg w-full lg:flex-1 min-w-0 lg:order-1">
+          <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm w-full lg:flex-1 min-w-0 lg:order-1">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">
               発注データ紐づけ
             </h3>
 
             <!-- 紐づけ済み発注データの表示（複数件対応） -->
             <div v-if="linkedOrders && linkedOrders.length > 0" class="mb-6">
-              <h4 class="text-md font-medium text-gray-900 mb-4">紐づけ済み発注データ ({{ linkedOrders.length }}件)</h4>
-              <div v-for="(linkedOrder, index) in linkedOrders" :key="linkedOrder.id" class="mb-4 p-4 bg-gray-50 rounded-lg">
+              <h4 class="text-md font-medium text-slate-800 mb-4">紐づけ済み発注データ ({{ linkedOrders.length }}件)</h4>
+              <div v-for="(linkedOrder, index) in linkedOrders" :key="linkedOrder.id" class="mb-4 p-4 bg-slate-50 rounded-lg">
                 <div class="flex justify-between items-start mb-4">
                   <div>
-                    <span class="text-sm text-gray-600">#{{ index + 1 }}</span>
-                    <span class="ml-2 text-xs px-2 py-1 rounded"
-                      :class="linkedOrder.pivot_delivery_type === 'complete' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                    <span class="text-sm text-slate-600">#{{ index + 1 }}</span>
+                    <span class="ml-2 text-xs font-semibold px-2 py-1 rounded-full"
+                      :class="linkedOrder.pivot_delivery_type === 'complete' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
                       {{ linkedOrder.pivot_delivery_type === 'complete' ? '完納' : '分納' }}
                     </span>
-                    <span class="ml-2 text-xs px-2 py-1 rounded"
-                      :class="linkedOrder.pivot_signage_display === 'show' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'">
+                    <span class="ml-2 text-xs font-semibold px-2 py-1 rounded-full"
+                      :class="linkedOrder.pivot_signage_display === 'show' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'">
                       サイネージ: {{ linkedOrder.pivot_signage_display === 'show' ? '表示あり' : '表示なし' }}
                     </span>
                   </div>
                   <button
                     @click="handleUnlinkOrder(linkedOrder.id)"
-                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm"
+                    class="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
                   >
                     紐づけ解除
                   </button>
                   </div>
-                <div class="border border-gray-200 rounded-lg overflow-auto">
+                <div class="border border-slate-200 rounded-lg overflow-auto">
                   <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-slate-50">
                       <tr>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文No</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">画像</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文者</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文日</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">希望納期</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">納品日</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文先</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品名</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品番</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">数量</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">単価</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">金額</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文No</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">画像</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文者</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文日</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">希望納期</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">納品日</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文先</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">品名</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">品番</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">数量</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">単価</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">金額</th>
                       </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -314,7 +300,7 @@
                             alt="商品画像"
                             class="cursor-pointer"
                           />
-                          <span v-else class="text-gray-400">-</span>
+                          <span v-else class="text-slate-400">-</span>
                         </td>
                         <td class="px-4 py-6 whitespace-nowrap">{{ linkedOrder.order_user || "-" }}</td>
                         <td class="px-4 py-6 whitespace-nowrap">
@@ -365,14 +351,14 @@
 
             <!-- 絞り込みブロック（常に表示） -->
             <div class="space-y-4">
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <h4 class="text-md font-medium text-gray-900 mb-4">絞り込み条件</h4>
+              <div class="bg-slate-50 p-4 rounded-lg">
+                <h4 class="text-md font-medium text-slate-800 mb-4">絞り込み条件</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <!-- 注文No -->
                   <div>
                     <label
                       for="filter_order_no"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-slate-700 mb-2"
                     >
                       注文No
                     </label>
@@ -381,7 +367,7 @@
                       v-model="filters.orderNo"
                       type="text"
                       placeholder="注文Noを入力"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
 
@@ -389,14 +375,14 @@
                   <div>
                     <label
                       for="filter_order_user"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-slate-700 mb-2"
                     >
                       注文者
                     </label>
                     <select
                       id="filter_order_user"
                       v-model="filters.orderUser"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">すべて</option>
                       <option
@@ -413,7 +399,7 @@
                   <div>
                     <label
                       for="filter_com_name"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-slate-700 mb-2"
                     >
                       注文先
                     </label>
@@ -424,7 +410,7 @@
                         list="com_name_list"
                         type="text"
                         placeholder="注文先を入力または選択"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                       <datalist id="com_name_list">
                         <option
@@ -442,7 +428,7 @@
                   <div>
                     <label
                       for="filter_product"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-slate-700 mb-2"
                     >
                       品名・品番
                     </label>
@@ -452,7 +438,7 @@
                       list="product_list"
                       type="text"
                       placeholder="品名・品番を入力または選択"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                     <datalist id="product_list">
                       <option
@@ -466,11 +452,11 @@
                   </div>
                 </div>
                 <div class="mt-4 flex justify-between items-center">
-                  <span v-if="isSearching" class="text-sm text-gray-500">発注データを読み込み中...</span>
-                  <span v-else class="text-sm text-gray-500">入力・選択すると自動で絞り込まれます</span>
+                  <span v-if="isSearching" class="text-sm text-slate-500">発注データを読み込み中...</span>
+                  <span v-else class="text-sm text-slate-500">入力・選択すると自動で絞り込まれます</span>
                   <button
                     @click="clearFilters"
-                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-6 rounded-lg"
                   >
                     条件クリア
                   </button>
@@ -479,25 +465,25 @@
 
               <!-- 検索結果表示 -->
               <div v-if="searchResults.length > 0" class="mt-4">
-                <h4 class="text-md font-medium text-gray-900 mb-2">
+                <h4 class="text-md font-medium text-slate-800 mb-2">
                   検索結果 ({{ searchResults.length }}件)
                 </h4>
-                <div class="border border-gray-200 rounded-lg overflow-auto">
+                <div class="border border-slate-200 rounded-lg overflow-auto">
                   <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-slate-50">
                       <tr>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文No</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">画像</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文者</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文日</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">希望納期</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">注文先</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品名</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">品番</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">数量</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">単価</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">金額</th>
-                        <th class="px-4 py-3 bg-gray-100 whitespace-nowrap">操作</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文No</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">画像</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文者</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文日</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">希望納期</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">注文先</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">品名</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">品番</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">数量</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">単価</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">金額</th>
+                        <th class="px-4 py-3 bg-slate-100 whitespace-nowrap">操作</th>
                       </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -516,7 +502,7 @@
                             alt="商品画像"
                             class="cursor-pointer"
                           />
-                          <span v-else class="text-gray-400">-</span>
+                          <span v-else class="text-slate-400">-</span>
                         </td>
                         <td class="px-4 py-6 whitespace-nowrap">{{ order.order_user || "-" }}</td>
                         <td class="px-4 py-6 whitespace-nowrap">
@@ -552,7 +538,7 @@
                         <td class="px-4 py-6 whitespace-nowrap">
                           <button
                             @click="linkOrder(order)"
-                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1 px-3 rounded-lg text-xs"
                           >
                             追加
                           </button>
@@ -643,7 +629,7 @@
           <h3 class="text-lg font-semibold">電子印配置</h3>
           <button
             @click="showSealOverlay = false"
-            class="text-gray-500 hover:text-gray-700"
+            class="text-slate-500 hover:text-slate-700"
           >
             <svg
               class="w-6 h-6"
@@ -679,7 +665,7 @@
           <h3 class="text-lg font-semibold">納品設定</h3>
           <button
             @click="showDeliveryTypeModal = false; selectedOrderId = null"
-            class="text-gray-500 hover:text-gray-700"
+            class="text-slate-500 hover:text-slate-700"
           >
             <svg
               class="w-6 h-6"
@@ -699,7 +685,7 @@
         <div class="space-y-6">
           <!-- 納品種別選択 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">
+            <label class="block text-sm font-medium text-slate-700 mb-3">
               納品種別
             </label>
             <div class="space-y-2">
@@ -710,7 +696,7 @@
                   value="partial"
                   class="mr-2"
                 />
-                <span class="text-sm text-gray-700">分納</span>
+                <span class="text-sm text-slate-700">分納</span>
               </label>
               <label class="flex items-center">
                 <input
@@ -719,14 +705,14 @@
                   value="complete"
                   class="mr-2"
                 />
-                <span class="text-sm text-gray-700">完納</span>
+                <span class="text-sm text-slate-700">完納</span>
               </label>
             </div>
           </div>
 
           <!-- サイネージディスプレイ選択 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">
+            <label class="block text-sm font-medium text-slate-700 mb-3">
               サイネージディスプレイ
             </label>
             <div class="space-y-2">
@@ -737,7 +723,7 @@
                   value="show"
                   class="mr-2"
                 />
-                <span class="text-sm text-gray-700">表示あり</span>
+                <span class="text-sm text-slate-700">表示あり</span>
               </label>
               <label class="flex items-center">
                 <input
@@ -746,26 +732,26 @@
                   value="hide"
                   class="mr-2"
                 />
-                <span class="text-sm text-gray-700">表示なし</span>
+                <span class="text-sm text-slate-700">表示なし</span>
               </label>
             </div>
           </div>
 
           <!-- 在庫加算（格納先・数量） -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">
+            <label class="block text-sm font-medium text-slate-700 mb-3">
               在庫加算
             </label>
 
             <!-- 格納先の読み込み中 -->
-            <p v-if="loadingStorages" class="text-sm text-gray-500">
+            <p v-if="loadingStorages" class="text-sm text-slate-500">
               格納先を確認中...
             </p>
 
             <!-- 格納先が未登録 -->
             <p
               v-else-if="storageOptions.length === 0"
-              class="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded p-3"
+              class="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded p-3"
             >
               この物品には格納先が登録されていないため、在庫加算は行いません。
             </p>
@@ -773,20 +759,20 @@
             <!-- 格納先あり -->
             <div v-else class="space-y-3">
               <div>
-                <span class="block text-xs text-gray-500 mb-1">格納先</span>
+                <span class="block text-xs text-slate-500 mb-1">格納先</span>
                 <!-- 単一の場合は自動選択（選択済みを表示） -->
                 <div
                   v-if="storageOptions.length === 1"
-                  class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-md text-sm text-gray-700"
+                  class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-sm text-slate-700"
                 >
                   {{ storageOptions[0].label }}
-                  <span class="text-gray-400">（現在庫: {{ storageOptions[0].current_quantity }}）</span>
+                  <span class="text-slate-400">（現在庫: {{ storageOptions[0].current_quantity }}）</span>
                 </div>
                 <!-- 複数の場合は選択 -->
                 <select
                   v-else
                   v-model="selectedStorageId"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
                   <option value="">格納先を選択してください</option>
                   <option
@@ -801,7 +787,7 @@
 
               <!-- 換算（換算値を使用するか） -->
               <div>
-                <span class="block text-xs text-gray-500 mb-1">換算</span>
+                <span class="block text-xs text-slate-500 mb-1">換算</span>
                 <div class="flex gap-4">
                   <label class="flex items-center">
                     <input
@@ -811,7 +797,7 @@
                       @change="applyConversion"
                       class="mr-2"
                     />
-                    <span class="text-sm text-gray-700">使用する</span>
+                    <span class="text-sm text-slate-700">使用する</span>
                   </label>
                   <label class="flex items-center">
                     <input
@@ -821,12 +807,12 @@
                       @change="applyConversion"
                       class="mr-2"
                     />
-                    <span class="text-sm text-gray-700">使用しない</span>
+                    <span class="text-sm text-slate-700">使用しない</span>
                   </label>
                 </div>
                 <p
                   v-if="conversionSelection === 'use'"
-                  class="text-xs text-gray-400 mt-1"
+                  class="text-xs text-slate-400 mt-1"
                 >
                   発注数量 {{ currentOrderQuantity ?? 0 }} × 換算値
                   {{ currentQuantityPerOrg ?? 1 }}
@@ -834,22 +820,22 @@
               </div>
 
               <div>
-                <span class="block text-xs text-gray-500 mb-1">加算数量</span>
+                <span class="block text-xs text-slate-500 mb-1">加算数量</span>
                 <input
                   v-model.number="linkQuantity"
                   type="number"
                   min="1"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
             </div>
           </div>
 
           <!-- 確定ボタン -->
-          <div class="pt-4 border-t">
+          <div class="pt-4 border-t border-slate-200">
             <button
               @click="confirmLinkOrder"
-              class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg"
             >
               確定
             </button>
@@ -865,6 +851,7 @@ import { computed, ref, onMounted } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import AdminLayout from "@/Layouts/AdminLayout.vue";
 import SealOverlay from "@/Components/SealOverlay.vue";
+import Badge from "@/Components/UI/Badge.vue";
 
 const props = defineProps({
   delivery: Object,
