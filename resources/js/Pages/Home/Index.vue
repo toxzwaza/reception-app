@@ -3,7 +3,7 @@
     <div class="flex min-h-[calc(100vh-13rem)] flex-col gap-6">
       <!-- ヒーロー見出し -->
       <div class="fade-up text-center">
-        <p class="reception-script text-3xl text-sky-400 leading-none">Welcome</p>
+        <p class="reception-script text-3xl text-sky-400 leading-none">Welcome to AKIOKA Co., Ltd.</p>
         <h1 class="mt-1 text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">
           受付システム
         </h1>
