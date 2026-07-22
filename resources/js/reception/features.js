@@ -11,11 +11,11 @@ export const DEFAULT_H = 2; // 既定カード高（2行）
 // href は route() を使うため、遅延評価できるよう関数で保持する
 export const FEATURE_CARDS = [
   {
-    key: "appointment",
+    key: "appointment_today",
     title: "アポイントありの方",
-    desc: "事前登録済みの方はこちら",
-    routeName: "appointment.index",
-    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    desc: "本日ご予約の方はこちら",
+    routeName: "appointment.today",
+    icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
     iconBg: "bg-blue-50",
     iconText: "text-blue-600",
     ring: "ring-blue-100",
@@ -81,6 +81,21 @@ export const FEATURE_CARDS = [
     ring: "ring-amber-100",
     blob: "from-amber-200/70 to-transparent",
     btn: "bg-amber-500 group-hover:bg-amber-600",
+  },
+  {
+    // 旧アポイントあり（QR/受付番号）。既定では非表示。将来利用のため温存し、
+    // 画面パターンで明示的に含めた場合のみ表示される。
+    key: "appointment",
+    title: "アポイントあり（QR/受付番号）",
+    desc: "QR・受付番号でチェックイン",
+    routeName: "appointment.index",
+    defaultHidden: true,
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    iconBg: "bg-slate-50",
+    iconText: "text-slate-600",
+    ring: "ring-slate-100",
+    blob: "from-slate-200/70 to-transparent",
+    btn: "bg-slate-600 group-hover:bg-slate-700",
   },
 ];
 

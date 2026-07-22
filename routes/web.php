@@ -110,6 +110,9 @@ Route::prefix('appointment')->name('appointment.')->group(function () {
     Route::get('/', [AppointmentController::class, 'index'])->name('index');
     Route::post('/check-in-qr', [AppointmentController::class, 'checkInQr'])->name('check-in-qr');
     Route::post('/check-in-number', [AppointmentController::class, 'checkInNumber'])->name('check-in-number');
+    // 新フロー：当日の予定を時間順に一覧し、タップで担当者へ通知＋チェックイン
+    Route::get('/today', [AppointmentController::class, 'today'])->name('today');
+    Route::post('/today/{appointment}/notify', [AppointmentController::class, 'notifyArrival'])->name('today.notify');
 });
 
 // 納品・集荷の方

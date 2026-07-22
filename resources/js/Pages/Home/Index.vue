@@ -195,9 +195,12 @@ const activePattern = computed(() =>
     : props.screenPatterns.find((p) => p.id === selectedPatternId.value) || null
 );
 
-// 表示する導線キー（FEATURE_ORDER 順）。パターン未選択時は全導線。
+// 表示する導線キー（FEATURE_ORDER 順）。
+// パターン未選択時は既定表示（defaultHidden の導線＝旧アポイントあり等は除外）。
 const enabledKeys = computed(() => {
-  if (!activePattern.value) return FEATURE_ORDER.slice();
+  if (!activePattern.value) {
+    return FEATURE_ORDER.filter((k) => !FEATURE_CARD_MAP[k]?.defaultHidden);
+  }
   const set = new Set(activePattern.value.features || []);
   return FEATURE_ORDER.filter((k) => set.has(k));
 });

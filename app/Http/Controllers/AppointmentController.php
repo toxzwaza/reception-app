@@ -6,16 +6,102 @@ use App\Models\Visitor;
 use App\Models\Appointment;
 use App\Models\ScheduleEvent;
 use App\Services\NotificationService;
+use App\Services\TeamsNotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AppointmentController extends Controller
 {
-    // アポイントあり受付画面
+    // アポイントあり受付画面（旧: QR/受付番号）
     public function index(): Response
     {
         return Inertia::render('Appointment/Index');
+    }
+
+    // 新フロー：当日の予定を時間順に一覧表示
+    public function today(): Response
+    {
+        $appointments = Appointment::with('staffMember')
+            ->whereDate('visit_date', now()->toDateString())
+            ->orderBy('visit_time')
+            ->get()
+            ->map(fn (Appointment $a) => [
+                'id' => $a->id,
+                'time' => optional($a->visit_time)->format('H:i'),
+                'company_name' => $a->company_name,
+                'visitor_name' => $a->visitor_name,
+                'staff_name' => $a->staffMember->name ?? null,
+                'purpose' => $a->purpose,
+                'is_checked_in' => (bool) $a->is_checked_in,
+            ])
+            ->values();
+
+        return Inertia::render('Appointment/Today', [
+            'appointments' => $appointments,
+            'today' => now()->format('Y年n月j日'),
+        ]);
+    }
+
+    // 新フロー：来訪者が自分の予定をタップ → 担当者（＋施設予約の参加メンバー）へ通知＋チェックイン
+    public function notifyArrival(Appointment $appointment)
+    {
+        // 宛先メール（担当スタッフ + 施設予約の参加メンバー）を収集
+        $staff = $appointment->staffMember;
+        $emails = [];
+        if ($staff && !empty($staff->email)) {
+            $emails[] = $staff->email;
+        }
+
+        $scheduleEvent = ScheduleEvent::with('participants')
+            ->where('appointment_id', $appointment->id)
+            ->latest('id')
+            ->first();
+        if ($scheduleEvent) {
+            foreach ($scheduleEvent->participants as $participant) {
+                if (!empty($participant->email)) {
+                    $emails[] = $participant->email;
+                }
+            }
+        }
+        // 重複排除（大文字小文字を無視）
+        $emails = array_values(array_intersect_key(
+            $emails,
+            array_unique(array_map('strtolower', $emails))
+        ));
+
+        // チェックイン記録
+        if (!$appointment->is_checked_in) {
+            $appointment->update(['is_checked_in' => true, 'checked_in_at' => now()]);
+        }
+        Visitor::create([
+            'company_name' => $appointment->company_name,
+            'visitor_name' => $appointment->visitor_name,
+            'staff_member_id' => $appointment->staff_member_id,
+            'visitor_type' => 'appointment',
+            'reception_number' => $appointment->reception_number,
+            'check_in_time' => now(),
+        ]);
+
+        // 緊急Teams通知（AkiTalk Bridge 経由・全通知緊急扱い）
+        $title = '👤 来客が到着しました';
+        $lines = [
+            '来訪者: ' . ($appointment->visitor_name ?: '—'),
+            '会社名: ' . ($appointment->company_name ?: '—'),
+            '担当者: ' . ($staff->name ?? '未設定'),
+            '予定時刻: ' . (optional($appointment->visit_time)->format('H:i') ?: '—'),
+            '到着時刻: ' . now()->format('Y年m月d日 H:i'),
+        ];
+        if ($appointment->purpose) {
+            $lines[] = '用件: ' . $appointment->purpose;
+        }
+
+        app(TeamsNotificationService::class)->notify($emails, $title, implode("\n", $lines));
+
+        return redirect()->route('appointment.today')->with('arrival', [
+            'staff_name' => $staff->name ?? '担当者',
+            'visitor_name' => $appointment->visitor_name,
+        ]);
     }
 
     // QRコードでチェックイン
