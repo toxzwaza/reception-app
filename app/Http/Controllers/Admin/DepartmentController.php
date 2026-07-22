@@ -17,17 +17,40 @@ use Inertia\Response;
 class DepartmentController extends Controller
 {
     /**
-     * 部署一覧（電話番号付き）
+     * 部署一覧（電話番号付き・表示順）
      */
     public function index(): Response
     {
-        $departments = Group::orderBy('id')
+        // display_order 昇順（未設定は末尾）→ 同順位は id 順
+        $departments = Group::orderByRaw('display_order IS NULL, display_order ASC')
+            ->orderBy('id')
             ->withCount('users')
-            ->get(['id', 'name', 'phone_number']);
+            ->get(['id', 'name', 'phone_number', 'display_order']);
 
         return Inertia::render('Admin/Departments/Index', [
             'departments' => $departments,
         ]);
+    }
+
+    /**
+     * 部署の表示順を一括更新
+     *
+     * フロントから並び順どおりの部署IDの配列を受け取り、
+     * 先頭から 1,2,3... の display_order を割り当てる。
+     */
+    public function updateOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:groups,id'],
+        ]);
+
+        foreach ($validated['ids'] as $index => $id) {
+            Group::where('id', $id)->update(['display_order' => $index + 1]);
+        }
+
+        return Redirect::route('admin.departments.index')
+            ->with('success', '部署の表示順を更新しました。');
     }
 
     /**

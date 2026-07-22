@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DeliveryPickupController;
+use App\Http\Controllers\DepartmentCallController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InterviewController;
 use App\Http\Controllers\OtherVisitorController;
@@ -52,6 +53,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
 
     // 部署電話番号管理（アポなし来訪のTwilio発信先）
     Route::get('/departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
+    Route::post('/departments/order', [AdminDepartmentController::class, 'updateOrder'])->name('departments.order');
     Route::get('/departments/{department}/edit', [AdminDepartmentController::class, 'edit'])->name('departments.edit');
     Route::put('/departments/{department}', [AdminDepartmentController::class, 'update'])->name('departments.update');
     
@@ -116,6 +118,12 @@ Route::prefix('other-visitor')->name('other-visitor.')->group(function () {
     Route::get('/create', [OtherVisitorController::class, 'create'])->name('create');
     Route::post('/select-department', [OtherVisitorController::class, 'selectDepartment'])->name('select-department');
     Route::post('/store', [OtherVisitorController::class, 'store'])->name('store');
+});
+
+// 部署内線発信（受付画面から部署を選んで発信）
+Route::prefix('department-call')->name('department-call.')->group(function () {
+    Route::get('/', [DepartmentCallController::class, 'select'])->name('select');
+    Route::get('/{group}/call', [DepartmentCallController::class, 'call'])->name('call');
 });
 
 // 来訪者受付関連（既存）
