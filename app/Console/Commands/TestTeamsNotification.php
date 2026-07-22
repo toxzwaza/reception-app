@@ -12,29 +12,32 @@ class TestTeamsNotification extends Command
      *
      * @var string
      */
-    protected $signature = 'teams:test';
+    protected $signature = 'teams:test {email? : 送信先メールアドレス（AkiTalk Bridge で解決）}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send a test notification to Teams';
+    protected $description = 'AkiTalk Bridge 経由でテストのTeams通知を送信する（宛先メール指定可）';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Sending test notification to Teams...');
+        $email = $this->argument('email');
+        $this->info($email
+            ? "テスト通知を送信します（宛先: {$email}）..."
+            : '宛先未指定のためテスト通知は送信されません（宛先メールを引数で指定してください）...');
 
         $teamsService = new TeamsNotificationService();
-        $result = $teamsService->sendTestNotification();
+        $result = $teamsService->sendTestNotification($email);
 
         if ($result) {
-            $this->info('✅ Test notification sent successfully!');
+            $this->info('✅ 送信処理が完了しました。Teams をご確認ください。');
         } else {
-            $this->error('❌ Failed to send test notification. Check your webhook URL and logs.');
+            $this->error('❌ 送信に失敗しました。AkiTalk Bridge 設定とログを確認してください。');
         }
 
         return $result ? 0 : 1;

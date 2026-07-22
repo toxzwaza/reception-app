@@ -9,152 +9,113 @@ use App\Models\Group;
 use App\Models\NotificationSetting;
 
 /**
- * Teams への Incoming Webhook 通知を一元化するサービス。
+ * Teams 通知を一元化するサービス。
  *
- * 設計方針（参考: 秘書部門/01_一時フォルダ/Notify/notify.py）:
- *   同 Python スクリプトが本番稼働している実装に合わせ、
- *   ペイロード構造を統一し「動いているもの」と同形式に固定する。
+ * 送信経路: AkiTalk Bridge（社内Notifyバッチ notify.py と同一）
+ *   POST {services.akitalk_bridge.url}  ヘッダ x-api-key で認証
+ *   payload = { recipients:[email...], title, msg, from, url? }
+ *   宛先ユーザーの Teams 個人チャットへプロアクティブ通知される。
+ *   （旧 Office365 Incoming Webhook は Microsoft 廃止により 403 で送信不可となったため移行）
  *
  *   共通エントリポイント: notify($mentionIds, $title, $message, $url = null)
  *   既存の notifyInterviewArrival 等はこの notify() を内部で呼ぶ薄いラッパー。
+ *   受付システムの通知は全て「緊急」扱い（タイトル先頭に 🚨【緊急】 を付与）。
  */
 class TeamsNotificationService
 {
-    /**
-     * Webhook URL の取得。config > env の順で評価。
-     */
-    private function getWebhookUrl(): ?string
-    {
-        return config('services.teams.webhook_url') ?: env('TEAMS_WEBHOOK_URL');
-    }
+    /** 受付通知は全て緊急扱いとするためのタイトル接頭辞 */
+    private const URGENT_PREFIX = '🚨【緊急】';
 
     /**
-     * ★ 汎用通知送信メソッド（参考 Python スクリプトと同一構造）
+     * ★ 汎用通知送信メソッド（AkiTalk Bridge 経由）
      *
-     * @param string|array $mentionIds メンション対象 email（単一 or 配列）。空可。
-     * @param string $title タイトル（デフォルト色）
-     * @param string $message 本文（good 色、大きめ）
-     * @param string|null $url 任意。末尾に「[受付システム]($url)」リンクを追加
-     * @return bool 送信成功時 true
+     * @param string|array $mentionIds 宛先 email（単一 or 配列）。空可。
+     * @param string $title タイトル（先頭に 🚨【緊急】 を自動付与）
+     * @param string $message 本文
+     * @param string|null $url 任意。カード下部リンクとして付与
+     * @return bool 送信成功時 true（宛先が空の場合も true）
      */
     public function notify(string|array $mentionIds, string $title, string $message, ?string $url = null): bool
     {
-        $webhookUrl = $this->getWebhookUrl();
-        if (!$webhookUrl) {
-            Log::warning('Teams webhook URL not configured');
-            return false;
-        }
-
-        // mentionIds を配列に正規化
+        // 宛先(email)を配列に正規化
         if (is_string($mentionIds)) {
             $mentionIds = $mentionIds === '' ? [] : [$mentionIds];
         }
-        $mentionIds = array_values(array_filter($mentionIds, fn($id) => !empty($id)));
+        $recipients = array_values(array_filter(
+            $mentionIds,
+            fn($id) => is_string($id) && trim($id) !== ''
+        ));
 
-        // メンションエンティティとテキストの生成
-        $mentions = [];
-        $mentionTextParts = [];
-        foreach ($mentionIds as $id) {
-            $mentions[] = [
-                'type' => 'mention',
-                'text' => "<at>{$id}</at>",
-                'mentioned' => [
-                    'id' => $id,
-                    'name' => $id,
-                ],
-            ];
-            $mentionTextParts[] = "@<at>{$id}</at>";
-        }
-        $mentionText = implode(' ', $mentionTextParts);
-
-        // Adaptive Card body 構築
-        $body = [];
-
-        // メンションがある場合は最上部に大きく表示
-        if ($mentionText !== '') {
-            $body[] = [
-                'type' => 'TextBlock',
-                'text' => $mentionText,
-                'color' => 'attention',
-                'size' => 'large',
-                'wrap' => true,
-            ];
+        if (empty($recipients)) {
+            // 宛先なしはリトライ不要のため成功扱い（notify.py と同挙動）
+            Log::info('Teams通知: 宛先が空のため送信をスキップ', ['title' => $title]);
+            return true;
         }
 
-        // タイトル
-        $body[] = [
-            'type' => 'TextBlock',
-            'text' => $title,
-            'color' => 'default',
-            'size' => 'default',
-            'wrap' => true,
-        ];
-
-        // 本文メッセージ
-        $body[] = [
-            'type' => 'TextBlock',
-            'text' => $message,
-            'color' => 'good',
-            'size' => 'medium',
-            'wrap' => true,
-        ];
-
-        // 任意 URL 追加
-        if ($url) {
-            $body[] = [
-                'type' => 'TextBlock',
-                'text' => "[受付システム]({$url})",
-                'color' => 'accent',
-                'size' => 'medium',
-                'wrap' => true,
-            ];
+        $bridgeUrl = config('services.akitalk_bridge.url');
+        $apiKey = config('services.akitalk_bridge.api_key');
+        if (!$bridgeUrl || !$apiKey) {
+            Log::warning('Teams通知: AkiTalk Bridge が未設定（AKITALK_BRIDGE_URL / AKITALK_BRIDGE_API_KEY）');
+            return false;
         }
+
+        // 受付システムの通知は全て緊急扱い
+        $urgentTitle = $this->withUrgentPrefix($title);
 
         $payload = [
-            'type' => 'message',
-            'attachments' => [[
-                'contentType' => 'application/vnd.microsoft.card.adaptive',
-                'content' => [
-                    'type' => 'AdaptiveCard',
-                    'body' => $body,
-                    '$schema' => 'http://adaptivecards.io/schemas/adaptive-card.json',
-                    'version' => '1.0',
-                    'msteams' => [
-                        'entities' => $mentions,
-                    ],
-                ],
-            ]],
+            'recipients' => $recipients,
+            'title' => $urgentTitle,
+            'msg' => $message ?? '',
+            'from' => config('services.akitalk_bridge.sender', 'AK受付システム通知'),
         ];
+        if ($url) {
+            $payload['url'] = $url;
+        }
 
         try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])  // 社内 SSL 互換用
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ])
-                ->post($webhookUrl, $payload);
+            $response = Http::timeout(15)
+                ->withHeaders(['x-api-key' => $apiKey])
+                ->post($bridgeUrl, $payload);
 
             if ($response->successful()) {
-                Log::info('Teams notification sent', [
-                    'title' => $title,
-                    'mention_count' => count($mentionIds),
-                    'status' => $response->status(),
-                ]);
-                return true;
+                $data = $response->json();
+                if (($data['ok'] ?? false) === true) {
+                    Log::info('Teams通知送信成功(AkiTalk Bridge)', [
+                        'title' => $urgentTitle,
+                        'recipients' => count($recipients),
+                        'sent' => $data['sent'] ?? null,
+                        'skipNoLicense' => $data['skipNoLicense'] ?? null,
+                        'skipNoRef' => $data['skipNoRef'] ?? null,
+                        'unknown' => $data['unknown'] ?? null,
+                    ]);
+                    return true;
+                }
+                Log::error('Teams通知: Bridge 応答が失敗', ['body' => $data]);
+                return false;
             }
 
-            Log::error('Teams notification failed', [
+            Log::error('Teams通知: Bridge API エラー', [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
             return false;
         } catch (\Throwable $e) {
-            Log::error('Teams notification exception: ' . $e->getMessage(), [
+            Log::error('Teams通知例外(AkiTalk Bridge): ' . $e->getMessage(), [
                 'exception' => $e,
             ]);
             return false;
         }
+    }
+
+    /**
+     * タイトル先頭に緊急接頭辞を付与（二重付与を防止）。
+     */
+    private function withUrgentPrefix(string $title): string
+    {
+        $title = $title ?? '';
+        return str_starts_with($title, self::URGENT_PREFIX)
+            ? $title
+            : self::URGENT_PREFIX . $title;
     }
 
     // ========================================================================
@@ -261,12 +222,14 @@ class TeamsNotificationService
     }
 
     /**
-     * テスト通知送信（管理画面からの動作確認用）
+     * テスト通知送信（動作確認用）
+     *
+     * @param string|null $to 宛先 email（未指定なら宛先なし＝実際には送信されない）
      */
-    public function sendTestNotification(): bool
+    public function sendTestNotification(?string $to = null): bool
     {
         return $this->notify(
-            [],
+            $to ? [$to] : [],
             '🧪 テスト通知',
             "受付システムからのテスト通知です。\n送信時刻: " . now()->format('Y年m月d日 H:i:s'),
         );

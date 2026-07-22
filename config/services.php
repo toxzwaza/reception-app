@@ -31,6 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // AkiTalk Bridge 経由のTeams通知（社内Notifyバッチ notify.py と同一の送信経路）
+    // 旧 Office365 Incoming Webhook が Microsoft 廃止により送信不可となったため移行。
+    'akitalk_bridge' => [
+        'url' => env('AKITALK_BRIDGE_URL', 'https://akitalk.akioka-sub.com/api/teams/bridge-notify'),
+        'api_key' => env('AKITALK_BRIDGE_API_KEY'),
+        'sender' => env('AKITALK_BRIDGE_SENDER', 'AK受付システム通知'),
+    ],
+
     'teams' => [
         'webhook_url' => env('TEAMS_WEBHOOK_URL'),
         'default_webhook_url' => env('TEAMS_DEFAULT_WEBHOOK_URL'),
