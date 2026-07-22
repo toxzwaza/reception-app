@@ -156,6 +156,7 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
 
 // 集荷業者受付関連
 Route::prefix('pickup')->name('pickup.')->group(function () {
+    Route::get('/request-select', [PickupController::class, 'selectRequest'])->name('request-select');
     Route::get('/create', [PickupController::class, 'create'])->name('create');
     Route::post('/store', [PickupController::class, 'store'])->name('store');
     Route::get('/{pickup}/qr', [PickupController::class, 'qrCode'])->name('qr');
