@@ -7,11 +7,14 @@ use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityReservationController;
 use App\Http\Controllers\Admin\NotificationSettingController;
+use App\Http\Controllers\Admin\PickupRequestController as AdminPickupRequestController;
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
+use App\Http\Controllers\Admin\ScreenPatternController as AdminScreenPatternController;
 use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DeliveryPickupController;
+use App\Http\Controllers\DepartmentCallController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InterviewController;
 use App\Http\Controllers\OtherVisitorController;
@@ -50,8 +53,13 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // プロジェクトグループ管理
     Route::resource('project-groups', AdminProjectGroupController::class);
 
+    // 集荷依頼管理
+    Route::get('/pickup-requests/{pickupRequest}/slip', [AdminPickupRequestController::class, 'slip'])->name('pickup-requests.slip');
+    Route::resource('pickup-requests', AdminPickupRequestController::class)->except(['show']);
+
     // 部署電話番号管理（アポなし来訪のTwilio発信先）
     Route::get('/departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
+    Route::post('/departments/order', [AdminDepartmentController::class, 'updateOrder'])->name('departments.order');
     Route::get('/departments/{department}/edit', [AdminDepartmentController::class, 'edit'])->name('departments.edit');
     Route::put('/departments/{department}', [AdminDepartmentController::class, 'update'])->name('departments.update');
     
@@ -71,6 +79,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::resource('staff-members', StaffMemberController::class);
     // Teams 通知のテスト送信（resource より前に定義して resource の {id} に吸収されないようにする）
     Route::post('notification-settings/test-send', [NotificationSettingController::class, 'sendTest'])->name('notification-settings.test-send');
+    Route::post('notification-settings/taxi', [NotificationSettingController::class, 'updateTaxi'])->name('notification-settings.taxi');
     Route::post('notification-settings/{notification_setting}/toggle', [NotificationSettingController::class, 'toggle'])->name('notification-settings.toggle');
     Route::resource('notification-settings', NotificationSettingController::class);
     
@@ -90,6 +99,10 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::get('/pickups/{pickup}', [PickupController::class, 'adminShow'])->name('pickups.show');
     Route::post('/pickups/{pickup}/apply-seal', [PickupController::class, 'applyDigitalSeal'])->name('pickups.apply-seal');
     Route::post('/pickups/{pickup}/rotate-image', [PickupController::class, 'rotateImage'])->name('pickups.rotate-image');
+
+    // 画面パターン管理（受付端末の設置場所ごとの表示切替）
+    Route::post('/screen-patterns/password', [AdminScreenPatternController::class, 'updatePassword'])->name('screen-patterns.password');
+    Route::resource('screen-patterns', AdminScreenPatternController::class)->except(['show']);
 });
 
 // アポイントありの方
@@ -118,6 +131,18 @@ Route::prefix('other-visitor')->name('other-visitor.')->group(function () {
     Route::post('/store', [OtherVisitorController::class, 'store'])->name('store');
 });
 
+// 部署内線発信（受付画面から部署を選んで発信）
+Route::prefix('department-call')->name('department-call.')->group(function () {
+    Route::get('/', [DepartmentCallController::class, 'select'])->name('select');
+    Route::get('/{group}/call', [DepartmentCallController::class, 'call'])->name('call');
+});
+
+// タクシー呼び出し（受付画面のボタンから発信）
+Route::get('/taxi-call', [DepartmentCallController::class, 'taxi'])->name('taxi-call');
+
+// 画面パターン切替パスワードの照合（受付端末の管理者ボタン）
+Route::post('/screen-pattern/verify', [HomeController::class, 'verifyScreenPassword'])->name('screen-pattern.verify');
+
 // 来訪者受付関連（既存）
 Route::prefix('visitor')->name('visitor.')->group(function () {
     Route::get('/scan-qr', [VisitorController::class, 'scanQr'])->name('scan-qr');
@@ -139,6 +164,7 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
 
 // 集荷業者受付関連
 Route::prefix('pickup')->name('pickup.')->group(function () {
+    Route::get('/request-select', [PickupController::class, 'selectRequest'])->name('request-select');
     Route::get('/create', [PickupController::class, 'create'])->name('create');
     Route::post('/store', [PickupController::class, 'store'])->name('store');
     Route::get('/{pickup}/qr', [PickupController::class, 'qrCode'])->name('qr');

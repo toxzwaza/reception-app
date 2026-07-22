@@ -15,6 +15,7 @@ class Group extends Model
     protected $fillable = [
         'name',
         'phone_number', // アポなし来訪時に部署代表電話へTwilioでつなぐための番号
+        'display_order', // 受付画面・部署電話番号管理での表示順（未設定は末尾）
     ];
 
     /**

@@ -13,16 +13,28 @@
           {{ $page.props.flash.success }}
         </div>
 
-        <p class="mb-4 text-sm text-slate-600">
-          アポイントなしの来訪受付時、選択された部署の電話番号へ受付端末から自動で発信します。
-          発信対象にするには電話番号を登録してください（未登録の部署は受付の部署選択に表示されません）。
-        </p>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <p class="max-w-2xl text-sm text-slate-600">
+            受付端末の部署選択・内線発信で、選択された部署の電話番号へ受付端末から発信します。
+            発信対象にするには電話番号を登録してください（未登録の部署は受付の部署選択に表示されません）。
+            <br />
+            <span class="text-slate-500">▲▼ で並べ替え、「表示順を保存」で受付画面・一覧の表示順に反映されます。</span>
+          </p>
+          <button
+            @click="saveOrder"
+            :disabled="!orderChanged || saving"
+            class="shrink-0 inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {{ saving ? '保存中...' : '表示順を保存' }}
+          </button>
+        </div>
 
         <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200">
               <thead class="bg-slate-50">
                 <tr>
+                  <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">表示順</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">部署名</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">電話番号</th>
                   <th class="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">所属人数</th>
@@ -30,7 +42,27 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-slate-100">
-                <tr v-for="department in departments" :key="department.id" class="hover:bg-blue-50/50 transition-colors">
+                <tr v-for="(department, index) in list" :key="department.id" class="hover:bg-blue-50/50 transition-colors">
+                  <td class="px-4 py-4">
+                    <div class="flex items-center justify-center gap-1">
+                      <button
+                        @click="move(index, -1)"
+                        :disabled="index === 0"
+                        class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                        title="上へ"
+                      >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>
+                      </button>
+                      <button
+                        @click="move(index, 1)"
+                        :disabled="index === list.length - 1"
+                        class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                        title="下へ"
+                      >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                    </div>
+                  </td>
                   <td class="px-6 py-4 text-sm font-semibold text-slate-800">{{ department.name }}</td>
                   <td class="px-6 py-4 text-sm">
                     <Badge v-if="department.phone_number" variant="success" dot>
@@ -45,8 +77,8 @@
                     </Link>
                   </td>
                 </tr>
-                <tr v-if="departments.length === 0">
-                  <td colspan="4" class="px-6 py-10 text-center text-slate-400">部署が登録されていません。</td>
+                <tr v-if="list.length === 0">
+                  <td colspan="5" class="px-6 py-10 text-center text-slate-400">部署が登録されていません。</td>
                 </tr>
               </tbody>
             </table>
@@ -58,11 +90,44 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Badge from '@/Components/UI/Badge.vue';
 
-defineProps({
+const props = defineProps({
   departments: { type: Array, default: () => [] },
 });
+
+// 並べ替え操作用のローカルコピー
+const list = ref(props.departments.map((d) => ({ ...d })));
+const saving = ref(false);
+
+// 元の並び順から変更されたか
+const orderChanged = computed(
+  () => list.value.map((d) => d.id).join(',') !== props.departments.map((d) => d.id).join(',')
+);
+
+// index の項目を dir(-1:上 / +1:下) に移動
+const move = (index, dir) => {
+  const target = index + dir;
+  if (target < 0 || target >= list.value.length) return;
+  const arr = list.value;
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+};
+
+// 表示順を保存（並び順どおりの id 配列を送信）
+const saveOrder = () => {
+  saving.value = true;
+  router.post(
+    route('admin.departments.order'),
+    { ids: list.value.map((d) => d.id) },
+    {
+      preserveScroll: true,
+      onFinish: () => {
+        saving.value = false;
+      },
+    }
+  );
+};
 </script>

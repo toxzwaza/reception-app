@@ -29,7 +29,7 @@
         <div 
           class="bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-2xl transition-all duration-200 cursor-pointer group p-12"
         >
-          <Link :href="route('pickup.create')" class="block">
+          <Link :href="route('pickup.request-select')" class="block">
             <div class="flex flex-col items-center text-center">
               <div class="w-32 h-32 mb-6 text-green-500 group-hover:scale-110 transition-transform duration-200">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

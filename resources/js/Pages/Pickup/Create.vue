@@ -244,6 +244,11 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  // 集荷依頼から来た場合の依頼ID（依頼一覧で選択された集荷依頼）
+  pickupRequestId: {
+    type: [Number, String],
+    default: null,
+  },
 });
 
 // ====== スキャンツール設定 ======
@@ -733,6 +738,7 @@ const submitForm = async () => {
 
     const formData = {
       slip_image: imageToSend,
+      pickup_request_id: props.pickupRequestId || '',
     };
 
     router.post(route('pickup.store'), formData, {

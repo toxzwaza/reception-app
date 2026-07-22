@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pickup;
+use App\Models\PickupRequest;
 use App\Services\PrintServerService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -13,10 +14,22 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PickupController extends Controller
 {
-    // 集荷伝票撮影画面
-    public function create(): Response
+    // 集荷依頼の選択画面（未集荷の依頼一覧から集荷対象を選ぶ）
+    public function selectRequest(): Response
     {
-        return Inertia::render('Pickup/Create');
+        $pickupRequests = PickupRequest::pending()->orderBy('created_at')->get();
+
+        return Inertia::render('Pickup/SelectRequest', [
+            'pickupRequests' => $pickupRequests,
+        ]);
+    }
+
+    // 集荷伝票撮影画面（集荷依頼から来た場合は request で依頼IDを受け取る）
+    public function create(Request $request): Response
+    {
+        return Inertia::render('Pickup/Create', [
+            'pickupRequestId' => $request->query('request'),
+        ]);
     }
 
     // 集荷記録の保存
@@ -24,6 +37,7 @@ class PickupController extends Controller
     {
         $validated = $request->validate([
             'slip_image' => 'required|image|max:10240', // 10MB
+            'pickup_request_id' => 'nullable|integer|exists:pickup_requests,id',
         ]);
 
         // 伝票画像の保存
@@ -47,6 +61,16 @@ class PickupController extends Controller
         $qrCode = QrCode::size(300)
             ->margin(2)
             ->generate($qrCodeUrl);
+
+        // 集荷依頼から来た場合は、その依頼を集荷済みにして紐づける
+        if ($request->filled('pickup_request_id')) {
+            PickupRequest::where('id', $request->input('pickup_request_id'))
+                ->update([
+                    'pickup_id' => $pickup->id,
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+        }
 
         // 通知を送信
         NotificationService::sendNotification('pickup_received', [
