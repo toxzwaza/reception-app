@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityRes
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\PickupRequestController as AdminPickupRequestController;
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
+use App\Http\Controllers\Admin\ScreenPatternController as AdminScreenPatternController;
 use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
@@ -98,6 +99,10 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::get('/pickups/{pickup}', [PickupController::class, 'adminShow'])->name('pickups.show');
     Route::post('/pickups/{pickup}/apply-seal', [PickupController::class, 'applyDigitalSeal'])->name('pickups.apply-seal');
     Route::post('/pickups/{pickup}/rotate-image', [PickupController::class, 'rotateImage'])->name('pickups.rotate-image');
+
+    // 画面パターン管理（受付端末の設置場所ごとの表示切替）
+    Route::post('/screen-patterns/password', [AdminScreenPatternController::class, 'updatePassword'])->name('screen-patterns.password');
+    Route::resource('screen-patterns', AdminScreenPatternController::class)->except(['show']);
 });
 
 // アポイントありの方
@@ -134,6 +139,9 @@ Route::prefix('department-call')->name('department-call.')->group(function () {
 
 // タクシー呼び出し（受付画面のボタンから発信）
 Route::get('/taxi-call', [DepartmentCallController::class, 'taxi'])->name('taxi-call');
+
+// 画面パターン切替パスワードの照合（受付端末の管理者ボタン）
+Route::post('/screen-pattern/verify', [HomeController::class, 'verifyScreenPassword'])->name('screen-pattern.verify');
 
 // 来訪者受付関連（既存）
 Route::prefix('visitor')->name('visitor.')->group(function () {
