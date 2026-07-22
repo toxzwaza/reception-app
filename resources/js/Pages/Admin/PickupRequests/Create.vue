@@ -33,6 +33,20 @@
             </div>
 
             <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">物品画像</label>
+              <input
+                type="file"
+                accept="image/*"
+                @change="onImageChange"
+                class="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+              />
+              <div v-if="imagePreview" class="mt-2">
+                <img :src="imagePreview" alt="物品画像プレビュー" class="h-40 rounded-lg border border-slate-200 object-contain" />
+              </div>
+              <div v-if="form.errors.item_image" class="mt-1 text-sm text-rose-600">{{ form.errors.item_image }}</div>
+            </div>
+
+            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">置き場所</label>
               <input v-model="form.storage_location" type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="例: 1F 集荷場所 A" />
               <div v-if="form.errors.storage_location" class="mt-1 text-sm text-rose-600">{{ form.errors.storage_location }}</div>
@@ -78,10 +92,19 @@ const form = useForm({
   requester_name: '',
   requester_group_id: '',
   item: '',
+  item_image: null,
   storage_location: '',
   contact_phone: '',
   memo: '',
 });
+
+// 物品画像のプレビュー
+const imagePreview = ref(null);
+const onImageChange = (e) => {
+  const file = e.target.files?.[0] || null;
+  form.item_image = file;
+  imagePreview.value = file ? URL.createObjectURL(file) : null;
+};
 
 // 選択中の担当者（User.id）
 const selectedStaffId = ref('');
@@ -109,6 +132,6 @@ const onStaffChange = () => {
 };
 
 const submit = () => {
-  form.post(route('admin.pickup-requests.store'));
+  form.post(route('admin.pickup-requests.store'), { forceFormData: true });
 };
 </script>

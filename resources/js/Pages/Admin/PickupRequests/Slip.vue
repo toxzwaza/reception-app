@@ -44,6 +44,12 @@
               </tr>
             </tbody>
           </table>
+
+          <!-- 物品画像 -->
+          <div v-if="itemImageUrl" style="margin-top: 16px;">
+            <div style="font-size: 9pt; color: #64748b; margin-bottom: 4px;">物品画像</div>
+            <img :src="itemImageUrl" alt="物品画像" style="width: 100%; max-height: 90mm; object-fit: contain; border: 1px solid #e2e8f0;" />
+          </div>
         </div>
       </div>
     </div>
@@ -62,6 +68,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 const props = defineProps({
   pickupRequest: { type: Object, required: true },
   departmentName: { type: String, default: null },
+  itemImageUrl: { type: String, default: null },
 });
 
 const printSlip = () => window.print();

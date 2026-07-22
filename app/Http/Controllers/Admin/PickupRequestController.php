@@ -9,6 +9,7 @@ use App\Models\StaffMember;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,6 +25,7 @@ class PickupRequestController extends Controller
             'requester_name' => ['required', 'string', 'max:255'],
             'requester_group_id' => ['nullable', 'integer', 'exists:groups,id'],
             'item' => ['required', 'string', 'max:255'],
+            'item_image' => ['nullable', 'image', 'max:10240'], // 物品画像（10MB）
             'storage_location' => ['nullable', 'string', 'max:255'],
             // 問い合わせ先は表示用（内線表記なども許容するため自由入力）
             'contact_phone' => ['nullable', 'string', 'max:50'],
@@ -76,6 +78,12 @@ class PickupRequestController extends Controller
     {
         $validated = $request->validate($this->rules(), $this->messages());
 
+        if ($request->hasFile('item_image')) {
+            $validated['item_image'] = $request->file('item_image')->store('pickup_request_items', 'public');
+        } else {
+            unset($validated['item_image']);
+        }
+
         $pickupRequest = PickupRequest::create($validated + ['status' => 'pending']);
 
         // 登録後は伝票発行画面へ
@@ -86,7 +94,10 @@ class PickupRequestController extends Controller
     public function edit(PickupRequest $pickupRequest): Response
     {
         return Inertia::render('Admin/PickupRequests/Edit', array_merge(
-            ['pickupRequest' => $pickupRequest],
+            [
+                'pickupRequest' => $pickupRequest,
+                'itemImageUrl' => $pickupRequest->item_image ? Storage::url($pickupRequest->item_image) : null,
+            ],
             $this->selectableData()
         ));
     }
@@ -95,6 +106,15 @@ class PickupRequestController extends Controller
     public function update(Request $request, PickupRequest $pickupRequest)
     {
         $validated = $request->validate($this->rules(), $this->messages());
+
+        if ($request->hasFile('item_image')) {
+            if ($pickupRequest->item_image) {
+                Storage::disk('public')->delete($pickupRequest->item_image);
+            }
+            $validated['item_image'] = $request->file('item_image')->store('pickup_request_items', 'public');
+        } else {
+            unset($validated['item_image']); // 画像が送られていなければ既存のまま
+        }
 
         $pickupRequest->update($validated);
 
@@ -105,6 +125,9 @@ class PickupRequestController extends Controller
     // 削除
     public function destroy(PickupRequest $pickupRequest)
     {
+        if ($pickupRequest->item_image) {
+            Storage::disk('public')->delete($pickupRequest->item_image);
+        }
         $pickupRequest->delete();
 
         return Redirect::route('admin.pickup-requests.index')
@@ -121,6 +144,7 @@ class PickupRequestController extends Controller
         return Inertia::render('Admin/PickupRequests/Slip', [
             'pickupRequest' => $pickupRequest,
             'departmentName' => $group?->name,
+            'itemImageUrl' => $pickupRequest->item_image ? Storage::url($pickupRequest->item_image) : null,
         ]);
     }
 }

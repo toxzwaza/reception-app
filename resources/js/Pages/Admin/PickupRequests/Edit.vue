@@ -35,6 +35,21 @@
             </div>
 
             <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">物品画像</label>
+              <input
+                type="file"
+                accept="image/*"
+                @change="onImageChange"
+                class="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+              />
+              <div v-if="imagePreview || currentImageUrl" class="mt-2">
+                <img :src="imagePreview || currentImageUrl" alt="物品画像" class="h-40 rounded-lg border border-slate-200 object-contain" />
+                <p class="mt-1 text-xs text-slate-400">{{ imagePreview ? '新しい画像（保存で差し替え）' : '現在の画像' }}</p>
+              </div>
+              <div v-if="form.errors.item_image" class="mt-1 text-sm text-rose-600">{{ form.errors.item_image }}</div>
+            </div>
+
+            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">置き場所</label>
               <input v-model="form.storage_location" type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
               <div v-if="form.errors.storage_location" class="mt-1 text-sm text-rose-600">{{ form.errors.storage_location }}</div>
@@ -78,6 +93,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   pickupRequest: { type: Object, required: true },
+  itemImageUrl: { type: String, default: null },
   staffMembers: { type: Array, default: () => [] },
   groups: { type: Array, default: () => [] },
 });
@@ -86,10 +102,20 @@ const form = useForm({
   requester_name: props.pickupRequest.requester_name,
   requester_group_id: props.pickupRequest.requester_group_id || '',
   item: props.pickupRequest.item,
+  item_image: null,
   storage_location: props.pickupRequest.storage_location || '',
   contact_phone: props.pickupRequest.contact_phone || '',
   memo: props.pickupRequest.memo || '',
 });
+
+// 物品画像（既存＋差し替えプレビュー）
+const currentImageUrl = props.itemImageUrl;
+const imagePreview = ref(null);
+const onImageChange = (e) => {
+  const file = e.target.files?.[0] || null;
+  form.item_image = file;
+  imagePreview.value = file ? URL.createObjectURL(file) : null;
+};
 
 // 選択中の担当者（既存の依頼者名に一致する User を初期選択）
 const selectedStaffId = ref(
@@ -116,6 +142,7 @@ const onStaffChange = () => {
 };
 
 const submit = () => {
-  form.put(route('admin.pickup-requests.update', props.pickupRequest.id));
+  // ファイルを含むため forceFormData（put はInertiaが POST+_method=PUT に変換）
+  form.put(route('admin.pickup-requests.update', props.pickupRequest.id), { forceFormData: true });
 };
 </script>

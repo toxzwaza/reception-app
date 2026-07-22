@@ -16,6 +16,7 @@ class PickupRequest extends Model
         'requester_name',    // 依頼者（担当者名）
         'requester_group_id', // 依頼者の所属部署（groups.id）
         'item',              // 物品
+        'item_image',        // 物品画像の保存パス
         'storage_location',  // 置き場所
         'contact_phone',     // 問い合わせ電話番号
         'memo',              // 備考
