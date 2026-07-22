@@ -123,6 +123,55 @@ class OutlookCalendarService
     }
 
     /**
+     * サイボウズ連携予定の本文（bodyPreview）から「参加者: 氏名、氏名…」を解析し、
+     * 受付アプリのユーザー表で氏名→メールに解決する。
+     * （会議室のみ運用のサイボウズ連携は attendees が空で、参加者は本文に氏名記載のため）
+     *
+     * @return array<int, string>
+     */
+    private function extractParticipantEmailsFromBody(?string $body): array
+    {
+        if (empty($body)) {
+            return [];
+        }
+        // 「参加者: A、B、C」を抽出（「元予定」「メモ」の手前まで）
+        if (!preg_match('/参加者\s*[:：]\s*(.+?)(?:\s*(?:元予定|メモ)\s*[:：]|$)/su', $body, $m)) {
+            return [];
+        }
+        $names = array_values(array_filter(array_map(
+            fn ($s) => trim($s),
+            preg_split('/[、,，]/u', $m[1])
+        )));
+        if (empty($names)) {
+            return [];
+        }
+
+        $strip = fn ($s) => str_replace([' ', '　'], '', (string) $s);
+
+        // 氏名（スペース有無の揺れを許容）でユーザーメールを解決
+        $variants = [];
+        foreach ($names as $n) {
+            $variants[] = $n;
+            $variants[] = $strip($n);
+        }
+        $users = User::whereIn('name', array_unique($variants))
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get(['name', 'email']);
+
+        $emails = [];
+        foreach ($names as $n) {
+            $target = $strip($n);
+            $u = $users->first(fn ($x) => $strip($x->name) === $target);
+            if ($u && !empty($u->email)) {
+                $emails[strtolower($u->email)] = $u->email;
+            }
+        }
+
+        return array_values($emails);
+    }
+
+    /**
      * Graphイベントの参加者から通知先メールを抽出する。
      * 会議室リソース（type=resource）・自施設アドレス・meetingroom宛は除外する。
      *
@@ -192,8 +241,13 @@ class OutlookCalendarService
             $organizerEmail = $event['organizer']['emailAddress']['address'] ?? null;
             $title = $organizerName ? "{$subject}（{$organizerName}）" : $subject;
 
-            // 参加者メール（会議室リソース・自施設アドレスは除外）＝タップ通知先
-            $attendeeEmails = $this->extractAttendeeEmails($event, $facility->outlook_resource_email);
+            // 参加者メール（タップ通知先）
+            //  1) Graph の attendees（会議室リソース・自施設アドレスは除外）
+            //  2) サイボウズ連携本文の「参加者: 氏名…」を氏名→メール解決
+            $attendeeEmails = array_values(array_unique(array_merge(
+                $this->extractAttendeeEmails($event, $facility->outlook_resource_email),
+                $this->extractParticipantEmailsFromBody($event['bodyPreview'] ?? '')
+            )));
 
             $existing = ScheduleEvent::where('outlook_event_id', $outlookEventId)->first();
 
