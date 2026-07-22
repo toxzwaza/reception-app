@@ -114,8 +114,13 @@ class PickupRequestController extends Controller
     // 集荷依頼伝票（印刷用）
     public function slip(PickupRequest $pickupRequest): Response
     {
+        $group = $pickupRequest->requester_group_id
+            ? Group::find($pickupRequest->requester_group_id)
+            : null;
+
         return Inertia::render('Admin/PickupRequests/Slip', [
             'pickupRequest' => $pickupRequest,
+            'departmentName' => $group?->name,
         ]);
     }
 }

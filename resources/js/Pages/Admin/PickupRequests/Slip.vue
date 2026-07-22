@@ -17,82 +17,143 @@
     </template>
 
     <div class="py-8">
-      <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- 伝票本体 -->
-        <div id="slip" class="bg-white rounded-2xl border border-slate-300 shadow-sm p-8 print:border-0 print:shadow-none">
-          <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
-            <h1 class="text-2xl font-bold tracking-wide text-slate-900">集荷依頼伝票</h1>
-            <p class="mt-1 text-sm text-slate-500">株式会社アキオカ</p>
+      <div class="mx-auto px-4 sm:px-6 lg:px-8" style="max-width: 160mm;">
+        <p class="mb-3 text-center text-sm text-slate-500 print:hidden">
+          A4用紙（横）に印刷され、中央の切り取り線で切り取るとA5縦サイズの伝票になります。
+        </p>
+
+        <!-- A4横の左半分（A5縦）を想定した伝票本体 -->
+        <div
+          id="slip"
+          class="mx-auto bg-white text-slate-900"
+          style="width: 148.5mm; min-height: 210mm; padding: 12mm; box-sizing: border-box; border: 1px solid #cbd5e1;"
+        >
+          <!-- ヘッダー -->
+          <div class="text-center" style="border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 18px;">
+            <h1 style="font-size: 20pt; font-weight: 700; letter-spacing: 0.05em;">集荷依頼伝票</h1>
+            <p style="margin-top: 4px; font-size: 9pt; color: #64748b;">株式会社アキオカ</p>
           </div>
 
-          <table class="w-full text-sm">
-            <tbody class="divide-y divide-slate-200">
-              <tr>
-                <th class="w-40 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">依頼番号</th>
-                <td class="px-4 py-3 text-slate-900">No. {{ String(pickupRequest.id).padStart(5, '0') }}</td>
-              </tr>
-              <tr>
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">依頼者</th>
-                <td class="px-4 py-3 text-slate-900">{{ pickupRequest.requester_name }}</td>
-              </tr>
-              <tr>
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">物品</th>
-                <td class="px-4 py-3 text-slate-900">{{ pickupRequest.item }}</td>
-              </tr>
-              <tr>
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">置き場所</th>
-                <td class="px-4 py-3 text-slate-900">{{ pickupRequest.storage_location || '—' }}</td>
-              </tr>
-              <tr>
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">問い合わせ電話番号</th>
-                <td class="px-4 py-3 text-slate-900">{{ pickupRequest.contact_phone || '—' }}</td>
-              </tr>
-              <tr v-if="pickupRequest.memo">
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">備考</th>
-                <td class="px-4 py-3 whitespace-pre-wrap text-slate-900">{{ pickupRequest.memo }}</td>
-              </tr>
-              <tr>
-                <th class="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600">登録日時</th>
-                <td class="px-4 py-3 text-slate-900">{{ formatDate(pickupRequest.created_at) }}</td>
+          <table style="width: 100%; font-size: 10.5pt; border-collapse: collapse;">
+            <tbody>
+              <tr v-for="row in rows" :key="row.label" style="border-bottom: 1px solid #e2e8f0;">
+                <th style="width: 34mm; background: #f8fafc; padding: 8px 10px; text-align: left; font-weight: 600; color: #475569; vertical-align: top;">
+                  {{ row.label }}
+                </th>
+                <td style="padding: 8px 10px; white-space: pre-wrap;">{{ row.value }}</td>
               </tr>
             </tbody>
           </table>
 
-          <div class="mt-10 flex justify-end gap-10">
-            <div class="text-center">
-              <div class="mb-1 text-xs text-slate-500">集荷担当者サイン</div>
-              <div class="h-16 w-40 border-b border-slate-400"></div>
+          <!-- サイン欄 -->
+          <div style="margin-top: 30px;">
+            <div style="margin-bottom: 22px;">
+              <div style="font-size: 8pt; color: #64748b; margin-bottom: 2px;">集荷担当者サイン</div>
+              <div style="height: 14mm; border-bottom: 1px solid #94a3b8;"></div>
             </div>
-            <div class="text-center">
-              <div class="mb-1 text-xs text-slate-500">集荷日時</div>
-              <div class="h-16 w-40 border-b border-slate-400"></div>
+            <div>
+              <div style="font-size: 8pt; color: #64748b; margin-bottom: 2px;">集荷日時</div>
+              <div style="height: 14mm; border-bottom: 1px solid #94a3b8;"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 切り取り線（印刷時、A4横の中央=148.5mmに縦の点線） -->
+    <div id="cutline" aria-hidden="true"></div>
+    <div id="cutlabel" aria-hidden="true">✂ 切り取り線</div>
   </AdminLayout>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
-defineProps({
+const props = defineProps({
   pickupRequest: { type: Object, required: true },
+  departmentName: { type: String, default: null },
 });
 
 const printSlip = () => window.print();
 
 const formatDate = (v) =>
   v ? new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(v)) : '';
+
+const rows = computed(() => {
+  const r = props.pickupRequest;
+  const list = [
+    { label: '依頼番号', value: 'No. ' + String(r.id).padStart(5, '0') },
+    { label: '依頼者', value: r.requester_name },
+    { label: '所属部署', value: props.departmentName || '—' },
+    { label: '物品', value: r.item },
+    { label: '置き場所', value: r.storage_location || '—' },
+    { label: '問い合わせ電話番号', value: r.contact_phone || '—' },
+  ];
+  if (r.memo) list.push({ label: '備考', value: r.memo });
+  list.push({ label: '登録日時', value: formatDate(r.created_at) });
+  return list;
+});
 </script>
 
 <style>
+/* 画面上では切り取り線は非表示 */
+#cutline,
+#cutlabel {
+  display: none;
+}
+
 @media print {
-  /* 伝票以外を隠して伝票のみ印刷 */
-  body * { visibility: hidden; }
-  #slip, #slip * { visibility: visible; }
-  #slip { position: absolute; left: 0; top: 0; width: 100%; }
+  @page {
+    size: A4 landscape; /* A4横 297mm × 210mm */
+    margin: 0;
+  }
+
+  /* 伝票以外を隠す */
+  body * {
+    visibility: hidden;
+  }
+  #slip,
+  #slip * {
+    visibility: visible;
+  }
+
+  /* 伝票をA4横の左半分（148.5mm × 210mm = A5縦）に配置 */
+  #slip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 148.5mm;
+    height: 210mm;
+    margin: 0;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* 中央（148.5mm）に縦の切り取り線 */
+  #cutline {
+    display: block;
+    visibility: visible;
+    position: fixed;
+    top: 0;
+    left: 148.5mm;
+    width: 0;
+    height: 210mm;
+    border-left: 1.5px dashed #9aa4b2;
+  }
+  #cutlabel {
+    display: block;
+    visibility: visible;
+    position: fixed;
+    left: 150mm;
+    top: 95mm;
+    font-size: 8pt;
+    color: #9aa4b2;
+    white-space: nowrap;
+    transform: rotate(90deg);
+    transform-origin: left top;
+  }
 }
 </style>
