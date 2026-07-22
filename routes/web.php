@@ -73,6 +73,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::resource('staff-members', StaffMemberController::class);
     // Teams 通知のテスト送信（resource より前に定義して resource の {id} に吸収されないようにする）
     Route::post('notification-settings/test-send', [NotificationSettingController::class, 'sendTest'])->name('notification-settings.test-send');
+    Route::post('notification-settings/taxi', [NotificationSettingController::class, 'updateTaxi'])->name('notification-settings.taxi');
     Route::post('notification-settings/{notification_setting}/toggle', [NotificationSettingController::class, 'toggle'])->name('notification-settings.toggle');
     Route::resource('notification-settings', NotificationSettingController::class);
     
@@ -125,6 +126,9 @@ Route::prefix('department-call')->name('department-call.')->group(function () {
     Route::get('/', [DepartmentCallController::class, 'select'])->name('select');
     Route::get('/{group}/call', [DepartmentCallController::class, 'call'])->name('call');
 });
+
+// タクシー呼び出し（受付画面のボタンから発信）
+Route::get('/taxi-call', [DepartmentCallController::class, 'taxi'])->name('taxi-call');
 
 // 来訪者受付関連（既存）
 Route::prefix('visitor')->name('visitor.')->group(function () {

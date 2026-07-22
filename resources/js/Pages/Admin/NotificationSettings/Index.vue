@@ -33,6 +33,35 @@
 
     <div class="py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 成功メッセージ -->
+        <div v-if="$page.props.flash?.success" class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+          {{ $page.props.flash.success }}
+        </div>
+
+        <!-- タクシー会社電話番号 -->
+        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-lg font-semibold text-slate-800">🚕 タクシー会社電話番号</h3>
+          <p class="mt-1 mb-3 text-sm text-slate-500">
+            受付画面の「タクシーを呼ぶ」ボタンから、この番号へ受付端末から発信します。
+          </p>
+          <form @submit.prevent="saveTaxi" class="flex flex-wrap items-center gap-3">
+            <input
+              v-model="taxiForm.phone_number"
+              type="tel"
+              placeholder="例: 0864-00-0000"
+              class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:w-72"
+            />
+            <button
+              type="submit"
+              :disabled="taxiForm.processing"
+              class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
+            >
+              {{ taxiForm.processing ? '保存中...' : '保存' }}
+            </button>
+            <span v-if="taxiForm.errors.phone_number" class="text-sm text-rose-600">{{ taxiForm.errors.phone_number }}</span>
+          </form>
+        </div>
+
         <!-- 通知設定一覧 -->
         <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <div class="overflow-x-auto">
@@ -132,7 +161,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Badge from '@/Components/UI/Badge.vue';
@@ -141,7 +170,14 @@ const props = defineProps({
   notificationSettings: Array,
   triggerEvents: Object,
   notificationTypes: Object,
+  taxiPhone: { type: String, default: '' },
 });
+
+// タクシー会社電話番号の設定フォーム
+const taxiForm = useForm({ phone_number: props.taxiPhone });
+const saveTaxi = () => {
+  taxiForm.post(route('admin.notification-settings.taxi'), { preserveScroll: true });
+};
 
 // テスト送信中フラグ（多重押下防止）
 const testSending = ref(false);

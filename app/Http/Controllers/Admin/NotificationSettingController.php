@@ -15,19 +15,52 @@ use Inertia\Response;
 
 class NotificationSettingController extends Controller
 {
+    // タクシー呼び出し用の設定を識別するトリガーイベント値（通知一覧には表示しない）
+    private const TAXI_TRIGGER = 'taxi_call';
+
     // 通知設定一覧
     public function index(): Response
     {
         $notificationSettings = NotificationSetting::with(['recipients.user'])
+            ->where('trigger_event', '!=', self::TAXI_TRIGGER)
             ->orderBy('trigger_event')
             ->orderBy('name')
             ->get();
+
+        // タクシー会社の電話番号（受付画面のタクシー呼び出し発信先）
+        $taxi = NotificationSetting::where('trigger_event', self::TAXI_TRIGGER)->first();
 
         return Inertia::render('Admin/NotificationSettings/Index', [
             'notificationSettings' => $notificationSettings,
             'triggerEvents' => NotificationSetting::TRIGGER_EVENTS,
             'notificationTypes' => NotificationRecipient::NOTIFICATION_TYPES,
+            'taxiPhone' => $taxi->settings['phone_number'] ?? '',
         ]);
+    }
+
+    // タクシー会社電話番号を更新（受付画面のタクシー呼び出しボタンの発信先）
+    public function updateTaxi(Request $request)
+    {
+        $validated = $request->validate([
+            'phone_number' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-\s]+$/'],
+        ], [
+            'phone_number.regex' => '電話番号は数字・+・-・空白のみで入力してください。',
+        ], [
+            'phone_number' => '電話番号',
+        ]);
+
+        NotificationSetting::updateOrCreate(
+            ['trigger_event' => self::TAXI_TRIGGER],
+            [
+                'name' => 'タクシー会社',
+                'description' => '受付画面のタクシー呼び出しボタンの発信先',
+                'is_active' => true,
+                'settings' => ['phone_number' => $validated['phone_number'] ?? null],
+            ]
+        );
+
+        return redirect()->route('admin.notification-settings.index')
+            ->with('success', 'タクシー会社の電話番号を更新しました。');
     }
 
     // 通知設定作成画面

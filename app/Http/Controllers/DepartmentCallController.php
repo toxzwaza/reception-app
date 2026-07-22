@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use App\Models\NotificationSetting;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -51,6 +52,19 @@ class DepartmentCallController extends Controller
 
         return Inertia::render('DepartmentCall/Call', [
             'groupInfo' => $group->only(['id', 'name', 'phone_number']),
+        ]);
+    }
+
+    /**
+     * タクシー呼び出し（通知設定管理に登録したタクシー会社番号へ発信）
+     */
+    public function taxi(): Response
+    {
+        $taxi = NotificationSetting::where('trigger_event', 'taxi_call')->first();
+        $phone = $taxi->settings['phone_number'] ?? null;
+
+        return Inertia::render('DepartmentCall/Taxi', [
+            'phoneNumber' => $phone,
         ]);
     }
 }

@@ -58,21 +58,28 @@
         </Link>
       </div>
 
-      <!-- その他のご用件（担当部署を呼ぶ） -->
-      <Link
-        :href="route('department-call.select')"
-        class="fade-up group block"
-        :style="{ animationDelay: '480ms' }"
-      >
-        <div class="flex items-center justify-center gap-3 rounded-2xl border border-white/70 bg-white/70 px-6 py-4 text-center shadow-md backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-lg">
-          <svg class="h-5 w-5 shrink-0 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-          </svg>
-          <span class="text-base font-bold text-slate-700">
-            ご用件が上記にない方・業者／配達の方は <span class="text-blue-600">担当部署を呼ぶ</span>
-          </span>
-        </div>
-      </Link>
+      <!-- その他のご用件（担当部署を呼ぶ / タクシーを呼ぶ） -->
+      <div class="fade-up grid grid-cols-1 gap-4 sm:grid-cols-3" :style="{ animationDelay: '480ms' }">
+        <!-- 担当部署を呼ぶ -->
+        <Link :href="route('department-call.select')" class="group block sm:col-span-2">
+          <div class="flex h-full items-center justify-center gap-3 rounded-2xl border border-white/70 bg-white/70 px-6 py-4 text-center shadow-md backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-lg">
+            <svg class="h-5 w-5 shrink-0 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            <span class="text-base font-bold text-slate-700">
+              ご用件が上記にない方・業者／配達の方は <span class="text-blue-600">担当部署を呼ぶ</span>
+            </span>
+          </div>
+        </Link>
+
+        <!-- タクシーを呼ぶ -->
+        <Link :href="route('taxi-call')" class="group block">
+          <div class="flex h-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-4 text-center shadow-md backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-amber-50 hover:shadow-lg">
+            <span class="text-xl">🚕</span>
+            <span class="text-base font-bold text-amber-700">タクシーを呼ぶ</span>
+          </div>
+        </Link>
+      </div>
     </div>
   </ReceptionLayout>
 </template>
