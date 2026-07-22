@@ -30,11 +30,12 @@ class ScreenPattern extends Model
      * Home/Index.vue のメニューキーと一致させること。
      */
     public const FEATURES = [
-        'appointment' => 'アポイントありの方',
+        'appointment_today' => 'アポイントありの方（当日一覧）',
         'other_visitor' => 'アポイントなしの方',
         'delivery_pickup' => '納品・集荷の方',
         'interview' => '面接の方',
         'department_call' => '担当部署を呼ぶ',
         'taxi' => 'タクシーを呼ぶ',
+        'appointment' => 'アポイントあり（QR/受付番号・旧）',
     ];
 }

@@ -6,16 +6,93 @@ use App\Models\Visitor;
 use App\Models\Appointment;
 use App\Models\ScheduleEvent;
 use App\Services\NotificationService;
+use App\Services\TeamsNotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AppointmentController extends Controller
 {
-    // アポイントあり受付画面
+    // アポイントあり受付画面（旧: QR/受付番号）
     public function index(): Response
     {
         return Inertia::render('Appointment/Index');
+    }
+
+    // 新フロー：当日の施設スケジュール（Outlook同期）を時間順に一覧表示
+    public function today(): Response
+    {
+        $today = now()->toDateString();
+
+        $events = ScheduleEvent::with('facility')
+            ->where('date', $today) // date は 'Y-m-d' 文字列で保持
+            ->orderBy('start_datetime')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (ScheduleEvent $e) => [
+                'id' => $e->id,
+                'time' => $e->start_datetime,
+                'end_time' => $e->end_datetime,
+                'title' => $e->title,
+                'facility' => $e->facility->name ?? null,
+                'recipient_count' => count($this->recipientEmails($e)),
+            ])
+            ->values();
+
+        return Inertia::render('Appointment/Today', [
+            'events' => $events,
+            'today' => now()->format('Y年n月j日'),
+        ]);
+    }
+
+    // 新フロー：来訪者が自分の予定をタップ → 予定の主催者＋参加者全員へ通知
+    public function notifyArrival(ScheduleEvent $scheduleEvent)
+    {
+        $emails = $this->recipientEmails($scheduleEvent);
+
+        $facilityName = $scheduleEvent->facility->name ?? '—';
+        $title = '👤 来客が到着しました';
+        $lines = [
+            '予定: ' . ($scheduleEvent->title ?: '—'),
+            '施設: ' . $facilityName,
+            '時間: ' . ($scheduleEvent->start_datetime ?: '—')
+                . ($scheduleEvent->end_datetime ? '〜' . $scheduleEvent->end_datetime : ''),
+            '到着時刻: ' . now()->format('Y年m月d日 H:i'),
+        ];
+
+        app(TeamsNotificationService::class)->notify($emails, $title, implode("\n", $lines));
+
+        return redirect()->route('appointment.today')->with('arrival', [
+            'title' => $scheduleEvent->title,
+            'notified' => count($emails),
+        ]);
+    }
+
+    // 施設スケジュールの通知先メール（主催者＋参加者。会議室メール除外・重複排除）
+    private function recipientEmails(ScheduleEvent $event): array
+    {
+        $candidates = [];
+        if (!empty($event->organizer_email)) {
+            $candidates[] = $event->organizer_email;
+        }
+        foreach (($event->attendee_emails ?? []) as $addr) {
+            if (is_string($addr) && $addr !== '') {
+                $candidates[] = $addr;
+            }
+        }
+
+        $seen = [];
+        $out = [];
+        foreach ($candidates as $addr) {
+            $lower = strtolower($addr);
+            if (str_contains($lower, 'meetingroom') || isset($seen[$lower])) {
+                continue;
+            }
+            $seen[$lower] = true;
+            $out[] = $addr;
+        }
+
+        return $out;
     }
 
     // QRコードでチェックイン
