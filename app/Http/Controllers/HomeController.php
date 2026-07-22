@@ -18,7 +18,7 @@ class HomeController extends Controller
         $screenPatterns = ScreenPattern::where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['id', 'name', 'description', 'features']);
+            ->get(['id', 'name', 'description', 'features', 'layout']);
 
         return Inertia::render('Home/Index', [
             'title' => '受付システム',

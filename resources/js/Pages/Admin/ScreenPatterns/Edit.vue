@@ -7,7 +7,7 @@
     </template>
 
     <div class="py-8">
-      <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <form @submit.prevent="submit" class="p-6 space-y-6">
             <PatternFields :form="form" :feature-options="featureOptions" />
@@ -41,6 +41,7 @@ const form = useForm({
   name: props.pattern.name,
   description: props.pattern.description || '',
   features: props.pattern.features || [],
+  layout: Array.isArray(props.pattern.layout) ? props.pattern.layout : [],
   sort_order: props.pattern.sort_order ?? 0,
   is_active: !!props.pattern.is_active,
 });

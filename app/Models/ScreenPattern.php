@@ -13,12 +13,14 @@ class ScreenPattern extends Model
         'name',        // パターン名
         'description', // 補足説明
         'features',    // 有効な導線キーの配列
+        'layout',      // 導線カードの配置（12列グリッド上の {i,x,y,w,h} 配列）
         'sort_order',  // 表示順
         'is_active',   // 選択肢に表示するか
     ];
 
     protected $casts = [
         'features' => 'array',
+        'layout' => 'array',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];

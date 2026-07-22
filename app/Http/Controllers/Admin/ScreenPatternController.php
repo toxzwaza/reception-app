@@ -25,9 +25,40 @@ class ScreenPatternController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
             'features' => ['array'],
             'features.*' => ['string', 'in:' . implode(',', array_keys(ScreenPattern::FEATURES))],
+            // カード配置（12列グリッド上の {i,x,y,w,h}）
+            'layout' => ['nullable', 'array'],
+            'layout.*.i' => ['required', 'string', 'in:' . implode(',', array_keys(ScreenPattern::FEATURES))],
+            'layout.*.x' => ['required', 'integer', 'min:0', 'max:12'],
+            'layout.*.y' => ['required', 'integer', 'min:0'],
+            'layout.*.w' => ['required', 'integer', 'min:1', 'max:12'],
+            'layout.*.h' => ['required', 'integer', 'min:1'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
         ];
+    }
+
+    // レイアウトを有効な導線のみに整える（重複キーは後勝ちで排除）
+    private function normalizeLayout(array $layout, array $features): array
+    {
+        $allowed = array_flip($features);
+        $seen = [];
+        $result = [];
+        foreach ($layout as $item) {
+            $key = $item['i'] ?? null;
+            if ($key === null || ! isset($allowed[$key]) || isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $result[] = [
+                'i' => $key,
+                'x' => (int) $item['x'],
+                'y' => (int) $item['y'],
+                'w' => (int) $item['w'],
+                'h' => (int) $item['h'],
+            ];
+        }
+
+        return $result;
     }
 
     // 導線の選択肢（キー => 表示名）
@@ -64,6 +95,7 @@ class ScreenPatternController extends Controller
     {
         $validated = $request->validate($this->rules());
         $validated['features'] = $validated['features'] ?? [];
+        $validated['layout'] = $this->normalizeLayout($validated['layout'] ?? [], $validated['features']);
         $validated['is_active'] = $request->boolean('is_active');
 
         ScreenPattern::create($validated);
@@ -86,6 +118,7 @@ class ScreenPatternController extends Controller
     {
         $validated = $request->validate($this->rules());
         $validated['features'] = $validated['features'] ?? [];
+        $validated['layout'] = $this->normalizeLayout($validated['layout'] ?? [], $validated['features']);
         $validated['is_active'] = $request->boolean('is_active');
 
         $screenPattern->update($validated);
