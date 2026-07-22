@@ -44,18 +44,6 @@
               </tr>
             </tbody>
           </table>
-
-          <!-- サイン欄 -->
-          <div style="margin-top: 30px;">
-            <div style="margin-bottom: 22px;">
-              <div style="font-size: 8pt; color: #64748b; margin-bottom: 2px;">集荷担当者サイン</div>
-              <div style="height: 14mm; border-bottom: 1px solid #94a3b8;"></div>
-            </div>
-            <div>
-              <div style="font-size: 8pt; color: #64748b; margin-bottom: 2px;">集荷日時</div>
-              <div style="height: 14mm; border-bottom: 1px solid #94a3b8;"></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
