@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityReservationController;
 use App\Http\Controllers\Admin\NotificationSettingController;
+use App\Http\Controllers\Admin\PickupRequestController as AdminPickupRequestController;
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
 use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\AppointmentController;
@@ -50,6 +51,10 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // プロジェクトグループ管理
     Route::resource('project-groups', AdminProjectGroupController::class);
+
+    // 集荷依頼管理
+    Route::get('/pickup-requests/{pickupRequest}/slip', [AdminPickupRequestController::class, 'slip'])->name('pickup-requests.slip');
+    Route::resource('pickup-requests', AdminPickupRequestController::class)->except(['show']);
 
     // 部署電話番号管理（アポなし来訪のTwilio発信先）
     Route::get('/departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
