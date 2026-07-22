@@ -19,89 +19,80 @@ class AppointmentController extends Controller
         return Inertia::render('Appointment/Index');
     }
 
-    // 新フロー：当日の予定を時間順に一覧表示
+    // 新フロー：当日の施設スケジュール（Outlook同期）を時間順に一覧表示
     public function today(): Response
     {
-        $appointments = Appointment::with('staffMember')
-            ->whereDate('visit_date', now()->toDateString())
-            ->orderBy('visit_time')
+        $today = now()->toDateString();
+
+        $events = ScheduleEvent::with('facility')
+            ->where('date', $today) // date は 'Y-m-d' 文字列で保持
+            ->orderBy('start_datetime')
+            ->orderBy('id')
             ->get()
-            ->map(fn (Appointment $a) => [
-                'id' => $a->id,
-                'time' => optional($a->visit_time)->format('H:i'),
-                'company_name' => $a->company_name,
-                'visitor_name' => $a->visitor_name,
-                'staff_name' => $a->staffMember->name ?? null,
-                'purpose' => $a->purpose,
-                'is_checked_in' => (bool) $a->is_checked_in,
+            ->map(fn (ScheduleEvent $e) => [
+                'id' => $e->id,
+                'time' => $e->start_datetime,
+                'end_time' => $e->end_datetime,
+                'title' => $e->title,
+                'facility' => $e->facility->name ?? null,
+                'recipient_count' => count($this->recipientEmails($e)),
             ])
             ->values();
 
         return Inertia::render('Appointment/Today', [
-            'appointments' => $appointments,
+            'events' => $events,
             'today' => now()->format('Y年n月j日'),
         ]);
     }
 
-    // 新フロー：来訪者が自分の予定をタップ → 担当者（＋施設予約の参加メンバー）へ通知＋チェックイン
-    public function notifyArrival(Appointment $appointment)
+    // 新フロー：来訪者が自分の予定をタップ → 予定の主催者＋参加者全員へ通知
+    public function notifyArrival(ScheduleEvent $scheduleEvent)
     {
-        // 宛先メール（担当スタッフ + 施設予約の参加メンバー）を収集
-        $staff = $appointment->staffMember;
-        $emails = [];
-        if ($staff && !empty($staff->email)) {
-            $emails[] = $staff->email;
-        }
+        $emails = $this->recipientEmails($scheduleEvent);
 
-        $scheduleEvent = ScheduleEvent::with('participants')
-            ->where('appointment_id', $appointment->id)
-            ->latest('id')
-            ->first();
-        if ($scheduleEvent) {
-            foreach ($scheduleEvent->participants as $participant) {
-                if (!empty($participant->email)) {
-                    $emails[] = $participant->email;
-                }
-            }
-        }
-        // 重複排除（大文字小文字を無視）
-        $emails = array_values(array_intersect_key(
-            $emails,
-            array_unique(array_map('strtolower', $emails))
-        ));
-
-        // チェックイン記録
-        if (!$appointment->is_checked_in) {
-            $appointment->update(['is_checked_in' => true, 'checked_in_at' => now()]);
-        }
-        Visitor::create([
-            'company_name' => $appointment->company_name,
-            'visitor_name' => $appointment->visitor_name,
-            'staff_member_id' => $appointment->staff_member_id,
-            'visitor_type' => 'appointment',
-            'reception_number' => $appointment->reception_number,
-            'check_in_time' => now(),
-        ]);
-
-        // 緊急Teams通知（AkiTalk Bridge 経由・全通知緊急扱い）
+        $facilityName = $scheduleEvent->facility->name ?? '—';
         $title = '👤 来客が到着しました';
         $lines = [
-            '来訪者: ' . ($appointment->visitor_name ?: '—'),
-            '会社名: ' . ($appointment->company_name ?: '—'),
-            '担当者: ' . ($staff->name ?? '未設定'),
-            '予定時刻: ' . (optional($appointment->visit_time)->format('H:i') ?: '—'),
+            '予定: ' . ($scheduleEvent->title ?: '—'),
+            '施設: ' . $facilityName,
+            '時間: ' . ($scheduleEvent->start_datetime ?: '—')
+                . ($scheduleEvent->end_datetime ? '〜' . $scheduleEvent->end_datetime : ''),
             '到着時刻: ' . now()->format('Y年m月d日 H:i'),
         ];
-        if ($appointment->purpose) {
-            $lines[] = '用件: ' . $appointment->purpose;
-        }
 
         app(TeamsNotificationService::class)->notify($emails, $title, implode("\n", $lines));
 
         return redirect()->route('appointment.today')->with('arrival', [
-            'staff_name' => $staff->name ?? '担当者',
-            'visitor_name' => $appointment->visitor_name,
+            'title' => $scheduleEvent->title,
+            'notified' => count($emails),
         ]);
+    }
+
+    // 施設スケジュールの通知先メール（主催者＋参加者。会議室メール除外・重複排除）
+    private function recipientEmails(ScheduleEvent $event): array
+    {
+        $candidates = [];
+        if (!empty($event->organizer_email)) {
+            $candidates[] = $event->organizer_email;
+        }
+        foreach (($event->attendee_emails ?? []) as $addr) {
+            if (is_string($addr) && $addr !== '') {
+                $candidates[] = $addr;
+            }
+        }
+
+        $seen = [];
+        $out = [];
+        foreach ($candidates as $addr) {
+            $lower = strtolower($addr);
+            if (str_contains($lower, 'meetingroom') || isset($seen[$lower])) {
+                continue;
+            }
+            $seen[$lower] = true;
+            $out[] = $addr;
+        }
+
+        return $out;
     }
 
     // QRコードでチェックイン

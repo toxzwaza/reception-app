@@ -105,7 +105,7 @@ class OutlookCalendarService
         $query = [
             'startDateTime' => $startDateTime,
             'endDateTime' => $endDateTime,
-            '$select' => 'id,subject,start,end,organizer,location,bodyPreview,isAllDay',
+            '$select' => 'id,subject,start,end,organizer,attendees,location,bodyPreview,isAllDay',
             '$orderby' => 'start/dateTime',
             '$top' => 100,
         ];
@@ -120,6 +120,36 @@ class OutlookCalendarService
         }
 
         return $allEvents;
+    }
+
+    /**
+     * Graphイベントの参加者から通知先メールを抽出する。
+     * 会議室リソース（type=resource）・自施設アドレス・meetingroom宛は除外する。
+     *
+     * @return array<int, string>
+     */
+    private function extractAttendeeEmails(array $event, ?string $facilityEmail): array
+    {
+        $facilityLower = strtolower((string) $facilityEmail);
+        $emails = [];
+
+        foreach ($event['attendees'] ?? [] as $attendee) {
+            $type = $attendee['type'] ?? '';
+            if ($type === 'resource') {
+                continue; // 会議室などのリソースは除外
+            }
+            $addr = $attendee['emailAddress']['address'] ?? '';
+            if (!is_string($addr) || $addr === '') {
+                continue;
+            }
+            $lower = strtolower($addr);
+            if ($lower === $facilityLower || str_contains($lower, 'meetingroom')) {
+                continue; // 施設自身・会議室メールは除外
+            }
+            $emails[$lower] = $addr; // キーで重複排除（大文字小文字無視）
+        }
+
+        return array_values($emails);
     }
 
     public function syncFacility(Facility $facility, string $startDate, string $endDate): int
@@ -158,8 +188,12 @@ class OutlookCalendarService
             $endTime = $isAllDay ? '23:59' : $end->format('H:i');
 
             $subject = $event['subject'] ?? '(件名なし)';
-            $organizer = $event['organizer']['emailAddress']['name'] ?? '';
-            $title = $organizer ? "{$subject}（{$organizer}）" : $subject;
+            $organizerName = $event['organizer']['emailAddress']['name'] ?? '';
+            $organizerEmail = $event['organizer']['emailAddress']['address'] ?? null;
+            $title = $organizerName ? "{$subject}（{$organizerName}）" : $subject;
+
+            // 参加者メール（会議室リソース・自施設アドレスは除外）＝タップ通知先
+            $attendeeEmails = $this->extractAttendeeEmails($event, $facility->outlook_resource_email);
 
             $existing = ScheduleEvent::where('outlook_event_id', $outlookEventId)->first();
 
@@ -167,6 +201,9 @@ class OutlookCalendarService
                 $existing->update([
                     'date' => $date,
                     'title' => mb_substr($title, 0, 500),
+                    'organizer_name' => $organizerName ?: null,
+                    'organizer_email' => $organizerEmail,
+                    'attendee_emails' => $attendeeEmails,
                     'start_datetime' => $startTime,
                     'end_datetime' => $endTime,
                 ]);
@@ -175,6 +212,9 @@ class OutlookCalendarService
                     'facility_id' => $facility->id,
                     'date' => $date,
                     'title' => mb_substr($title, 0, 500),
+                    'organizer_name' => $organizerName ?: null,
+                    'organizer_email' => $organizerEmail,
+                    'attendee_emails' => $attendeeEmails,
                     'start_datetime' => $startTime,
                     'end_datetime' => $endTime,
                     'badge' => null,
