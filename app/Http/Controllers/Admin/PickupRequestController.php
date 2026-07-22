@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\PickupRequest;
+use App\Models\StaffMember;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -19,12 +22,30 @@ class PickupRequestController extends Controller
     {
         return [
             'requester_name' => ['required', 'string', 'max:255'],
+            'requester_group_id' => ['nullable', 'integer', 'exists:groups,id'],
             'item' => ['required', 'string', 'max:255'],
             'storage_location' => ['nullable', 'string', 'max:255'],
             // 問い合わせ先は表示用（内線表記なども許容するため自由入力）
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'memo' => ['nullable', 'string', 'max:1000'],
         ];
+    }
+
+    // 依頼者の選択肢（部署一覧＝電話番号付き / 担当者候補＝スタッフ登録済みユーザー）
+    private function selectableData(): array
+    {
+        $registeredUserIds = StaffMember::pluck('user_id');
+        $staffMembers = User::select('id', 'name', 'group_id')
+            ->whereIn('id', $registeredUserIds)
+            ->orderBy('name')
+            ->get();
+
+        $groups = Group::select('id', 'name', 'phone_number')
+            ->orderByRaw('display_order IS NULL, display_order ASC')
+            ->orderBy('id')
+            ->get();
+
+        return ['staffMembers' => $staffMembers, 'groups' => $groups];
     }
 
     private function messages(): array
@@ -47,7 +68,7 @@ class PickupRequestController extends Controller
     // 登録画面
     public function create(): Response
     {
-        return Inertia::render('Admin/PickupRequests/Create');
+        return Inertia::render('Admin/PickupRequests/Create', $this->selectableData());
     }
 
     // 登録
@@ -64,9 +85,10 @@ class PickupRequestController extends Controller
     // 編集画面
     public function edit(PickupRequest $pickupRequest): Response
     {
-        return Inertia::render('Admin/PickupRequests/Edit', [
-            'pickupRequest' => $pickupRequest,
-        ]);
+        return Inertia::render('Admin/PickupRequests/Edit', array_merge(
+            ['pickupRequest' => $pickupRequest],
+            $this->selectableData()
+        ));
     }
 
     // 更新

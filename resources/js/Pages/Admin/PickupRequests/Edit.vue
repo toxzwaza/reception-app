@@ -12,7 +12,19 @@
           <form @submit.prevent="submit" class="p-6 space-y-6">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">依頼者 <span class="text-rose-500">*</span></label>
-              <input v-model="form.requester_name" type="text" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <select v-model="form.requester_group_id" @change="onGroupChange" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="">部署を選択</option>
+                  <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                </select>
+                <select v-model="selectedStaffId" @change="onStaffChange" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="">担当者を選択（{{ filteredStaff.length }}名）</option>
+                  <option v-for="s in filteredStaff" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">
+                現在の依頼者：<span class="font-medium text-slate-700">{{ form.requester_name || '—' }}</span>
+              </p>
               <div v-if="form.errors.requester_name" class="mt-1 text-sm text-rose-600">{{ form.errors.requester_name }}</div>
             </div>
 
@@ -60,20 +72,48 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue';
 import { useForm, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   pickupRequest: { type: Object, required: true },
+  staffMembers: { type: Array, default: () => [] },
+  groups: { type: Array, default: () => [] },
 });
 
 const form = useForm({
   requester_name: props.pickupRequest.requester_name,
+  requester_group_id: props.pickupRequest.requester_group_id || '',
   item: props.pickupRequest.item,
   storage_location: props.pickupRequest.storage_location || '',
   contact_phone: props.pickupRequest.contact_phone || '',
   memo: props.pickupRequest.memo || '',
 });
+
+// 選択中の担当者（既存の依頼者名に一致する User を初期選択）
+const selectedStaffId = ref(
+  props.staffMembers.find((s) => s.name === props.pickupRequest.requester_name)?.id ?? ''
+);
+
+const filteredStaff = computed(() => {
+  if (!form.requester_group_id) return props.staffMembers;
+  return props.staffMembers.filter((s) => String(s.group_id) === String(form.requester_group_id));
+});
+
+const onGroupChange = () => {
+  selectedStaffId.value = '';
+  form.requester_name = '';
+  const g = props.groups.find((x) => String(x.id) === String(form.requester_group_id));
+  if (g && g.phone_number) {
+    form.contact_phone = g.phone_number;
+  }
+};
+
+const onStaffChange = () => {
+  const s = props.staffMembers.find((x) => String(x.id) === String(selectedStaffId.value));
+  form.requester_name = s ? s.name : '';
+};
 
 const submit = () => {
   form.put(route('admin.pickup-requests.update', props.pickupRequest.id));
