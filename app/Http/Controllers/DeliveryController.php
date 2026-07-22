@@ -7,6 +7,7 @@ use App\Models\InitialOrder;
 use App\Models\StockStorage;
 use App\Services\PrintServerService;
 use App\Services\NotificationService;
+use App\Services\TeamsNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -40,6 +41,7 @@ class DeliveryController extends Controller
         $validated = $request->validate([
             'delivery_type' => 'required|in:納品書,その他書類',
             'document_image' => 'required|image|max:10240', // 10MB
+            'immediate_pickup' => 'nullable', // 即座受け取り必要（要冷蔵品など）
         ]);
 
         // 書類画像の保存
@@ -77,6 +79,16 @@ class DeliveryController extends Controller
             'received_at' => $delivery->received_at->format('Y-m-d H:i:s'),
             'delivery_id' => $delivery->id,
         ]);
+
+        // 「即座受け取り必要」がチェックされていれば担当者へ Teams 通知（要冷蔵品など）
+        if ($request->boolean('immediate_pickup')) {
+            app(TeamsNotificationService::class)->notify(
+                [],
+                '⚠️ 即座受け取りが必要な納品',
+                "即座の受け取りが必要な納品（{$delivery->delivery_type}）が届きました。\n受付までお越しください。",
+                $qrCodeUrl
+            );
+        }
 
         return Inertia::render('Delivery/Complete', [
             'qrCode' => $qrCode,

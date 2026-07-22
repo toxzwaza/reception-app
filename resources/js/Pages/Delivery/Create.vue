@@ -275,6 +275,19 @@
                 </ul>
               </details>
 
+              <!-- 即座受け取り必要（要冷蔵品など） -->
+              <label class="mb-4 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                <input
+                  type="checkbox"
+                  v-model="form.immediate_pickup"
+                  class="h-6 w-6 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <span class="text-base font-semibold text-amber-800">
+                  即座の受け取りが必要（要冷蔵品など）
+                  <span class="block text-sm font-normal text-amber-700">チェックすると担当者へすぐに通知します</span>
+                </span>
+              </label>
+
               <!-- 操作ボタン -->
               <div class="flex gap-4">
                 <button
@@ -364,6 +377,7 @@ const form = ref({
   delivery_type: '',
   document_image: null,
   document_preview: null,
+  immediate_pickup: false, // 即座受け取り必要（要冷蔵品など）
 });
 
 // 状態管理
@@ -868,6 +882,7 @@ const submitForm = async () => {
     const formData = {
       delivery_type: form.value.delivery_type,
       document_image: imageToSend,
+      immediate_pickup: form.value.immediate_pickup ? 1 : 0,
     };
 
     router.post(route('delivery.store'), formData, {
