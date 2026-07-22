@@ -92,22 +92,25 @@ const statusMessage = ref('');
 const statusType = ref('');
 const callData = ref(null);
 
-// 電話番号のフォーマット変換（090→+81）
+// 電話番号を E.164（+81…）へ変換。携帯・固定を問わず先頭0を除去して +81 を付与する。
 const formatPhoneNumber = (phone) => {
   if (!phone) return '';
-  
-  // 既に +81 で始まっている場合はそのまま返す
-  if (phone.startsWith('+81')) {
-    return phone;
+
+  // ハイフン・空白・括弧などの記号を除去
+  const digits = phone.replace(/[-\s()（）.]/g, '');
+
+  // 既に国際形式（+…）ならそのまま
+  if (digits.startsWith('+')) {
+    return digits;
   }
-  
-  // 090/080/070 で始まる場合
-  if (phone.match(/^0[789]0/)) {
-    return phone.replace(/^0/, '+81');
+
+  // 国内番号：先頭の0を除去して +81 を付与（携帯090/固定086等 共通）
+  if (digits.startsWith('0')) {
+    return '+81' + digits.slice(1);
   }
-  
-  // その他の場合は +81 を付けて返す
-  return `+81${phone}`;
+
+  // 0始まりでない場合はそのまま +81 を付与
+  return '+81' + digits;
 };
 
 // 表示用電話番号のフォーマット
