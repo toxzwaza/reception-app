@@ -139,12 +139,12 @@
 
             <!-- ========== スキャン完了プレビュー（確認） ========== -->
             <template v-else>
-            <!-- 画像プレビュー（中央配置・はみ出し時は縮小） -->
-            <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
+            <!-- 画像プレビュー（高さ基準で全体表示・中央揃え） -->
+            <div class="flex-shrink-0 h-[55vh] flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
               <img
                 :src="form.slip_preview"
                 alt="受領書"
-                class="max-h-full max-w-full object-contain rounded-lg shadow transition-transform duration-200"
+                class="h-full w-auto max-w-full object-contain rounded-lg shadow transition-transform duration-200"
                 :style="{ transform: `rotate(${rotationDegrees}deg)` }"
               />
             </div>
