@@ -210,13 +210,15 @@
             <!-- ========== スキャン完了プレビュー（確認） ========== -->
             <template v-else>
             <!-- 画像プレビュー（高さ基準で全体表示・中央揃え・右上に回転ボタン） -->
-            <div class="flex-shrink-0 h-[55vh] flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
+            <div ref="previewContainer" class="flex-shrink-0 h-[55vh] flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
               <div class="relative h-full max-w-full">
                 <img
+                  ref="previewImg"
                   :src="form.document_preview"
                   :alt="form.delivery_type"
                   class="h-full w-auto max-w-full object-contain rounded-lg shadow transition-transform duration-200"
-                  :style="{ transform: `rotate(${rotationDegrees}deg)` }"
+                  :style="{ transform: `rotate(${rotationDegrees}deg) scale(${previewScale})` }"
+                  @load="updatePreviewScale"
                 />
                 <!-- 回転コントロール（画像右上にオーバーレイ） -->
                 <div class="absolute top-2 right-2 flex gap-2">
@@ -289,7 +291,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, nextTick, onMounted } from 'vue';
+import { ref, watch, onUnmounted, nextTick, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { io } from 'socket.io-client';
 import axios from 'axios';
@@ -795,6 +797,28 @@ const rotateLeft = () => {
 const rotateRight = () => {
   rotationDegrees.value = (rotationDegrees.value + 90) % 360;
 };
+
+// 90/270度回転時は縦横が入れ替わり領域からはみ出すため、収まる縮小率を計算する
+const previewContainer = ref(null);
+const previewImg = ref(null);
+const previewScale = ref(1);
+
+const updatePreviewScale = () => {
+  const img = previewImg.value;
+  const cont = previewContainer.value;
+  const swapped = rotationDegrees.value === 90 || rotationDegrees.value === 270;
+  if (!swapped || !img || !cont || !img.offsetWidth || !img.offsetHeight) {
+    previewScale.value = 1;
+    return;
+  }
+  const style = getComputedStyle(cont);
+  const contW = cont.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const contH = cont.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  // 回転後の見た目は幅と高さが入れ替わるため、それぞれ収まる倍率の小さい方を採用
+  previewScale.value = Math.min(contH / img.offsetWidth, contW / img.offsetHeight, 1);
+};
+
+watch(rotationDegrees, () => nextTick(updatePreviewScale));
 
 // Base64 画像を canvas 経由で指定角度回転させて File に戻す
 const rotateImageFile = async (srcDataUrl, degrees, filename) => {
