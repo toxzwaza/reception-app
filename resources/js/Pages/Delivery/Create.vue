@@ -209,72 +209,120 @@
 
             <!-- ========== スキャン完了プレビュー（確認） ========== -->
             <template v-else>
-            <!-- 画像プレビュー（中央配置・はみ出し時は縮小） -->
-            <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
+            <!-- 画像プレビュー（高さ基準で全体表示・中央揃え・右上に回転ボタン） -->
+            <div ref="previewContainer" class="flex-shrink-0 h-[55vh] flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
+              <div class="relative h-full max-w-full">
+                <img
+                  ref="previewImg"
+                  :src="form.document_preview"
+                  :alt="form.delivery_type"
+                  class="h-full w-auto max-w-full object-contain rounded-lg shadow transition-transform duration-200"
+                  :style="{ transform: `rotate(${rotationDegrees}deg) scale(${previewScale})` }"
+                  @load="updatePreviewScale"
+                />
+                <!-- 拡大ボタン（画像左上にオーバーレイ・リキッドグラス調） -->
+                <div class="absolute top-2 left-2">
+                  <button
+                    type="button"
+                    @click="openZoom"
+                    :disabled="processing"
+                    class="p-3 bg-white/40 backdrop-blur-md border border-white/50 text-gray-800 rounded-full shadow-lg hover:bg-white/60 active:scale-95 transition disabled:opacity-50"
+                    aria-label="画像を拡大表示"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 8v6m-3-3h6m6.35 9.35L16 16m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <!-- 回転コントロール（画像右上にオーバーレイ・リキッドグラス調） -->
+                <div class="absolute top-2 right-2 flex gap-2">
+                  <button
+                    type="button"
+                    @click="rotateLeft"
+                    :disabled="processing"
+                    class="p-3 bg-white/40 backdrop-blur-md border border-white/50 text-gray-800 rounded-full shadow-lg hover:bg-white/60 active:scale-95 transition disabled:opacity-50"
+                    aria-label="左に90度回転"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    @click="rotateRight"
+                    :disabled="processing"
+                    class="p-3 bg-white/40 backdrop-blur-md border border-white/50 text-gray-800 rounded-full shadow-lg hover:bg-white/60 active:scale-95 transition disabled:opacity-50"
+                    aria-label="右に90度回転"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 拡大表示オーバーレイ -->
+            <div
+              v-if="showZoom"
+              class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center overflow-hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="画像の拡大表示"
+              @click.self="closeZoom"
+            >
               <img
                 :src="form.document_preview"
                 :alt="form.delivery_type"
-                class="max-h-full max-w-full object-contain rounded-lg shadow transition-transform duration-200"
-                :style="{ transform: `rotate(${rotationDegrees}deg)` }"
+                draggable="false"
+                class="max-h-[85vh] max-w-[90vw] object-contain rounded-lg select-none touch-none cursor-grab active:cursor-grabbing"
+                :style="{ transform: `translate(${panX}px, ${panY}px) rotate(${rotationDegrees}deg) scale(${zoomLevel})` }"
+                @pointerdown="onZoomPanStart"
+                @pointermove="onZoomPanMove"
+                @pointerup="onZoomPanEnd"
+                @pointercancel="onZoomPanEnd"
               />
-            </div>
-
-            <!-- 固定フッター（回転・注意文・操作ボタン） -->
-            <div class="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
-              <!-- 回転コントロール -->
-              <div class="flex gap-2">
+              <!-- 拡大操作コントロール（リキッドグラス調） -->
+              <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2 bg-white/20 backdrop-blur-xl border border-white/30 rounded-full shadow-2xl">
                 <button
                   type="button"
-                  @click="rotateLeft"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
-                  aria-label="左に90度回転"
+                  @click="zoomOut"
+                  :disabled="zoomLevel <= ZOOM_MIN"
+                  class="p-3 text-white rounded-full hover:bg-white/20 active:scale-95 transition disabled:opacity-40"
+                  aria-label="縮小"
                 >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11h6m6.35 9.35L16 16m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  左に90°
                 </button>
+                <span class="min-w-[4rem] text-center text-white font-semibold select-none">{{ Math.round(zoomLevel * 100) }}%</span>
                 <button
                   type="button"
-                  @click="rotate180"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base"
-                  aria-label="180度回転"
+                  @click="zoomIn"
+                  :disabled="zoomLevel >= ZOOM_MAX"
+                  class="p-3 text-white rounded-full hover:bg-white/20 active:scale-95 transition disabled:opacity-40"
+                  aria-label="拡大"
                 >
-                  180°
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 8v6m-3-3h6m6.35 9.35L16 16m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </button>
+                <div class="w-px h-6 bg-white/30 mx-1"></div>
                 <button
                   type="button"
-                  @click="rotateRight"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
-                  aria-label="右に90度回転"
+                  @click="closeZoom"
+                  class="p-3 text-white rounded-full hover:bg-white/20 active:scale-95 transition"
+                  aria-label="閉じる"
                 >
-                  右に90°
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
+            </div>
 
-              <!-- 注意文（折りたたみ。既定は閉じてスクロール不要に） -->
-              <details class="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm">
-                <summary class="cursor-pointer select-none font-medium text-red-800 flex items-center gap-2">
-                  <svg class="h-4 w-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                  撮影内容の確認（タップで開く）
-                </summary>
-                <ul class="mt-2 text-red-700 list-disc pl-5 space-y-1">
-                  <li>テキストが可読か</li>
-                  <li>手や指で隠れていないか</li>
-                  <li>書類全体が写っているか</li>
-                  <li>明るさが適切か</li>
-                  <li>向きが正しいか（回転で調整）</li>
-                </ul>
-              </details>
-
+            <!-- 固定フッター（操作ボタン） -->
+            <div class="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
               <!-- 即座受け取り必要（要冷蔵品など） -->
               <label class="mb-4 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
                 <input
@@ -316,7 +364,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, nextTick, onMounted } from 'vue';
+import { ref, watch, onUnmounted, nextTick, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { io } from 'socket.io-client';
 import axios from 'axios';
@@ -392,7 +440,9 @@ const videoFeedError = ref(false);  // ビデオフィードエラーフラグ
 const documentDetected = ref(false);  // スキャナー側で書類（赤枠）を検出中か
 const isCapturing = ref(false);  // 撮影リクエスト送信中フラグ（二重押下防止）
 const videoFeedUrl = ref(VIDEO_FEED_URL);  // ビデオフィードURL
-const rotationDegrees = ref(0);  // スキャン画像の回転角度（0/90/180/270）
+// スキャナーの設置向きの都合で画像が上下逆さまに取得されるため、既定で180度回転した状態にする
+const DEFAULT_ROTATION = 180;
+const rotationDegrees = ref(DEFAULT_ROTATION);  // スキャン画像の回転角度（0/90/180/270）
 let stream = null;
 let countdownTimer = null;
 let socket = null;  // Socket.IO接続
@@ -685,7 +735,8 @@ const handleScanCompleted = async () => {
     // Base64データをData URLに変換
     const dataUrl = `data:image/jpeg;base64,${imgBase64}`;
     
-    // プレビューに表示
+    // プレビューに表示（回転角は既定値=180度から開始）
+    rotationDegrees.value = DEFAULT_ROTATION;
     form.value.document_preview = dataUrl;
     
     // タイムスタンプ付きファイル名を生成
@@ -801,7 +852,7 @@ const handleCancel = () => {
 const retakeImage = () => {
   form.value.document_preview = null;
   form.value.document_image = null;
-  rotationDegrees.value = 0;  // 回転もリセット
+  rotationDegrees.value = DEFAULT_ROTATION;  // 回転を既定値に戻す
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
@@ -813,15 +864,77 @@ const retakeImage = () => {
 };
 
 // ====== 回転操作 ======
+// 角度は累積させる（360で丸めるとCSSトランジションが逆回転してしまうため）。
+// 判定・送信時は normalizedRotation() で0〜359度に正規化して使う。
+const normalizedRotation = () => ((rotationDegrees.value % 360) + 360) % 360;
 const rotateLeft = () => {
-  rotationDegrees.value = (rotationDegrees.value + 270) % 360;
+  rotationDegrees.value -= 90;
 };
 const rotateRight = () => {
-  rotationDegrees.value = (rotationDegrees.value + 90) % 360;
+  rotationDegrees.value += 90;
 };
-const rotate180 = () => {
-  rotationDegrees.value = (rotationDegrees.value + 180) % 360;
+
+// ====== 拡大表示 ======
+const showZoom = ref(false);
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 4;
+const zoomLevel = ref(1);
+const panX = ref(0);
+const panY = ref(0);
+let panStart = null;
+
+const openZoom = () => {
+  zoomLevel.value = 1;
+  panX.value = 0;
+  panY.value = 0;
+  showZoom.value = true;
 };
+const closeZoom = () => {
+  showZoom.value = false;
+};
+const zoomIn = () => {
+  zoomLevel.value = Math.min(ZOOM_MAX, zoomLevel.value + 0.5);
+};
+const zoomOut = () => {
+  zoomLevel.value = Math.max(ZOOM_MIN, zoomLevel.value - 0.5);
+};
+
+// ドラッグで表示位置を移動（タッチ・マウス共通のポインターイベント）
+const onZoomPanStart = (e) => {
+  panStart = { x: e.clientX - panX.value, y: e.clientY - panY.value };
+  e.currentTarget.setPointerCapture(e.pointerId);
+};
+const onZoomPanMove = (e) => {
+  if (!panStart) return;
+  panX.value = e.clientX - panStart.x;
+  panY.value = e.clientY - panStart.y;
+};
+const onZoomPanEnd = () => {
+  panStart = null;
+};
+
+// 90/270度回転時は縦横が入れ替わり領域からはみ出すため、収まる縮小率を計算する
+const previewContainer = ref(null);
+const previewImg = ref(null);
+const previewScale = ref(1);
+
+const updatePreviewScale = () => {
+  const img = previewImg.value;
+  const cont = previewContainer.value;
+  const deg = normalizedRotation();
+  const swapped = deg === 90 || deg === 270;
+  if (!swapped || !img || !cont || !img.offsetWidth || !img.offsetHeight) {
+    previewScale.value = 1;
+    return;
+  }
+  const style = getComputedStyle(cont);
+  const contW = cont.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const contH = cont.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  // 回転後の見た目は幅と高さが入れ替わるため、それぞれ収まる倍率の小さい方を採用
+  previewScale.value = Math.min(contH / img.offsetWidth, contW / img.offsetHeight, 1);
+};
+
+watch(rotationDegrees, () => nextTick(updatePreviewScale));
 
 // Base64 画像を canvas 経由で指定角度回転させて File に戻す
 const rotateImageFile = async (srcDataUrl, degrees, filename) => {
@@ -869,13 +982,14 @@ const submitForm = async () => {
   try {
     // 回転が指定されていれば実画像を回転してから送信
     let imageToSend = form.value.document_image;
-    if (rotationDegrees.value !== 0 && form.value.document_preview) {
+    const sendRotation = normalizedRotation();
+    if (sendRotation !== 0 && form.value.document_preview) {
       imageToSend = await rotateImageFile(
         form.value.document_preview,
-        rotationDegrees.value,
+        sendRotation,
         form.value.document_image.name || 'document.jpg'
       );
-      console.log(`🔄 画像を ${rotationDegrees.value}° 回転して送信`);
+      console.log(`🔄 画像を ${sendRotation}° 回転して送信`);
     }
 
     // ファイルアップロード用のデータを作成（previewはサーバーに送信しない）
