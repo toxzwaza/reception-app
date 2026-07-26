@@ -209,72 +209,45 @@
 
             <!-- ========== スキャン完了プレビュー（確認） ========== -->
             <template v-else>
-            <!-- 画像プレビュー（高さ基準で全体表示・中央揃え） -->
+            <!-- 画像プレビュー（高さ基準で全体表示・中央揃え・右上に回転ボタン） -->
             <div class="flex-shrink-0 h-[55vh] flex items-center justify-center bg-gray-100 p-4 overflow-hidden">
-              <img
-                :src="form.document_preview"
-                :alt="form.delivery_type"
-                class="h-full w-auto max-w-full object-contain rounded-lg shadow transition-transform duration-200"
-                :style="{ transform: `rotate(${rotationDegrees}deg)` }"
-              />
+              <div class="relative h-full max-w-full">
+                <img
+                  :src="form.document_preview"
+                  :alt="form.delivery_type"
+                  class="h-full w-auto max-w-full object-contain rounded-lg shadow transition-transform duration-200"
+                  :style="{ transform: `rotate(${rotationDegrees}deg)` }"
+                />
+                <!-- 回転コントロール（画像右上にオーバーレイ） -->
+                <div class="absolute top-2 right-2 flex gap-2">
+                  <button
+                    type="button"
+                    @click="rotateLeft"
+                    :disabled="processing"
+                    class="p-3 bg-white/80 border border-gray-300 text-gray-700 rounded-full shadow hover:bg-white disabled:opacity-50"
+                    aria-label="左に90度回転"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    @click="rotateRight"
+                    :disabled="processing"
+                    class="p-3 bg-white/80 border border-gray-300 text-gray-700 rounded-full shadow hover:bg-white disabled:opacity-50"
+                    aria-label="右に90度回転"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- 固定フッター（回転・注意文・操作ボタン） -->
+            <!-- 固定フッター（操作ボタン） -->
             <div class="flex-shrink-0 border-t border-gray-200 p-4 space-y-3">
-              <!-- 回転コントロール -->
-              <div class="flex gap-2">
-                <button
-                  type="button"
-                  @click="rotateLeft"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
-                  aria-label="左に90度回転"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                  </svg>
-                  左に90°
-                </button>
-                <button
-                  type="button"
-                  @click="rotate180"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base"
-                  aria-label="180度回転"
-                >
-                  180°
-                </button>
-                <button
-                  type="button"
-                  @click="rotateRight"
-                  :disabled="processing"
-                  class="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 text-base flex items-center justify-center gap-2"
-                  aria-label="右に90度回転"
-                >
-                  右に90°
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
-                  </svg>
-                </button>
-              </div>
-
-              <!-- 注意文（折りたたみ。既定は閉じてスクロール不要に） -->
-              <details class="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm">
-                <summary class="cursor-pointer select-none font-medium text-red-800 flex items-center gap-2">
-                  <svg class="h-4 w-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                  撮影内容の確認（タップで開く）
-                </summary>
-                <ul class="mt-2 text-red-700 list-disc pl-5 space-y-1">
-                  <li>テキストが可読か</li>
-                  <li>手や指で隠れていないか</li>
-                  <li>書類全体が写っているか</li>
-                  <li>明るさが適切か</li>
-                  <li>向きが正しいか（回転で調整）</li>
-                </ul>
-              </details>
-
               <!-- 即座受け取り必要（要冷蔵品など） -->
               <label class="mb-4 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
                 <input
@@ -821,9 +794,6 @@ const rotateLeft = () => {
 };
 const rotateRight = () => {
   rotationDegrees.value = (rotationDegrees.value + 90) % 360;
-};
-const rotate180 = () => {
-  rotationDegrees.value = (rotationDegrees.value + 180) % 360;
 };
 
 // Base64 画像を canvas 経由で指定角度回転させて File に戻す
