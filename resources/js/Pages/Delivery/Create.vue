@@ -392,7 +392,9 @@ const videoFeedError = ref(false);  // ビデオフィードエラーフラグ
 const documentDetected = ref(false);  // スキャナー側で書類（赤枠）を検出中か
 const isCapturing = ref(false);  // 撮影リクエスト送信中フラグ（二重押下防止）
 const videoFeedUrl = ref(VIDEO_FEED_URL);  // ビデオフィードURL
-const rotationDegrees = ref(0);  // スキャン画像の回転角度（0/90/180/270）
+// スキャナーの設置向きの都合で画像が上下逆さまに取得されるため、既定で180度回転した状態にする
+const DEFAULT_ROTATION = 180;
+const rotationDegrees = ref(DEFAULT_ROTATION);  // スキャン画像の回転角度（0/90/180/270）
 let stream = null;
 let countdownTimer = null;
 let socket = null;  // Socket.IO接続
@@ -685,7 +687,8 @@ const handleScanCompleted = async () => {
     // Base64データをData URLに変換
     const dataUrl = `data:image/jpeg;base64,${imgBase64}`;
     
-    // プレビューに表示
+    // プレビューに表示（回転角は既定値=180度から開始）
+    rotationDegrees.value = DEFAULT_ROTATION;
     form.value.document_preview = dataUrl;
     
     // タイムスタンプ付きファイル名を生成
@@ -801,7 +804,7 @@ const handleCancel = () => {
 const retakeImage = () => {
   form.value.document_preview = null;
   form.value.document_image = null;
-  rotationDegrees.value = 0;  // 回転もリセット
+  rotationDegrees.value = DEFAULT_ROTATION;  // 回転を既定値に戻す
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
