@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\DisplayController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\LocalStorageAuthController;
 use App\Http\Controllers\ReceiveController;
@@ -30,6 +31,9 @@ Route::post('/login-local', [LocalStorageAuthController::class, 'login']);
 Route::post('/logout-local', [LocalStorageAuthController::class, 'logout']);
 Route::post('/test-password', [LocalStorageAuthController::class, 'testPassword']); // デバッグ用
 Route::post('/set-session-user', [LocalStorageAuthController::class, 'setSessionUser']); // セッション設定用
+
+// 事務所ディスプレイ表示システム用API（固定トークン認証）
+Route::middleware('display.token')->get('/display/facility-schedules', [DisplayController::class, 'facilitySchedules'])->name('api.display.facility-schedules');
 
 // 納品関連API
 Route::get('/initial-orders', [ReceiveController::class, 'getInitialOrders'])->name('api.initial-orders');

@@ -62,6 +62,11 @@ return [
         'twiml_app_sid' => env('TWILIO_TWIML_APP_SID'),
     ],
 
+    // 事務所ディスプレイ表示システム（52インチダッシュボード）用の表示専用APIトークン
+    'display' => [
+        'token' => env('DISPLAY_API_TOKEN'),
+    ],
+
     'microsoft_graph' => [
         'tenant_id' => env('GRAPH_TENANT_ID'),
         'client_id' => env('GRAPH_CLIENT_ID'),
