@@ -157,6 +157,55 @@ class AttendanceController extends Controller
     }
 
     /**
+     * 直前の打刻の取り消し。
+     * 出勤中：出勤を取り消し（当日レコードを削除して未出勤に戻す）
+     * 退勤済み：退勤を取り消し（退勤時刻をクリアして出勤中に戻す）
+     *
+     * POST /api/timeclock/cancel
+     */
+    public function cancel(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|integer',
+        ]);
+
+        $user = User::active()->withEmail()->find($validated['user_id']);
+
+        if (!$user) {
+            return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
+        }
+
+        $attendance = Attendance::today()->where('user_id', $user->id)->first();
+
+        if (!$attendance) {
+            return response()->json(['message' => '取り消せる打刻がありません。'], 422);
+        }
+
+        if ($attendance->status === Attendance::STATUS_WORKING) {
+            $attendance->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => '出勤を取り消しました。',
+                'status' => Attendance::STATUS_NOT_CLOCKED_IN,
+                'clock_in_at' => null,
+                'clock_out_at' => null,
+            ]);
+        }
+
+        // 退勤済み → 退勤のみ取り消して出勤中に戻す
+        $attendance->update(['clock_out_at' => null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '退勤を取り消しました。',
+            'status' => $attendance->status,
+            'clock_in_at' => $attendance->clock_in_at->format('H:i'),
+            'clock_out_at' => null,
+        ]);
+    }
+
+    /**
      * 当日の出退勤情報を返す専用API（メールアドレス登録済みの社員のみ）。
      *
      * GET /api/attendances/today

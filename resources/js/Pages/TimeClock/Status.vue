@@ -12,7 +12,7 @@ const errorMessage = ref('');
 const date = ref('');
 const count = ref({ total: 0, working: 0, clocked_out: 0 });
 const attendances = ref([]);
-const selectedGroupId = ref('');
+const hiddenGroupIds = ref([]); // 非表示にした部署ID（デフォルトはすべて表示）
 const selectedStatus = ref(''); // '' | 'working' | 'clocked_out'
 const nameQuery = ref('');
 const lastUpdatedAt = ref(null);
@@ -28,19 +28,91 @@ const normalize = (text) => String(text ?? '').replace(/[\s　]/g, '').toLowerCa
 const filteredAttendances = computed(() => {
     const query = normalize(nameQuery.value);
     return attendances.value.filter((a) => {
-        if (selectedGroupId.value && String(a.group_id) !== String(selectedGroupId.value)) return false;
         if (selectedStatus.value && a.status !== selectedStatus.value) return false;
-        if (query && !normalize(a.name).includes(query) && !normalize(a.emp_no).includes(query)) return false;
+        if (query) {
+            // 名前・社員番号に加え部署名でもマッチ（部署名ヒット時はその部署のメンバー全員が残る）
+            const deptName = normalize(groupNames.value[String(a.group_id)] ?? (a.group_id == null ? '部署なし' : ''));
+            const hit =
+                normalize(a.name).includes(query) ||
+                normalize(a.emp_no).includes(query) ||
+                (deptName && deptName.includes(query));
+            if (!hit) return false;
+        }
         return true;
     });
 });
 
+// 当日の出勤記録がある部署（トグルボタン用。部署マスタの並び順＋部署なし）
+const departmentOptions = computed(() => {
+    const presentIds = new Set(
+        attendances.value.map((a) => (a.group_id != null ? String(a.group_id) : 'none'))
+    );
+    const options = props.groups
+        .filter((g) => presentIds.has(String(g.id)))
+        .map((g) => ({ id: String(g.id), name: g.name }));
+    if (presentIds.has('none')) options.push({ id: 'none', name: '部署なし' });
+    return options;
+});
+
+// 部署ボタンで表示・非表示をトグル
+const toggleGroup = (groupId) => {
+    const id = String(groupId);
+    if (hiddenGroupIds.value.includes(id)) {
+        hiddenGroupIds.value = hiddenGroupIds.value.filter((hidden) => hidden !== id);
+    } else {
+        hiddenGroupIds.value = [...hiddenGroupIds.value, id];
+    }
+};
+
+const isGroupVisible = (groupId) => !hiddenGroupIds.value.includes(String(groupId));
+
+// 部署ごとの縦カラム表示用（部署マスタの並び順・メンバーは社員番号順）
+const groupedAttendances = computed(() => {
+    const byGroup = new Map();
+    for (const attendance of filteredAttendances.value) {
+        const key = attendance.group_id != null ? String(attendance.group_id) : 'none';
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push(attendance);
+    }
+
+    const sortByEmpNo = (members) =>
+        [...members].sort((a, b) => String(a.emp_no ?? '').localeCompare(String(b.emp_no ?? '')));
+
+    const columns = [];
+    for (const group of props.groups) {
+        const members = byGroup.get(String(group.id));
+        if (members && isGroupVisible(group.id)) {
+            columns.push({
+                id: group.id,
+                name: group.name,
+                members: sortByEmpNo(members),
+                workingCount: members.filter((m) => m.status === 'working').length,
+            });
+        }
+    }
+    if (byGroup.has('none') && isGroupVisible('none')) {
+        const members = byGroup.get('none');
+        columns.push({
+            id: 'none',
+            name: '部署なし',
+            members: sortByEmpNo(members),
+            workingCount: members.filter((m) => m.status === 'working').length,
+        });
+    }
+    return columns;
+});
+
+// 表示中カラムの合計人数（絞り込み件数表示用）
+const visibleCount = computed(() =>
+    groupedAttendances.value.reduce((sum, column) => sum + column.members.length, 0)
+);
+
 const isFiltered = computed(() =>
-    Boolean(selectedGroupId.value || selectedStatus.value || nameQuery.value.trim())
+    Boolean(hiddenGroupIds.value.length || selectedStatus.value || nameQuery.value.trim())
 );
 
 const clearFilters = () => {
-    selectedGroupId.value = '';
+    hiddenGroupIds.value = [];
     selectedStatus.value = '';
     nameQuery.value = '';
 };
@@ -95,7 +167,7 @@ onUnmounted(() => {
     <div class="tc-bg min-h-screen text-zinc-100">
         <!-- ヘッダー -->
         <header class="sticky top-0 z-10 border-b border-zinc-700/60 bg-zinc-900/85 backdrop-blur">
-            <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
                 <div class="flex min-w-0 items-center gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-zinc-100 to-zinc-400 shadow-lg shadow-black/40">
                         <span class="text-sm font-black tracking-tight text-zinc-900">A</span>
@@ -114,7 +186,7 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
             <!-- 日付・更新時刻 -->
             <p class="text-xs tracking-wider text-zinc-400">
                 {{ displayDate }}
@@ -156,8 +228,8 @@ onUnmounted(() => {
                         <input
                             v-model="nameQuery"
                             type="search"
-                            aria-label="名前・社員番号で検索"
-                            placeholder="名前・社員番号で検索"
+                            aria-label="名前・社員番号・部署名で検索"
+                            placeholder="名前・社員番号・部署名で検索"
                             class="w-full rounded-lg border-zinc-600/80 bg-zinc-900/80 py-2 pl-9 pr-9 text-sm text-zinc-100 shadow-inner placeholder:text-zinc-600 focus:border-zinc-300 focus:ring-zinc-300/40"
                         />
                         <button
@@ -172,37 +244,45 @@ onUnmounted(() => {
                             </svg>
                         </button>
                     </div>
-
-                    <!-- 部署選択 -->
-                    <select
-                        v-model="selectedGroupId"
-                        aria-label="部署で絞り込み"
-                        class="rounded-lg border-zinc-600/80 bg-zinc-900/80 py-2 text-sm text-zinc-100 shadow-inner focus:border-zinc-300 focus:ring-zinc-300/40"
-                    >
-                        <option value="">すべての部署</option>
-                        <option v-for="group in groups" :key="group.id" :value="group.id">
-                            {{ group.name }}
-                        </option>
-                    </select>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <!-- ステータス切替（セグメントコントロール） -->
-                    <div role="radiogroup" aria-label="ステータスで絞り込み" class="inline-flex rounded-lg border border-zinc-700/80 bg-zinc-900/80 p-1">
-                        <button
-                            v-for="option in statusOptions"
-                            :key="option.value"
-                            type="button"
-                            role="radio"
-                            :aria-checked="selectedStatus === option.value"
-                            @click="selectedStatus = option.value"
-                            class="rounded-md px-3.5 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
-                            :class="selectedStatus === option.value
-                                ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-900 shadow'
-                                : 'text-zinc-400 hover:text-zinc-200'"
-                        >
-                            {{ option.label }}
-                        </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- ステータス切替（セグメントコントロール） -->
+                        <div role="radiogroup" aria-label="ステータスで絞り込み" class="inline-flex rounded-lg border border-zinc-700/80 bg-zinc-900/80 p-1">
+                            <button
+                                v-for="option in statusOptions"
+                                :key="option.value"
+                                type="button"
+                                role="radio"
+                                :aria-checked="selectedStatus === option.value"
+                                @click="selectedStatus = option.value"
+                                class="rounded-md px-3.5 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
+                                :class="selectedStatus === option.value
+                                    ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-900 shadow'
+                                    : 'text-zinc-400 hover:text-zinc-200'"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
+
+                        <!-- 部署ごとの表示トグル（クリックで表示・非表示、デフォルトはすべて表示） -->
+                        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="部署の表示切り替え">
+                            <button
+                                v-for="department in departmentOptions"
+                                :key="department.id"
+                                type="button"
+                                :aria-pressed="isGroupVisible(department.id)"
+                                :title="isGroupVisible(department.id) ? `${department.name} を非表示にする` : `${department.name} を表示する`"
+                                @click="toggleGroup(department.id)"
+                                class="rounded-lg border px-3 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50 active:scale-[0.96]"
+                                :class="isGroupVisible(department.id)
+                                    ? 'border-white/30 bg-white/10 text-white shadow-sm'
+                                    : 'border-zinc-800 bg-transparent text-zinc-600 line-through decoration-zinc-600 hover:text-zinc-400'"
+                            >
+                                {{ department.name }}
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -226,7 +306,7 @@ onUnmounted(() => {
 
                 <!-- 絞り込み結果件数 -->
                 <p v-if="isFiltered && !loading" class="text-xs text-zinc-500" role="status">
-                    {{ filteredAttendances.length }} 件が該当（全 {{ attendances.length }} 件中）
+                    {{ visibleCount }} 件を表示中（全 {{ attendances.length }} 件中）
                 </p>
             </div>
 
@@ -234,10 +314,12 @@ onUnmounted(() => {
                 {{ errorMessage }}
             </p>
 
-            <!-- 一覧 -->
-            <section class="mt-4 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 ring-1 ring-white/[0.05]">
-                <div v-if="loading" class="px-6 py-14 text-center text-sm text-zinc-500">読み込み中…</div>
-                <div v-else-if="filteredAttendances.length === 0" class="px-6 py-14 text-center text-sm text-zinc-500">
+            <!-- 部署ごとの縦カラム一覧 -->
+            <section class="mt-4">
+                <div v-if="loading" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
+                    読み込み中…
+                </div>
+                <div v-else-if="groupedAttendances.length === 0" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
                     <template v-if="isFiltered">
                         絞り込み条件に該当する記録がありません
                         <button
@@ -251,76 +333,50 @@ onUnmounted(() => {
                     <template v-else>本日の出勤記録はまだありません</template>
                 </div>
 
-                <template v-else>
-                    <!-- デスクトップ：テーブル -->
-                    <div class="hidden overflow-x-auto md:block">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-zinc-700/60 bg-black/25 text-left text-[11px] uppercase tracking-[0.15em] text-zinc-500">
-                                <th class="px-5 py-3 font-semibold">社員番号</th>
-                                <th class="px-5 py-3 font-semibold">名前</th>
-                                <th class="px-5 py-3 font-semibold">部署</th>
-                                <th class="px-5 py-3 text-center font-semibold">出勤</th>
-                                <th class="px-5 py-3 text-center font-semibold">退勤</th>
-                                <th class="px-5 py-3 text-center font-semibold">ステータス</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-zinc-800">
-                            <tr v-for="attendance in filteredAttendances" :key="attendance.user_id" class="transition hover:bg-white/[0.03]">
-                                <td class="px-5 py-3.5 tabular-nums text-zinc-500">{{ attendance.emp_no }}</td>
-                                <td class="px-5 py-3.5 font-semibold text-zinc-100">{{ attendance.name }}</td>
-                                <td class="px-5 py-3.5 text-zinc-400">{{ groupNames[String(attendance.group_id)] ?? '—' }}</td>
-                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_in_at ?? '--:--' }}</td>
-                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_out_at ?? '--:--' }}</td>
-                                <td class="px-5 py-3.5 text-center">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-wider"
-                                        :class="attendance.status === 'working'
-                                            ? 'border-white/40 bg-white/10 text-white'
-                                            : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
-                                        ></span>
-                                        {{ statusLabel(attendance.status) }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
+                <!-- 部署カラムは折り返さず横スクロールで表示 -->
+                <div v-else class="tc-scroll flex items-start gap-4 overflow-x-auto pb-3">
+                    <section
+                        v-for="column in groupedAttendances"
+                        :key="column.id"
+                        class="w-64 shrink-0 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05] sm:w-72"
+                        :aria-label="`${column.name}の出退勤状況`"
+                    >
+                        <!-- 部署名ヘッダー -->
+                        <header class="flex items-center justify-center gap-2 border-b border-zinc-700/60 bg-black/30 px-4 py-3">
+                            <h2 class="truncate text-sm font-bold tracking-widest text-white">{{ column.name }}</h2>
+                            <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-300">
+                                {{ column.workingCount }}/{{ column.members.length }}
+                            </span>
+                        </header>
 
-                    <!-- モバイル：カード -->
-                    <ul class="divide-y divide-zinc-800 md:hidden">
-                        <li v-for="attendance in filteredAttendances" :key="attendance.user_id" class="px-4 py-3.5">
-                            <div class="flex items-center justify-between gap-3">
+                        <!-- 所属メンバー（縦並び） -->
+                        <ul class="divide-y divide-zinc-800/80">
+                            <li
+                                v-for="member in column.members"
+                                :key="member.user_id"
+                                class="flex items-center justify-between gap-3 px-4 py-2.5 transition hover:bg-white/[0.03]"
+                            >
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-zinc-100">{{ attendance.name }}</p>
-                                    <p class="mt-0.5 text-[11px] text-zinc-500">
-                                        {{ attendance.emp_no }} ・ {{ groupNames[String(attendance.group_id)] ?? '—' }}
+                                    <p class="truncate text-sm font-semibold text-zinc-100">{{ member.name }}</p>
+                                    <p class="mt-0.5 text-[10px] tabular-nums text-zinc-500">
+                                        <span class="mr-0.5 uppercase tracking-wider text-zinc-600">In</span>{{ member.clock_in_at ?? '--:--' }}
+                                        <span class="ml-2 mr-0.5 uppercase tracking-wider text-zinc-600">Out</span>{{ member.clock_out_at ?? '--:--' }}
                                     </p>
                                 </div>
                                 <span
-                                    class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-wider"
-                                    :class="attendance.status === 'working'
-                                        ? 'border-white/40 bg-white/10 text-white'
-                                        : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
+                                    class="w-10 shrink-0 rounded-md border py-1 text-center text-xs font-black tracking-wide"
+                                    :class="member.status === 'working'
+                                        ? 'border-emerald-300/60 bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-950 shadow shadow-emerald-900/40'
+                                        : 'border-zinc-500/60 bg-gradient-to-b from-zinc-600 to-zinc-700 text-zinc-300'"
+                                    :title="statusLabel(member.status)"
+                                    :aria-label="statusLabel(member.status)"
                                 >
-                                    <span
-                                        class="h-1.5 w-1.5 rounded-full"
-                                        :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
-                                    ></span>
-                                    {{ statusLabel(attendance.status) }}
+                                    {{ member.status === 'working' ? '出' : '退' }}
                                 </span>
-                            </div>
-                            <div class="mt-2 flex gap-4 text-xs tabular-nums text-zinc-400">
-                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">In</span>{{ attendance.clock_in_at ?? '--:--' }}</span>
-                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">Out</span>{{ attendance.clock_out_at ?? '--:--' }}</span>
-                            </div>
-                        </li>
-                    </ul>
-                </template>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
             </section>
 
             <p class="mt-6 text-center text-[10px] tracking-[0.3em] text-zinc-600">AKIOKA RECEPTION SYSTEM</p>
@@ -337,6 +393,25 @@ onUnmounted(() => {
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         radial-gradient(ellipse at top, rgba(120, 125, 135, 0.18), transparent 60%);
     background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+/* 部署カラムの横スクロールバー（ダークテーマに合わせた細めのバー） */
+.tc-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.tc-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+.tc-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tc-scroll::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+}
+.tc-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* 検索クリアは自作の×ボタンを使うため、ブラウザ標準のクリアボタンは非表示にする */
