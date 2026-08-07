@@ -17,7 +17,9 @@ class TimeClockController extends Controller
     {
         $groups = Group::select('id', 'name')->orderBy('name')->get();
 
+        // 打刻対象はメールアドレスが登録されているユーザーのみ
         $users = User::active()
+            ->withEmail()
             ->select('id', 'name', 'emp_no', 'group_id')
             ->orderBy('emp_no')
             ->get();

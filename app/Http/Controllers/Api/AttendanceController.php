@@ -13,7 +13,8 @@ class AttendanceController extends Controller
 {
     /**
      * 出退勤画面用ログイン。
-     * 管理画面と異なり StaffMember 登録は不要（全社員が対象）。
+     * 管理画面と異なり StaffMember 登録は不要。
+     * ただしメールアドレスが登録されている社員のみ打刻対象とする。
      *
      * POST /api/timeclock/login
      */
@@ -23,7 +24,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->find($validated['user_id']);
+        $user = User::active()->withEmail()->find($validated['user_id']);
 
         if (!$user) {
             throw ValidationException::withMessages([
@@ -53,7 +54,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->find($validated['user_id']);
+        $user = User::active()->withEmail()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -85,7 +86,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->find($validated['user_id']);
+        $user = User::active()->withEmail()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -128,7 +129,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->find($validated['user_id']);
+        $user = User::active()->withEmail()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -156,13 +157,14 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 当日の全社員の出退勤情報を返す専用API。
+     * 当日の出退勤情報を返す専用API（メールアドレス登録済みの社員のみ）。
      *
      * GET /api/attendances/today
      */
     public function today(): JsonResponse
     {
         $attendances = Attendance::today()
+            ->whereHas('user', fn ($query) => $query->active()->withEmail())
             ->with('user:id,emp_no,name,group_id')
             ->orderBy('clock_in_at')
             ->get()
