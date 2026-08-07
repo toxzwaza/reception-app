@@ -76,6 +76,14 @@ class User extends Authenticatable
     }
 
     /**
+     * メールアドレスが登録されているユーザーのみを取得（出退勤打刻の対象者）
+     */
+    public function scopeWithEmail($query)
+    {
+        return $query->whereNotNull('email')->where('email', '<>', '');
+    }
+
+    /**
      * 管理者権限を持つユーザーのみを取得
      */
     public function scopeAdmin($query)
