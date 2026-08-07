@@ -54,11 +54,11 @@
               <!-- ライブ映像エリア -->
               <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-900 p-4 overflow-hidden">
                 <div class="relative max-h-full">
-                  <!-- ビデオフィード表示 -->
+                  <!-- ビデオフィード表示（スキャナーが逆さ設置のため撮影後画像と同様に180度回転して表示） -->
                   <img
                     :src="videoFeedUrl"
                     alt="スキャン映像"
-                    class="max-h-[60vh] max-w-full object-contain rounded-lg"
+                    class="max-h-[60vh] max-w-full object-contain rounded-lg rotate-180"
                     @error="handleVideoFeedError"
                   />
                   <!-- ビデオフィードエラー時のフォールバック表示 -->
@@ -103,11 +103,11 @@
                   class="rounded-lg px-4 py-2 text-sm font-medium text-center"
                   :class="documentDetected ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"
                 >
-                  <span v-if="documentDetected">書類を認識しました（赤枠）。「スキャン」で撮影してください。</span>
-                  <span v-else>書類を認識していません。位置を調整するか「手動撮影」で撮影してください。</span>
+                  <span v-if="documentDetected">書類を認識しました（赤枠）。「スキャン」ボタンで撮影してください。</span>
+                  <span v-else>書類を認識していません。位置を調整するか「撮影」ボタンで撮影してください。</span>
                 </div>
 
-                <!-- 操作ボタン -->
+                <!-- 操作ボタン（検出状態に応じてスキャン/撮影のどちらか一方のみ表示） -->
                 <div class="flex gap-3">
                   <button
                     type="button"
@@ -118,20 +118,22 @@
                     キャンセル
                   </button>
                   <button
+                    v-if="documentDetected"
+                    type="button"
+                    @click="captureScan"
+                    :disabled="isCapturing"
+                    class="flex-1 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50 text-lg"
+                  >
+                    {{ isCapturing ? '撮影中...' : 'スキャン' }}
+                  </button>
+                  <button
+                    v-else
                     type="button"
                     @click="captureManual"
                     :disabled="isCapturing"
-                    class="flex-1 py-4 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 disabled:opacity-50 text-lg"
+                    class="flex-1 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 text-lg"
                   >
-                    手動撮影
-                  </button>
-                  <button
-                    type="button"
-                    @click="captureScan"
-                    :disabled="!documentDetected || isCapturing"
-                    class="flex-1 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-lg"
-                  >
-                    {{ isCapturing ? '撮影中...' : 'スキャン' }}
+                    {{ isCapturing ? '撮影中...' : '撮影' }}
                   </button>
                 </div>
               </div>

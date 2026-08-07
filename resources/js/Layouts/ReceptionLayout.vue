@@ -140,8 +140,11 @@
           loop
           playsinline
         ></video>
-        <div class="pointer-events-none absolute inset-x-0 bottom-12 text-center">
-          <span class="inline-block animate-pulse rounded-full bg-white/15 px-6 py-2.5 text-lg font-medium text-white backdrop-blur-sm">
+        <div class="pointer-events-none absolute inset-x-0 bottom-16 text-center">
+          <span class="inline-flex animate-pulse items-center gap-4 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-12 py-6 text-3xl font-bold text-white shadow-2xl shadow-blue-500/50 ring-4 ring-white/60">
+            <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
+            </svg>
             画面をタップして受付を開始
           </span>
         </div>
@@ -152,7 +155,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 
 // public 配下の背景素材（Vite の静的解決を避けるため実行時バインド）
 const bgSrc = '/images/reception/background.png';
@@ -170,8 +173,14 @@ const props = defineProps({
 // ── スクリーンセーバー（無操作時のPR動画再生） ──────────
 const videoSrc = '/videos/akioka_pr.mp4';
 const IDLE_MS = 10 * 60 * 1000; // 10分間無操作で起動
+// TOP以外の画面は5分間無操作で受付トップへ自動リダイレクト
+const REDIRECT_IDLE_MS = 5 * 60 * 1000;
 const showSaver = ref(false);
 let idleTimer = null;
+let redirectTimer = null;
+
+const page = usePage();
+const isHome = () => (page.url || '/').split('?')[0] === '/';
 
 // 無操作タイマーを開始/再開
 const startIdleTimer = () => {
@@ -179,6 +188,13 @@ const startIdleTimer = () => {
   idleTimer = setTimeout(() => {
     showSaver.value = true;
   }, IDLE_MS);
+
+  clearTimeout(redirectTimer);
+  redirectTimer = setTimeout(() => {
+    if (!isHome() && !showSaver.value) {
+      router.visit(route('home'));
+    }
+  }, REDIRECT_IDLE_MS);
 };
 
 // 操作を検知したらタイマーをリセット（セーバー表示中は無視）
@@ -189,6 +205,7 @@ const onActivity = () => {
 // ボタンから即座にセーバーを起動
 const startSaver = () => {
   clearTimeout(idleTimer);
+  clearTimeout(redirectTimer);
   showSaver.value = true;
 };
 
@@ -226,6 +243,7 @@ onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
   activityEvents.forEach((e) => window.removeEventListener(e, onActivity));
   clearTimeout(idleTimer);
+  clearTimeout(redirectTimer);
 });
 </script>
 

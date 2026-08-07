@@ -231,7 +231,12 @@ class DeliveryController extends Controller
     // 管理画面用：納品書・受領書一覧
     public function adminIndex(Request $request)
     {
-        $query = Delivery::query();
+        // 一覧に品名・品番を表示するため、紐づけ済み発注データを件数付きで取得
+        $query = Delivery::query()
+            ->with(['initialOrders' => function ($q) {
+                $q->select('initial_orders.id', 'initial_orders.name', 'initial_orders.s_name');
+            }])
+            ->withCount('initialOrders');
 
         // 検索フィルター
         if ($request->filled('delivery_type')) {
@@ -246,16 +251,25 @@ class DeliveryController extends Controller
             $query->whereDate('received_at', '<=', $request->date_to);
         }
 
+        // 電子印状態フィルター（一覧バッジと同じ sealed_document_image の有無で判定）
+        if ($request->filled('seal_status')) {
+            if ($request->seal_status === 'sealed') {
+                $query->whereNotNull('sealed_document_image');
+            } elseif ($request->seal_status === 'unsealed') {
+                $query->whereNull('sealed_document_image');
+            }
+        }
+
         // ソート
         $sortBy = $request->get('sort_by', 'received_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $deliveries = $query->paginate(20);
+        $deliveries = $query->paginate(20)->appends($request->query());
 
         return Inertia::render('Admin/Deliveries/Index', [
             'deliveries' => $deliveries,
-            'filters' => $request->only(['delivery_type', 'date_from', 'date_to', 'sort_by', 'sort_order'])
+            'filters' => $request->only(['delivery_type', 'date_from', 'date_to', 'seal_status', 'sort_by', 'sort_order'])
         ]);
     }
 

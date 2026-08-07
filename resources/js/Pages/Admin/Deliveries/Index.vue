@@ -18,13 +18,21 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- 検索フィルター -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
-          <form @submit.prevent="applyFilters" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form @submit.prevent="applyFilters" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">書類種別</label>
               <select v-model="filters.delivery_type" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="">すべて</option>
                 <option value="納品書">納品書</option>
                 <option value="受領書">受領書</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">電子印状態</label>
+              <select v-model="filters.seal_status" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">すべて</option>
+                <option value="sealed">電子印済み</option>
+                <option value="unsealed">未押印</option>
               </select>
             </div>
             <div>
@@ -80,6 +88,7 @@
                       <span v-if="filters.sort_by === 'received_at'">{{ filters.sort_order === 'asc' ? '↑' : '↓' }}</span>
                     </button>
                   </th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品名・品番</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">電子印状態</th>
                   <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
                 </tr>
@@ -97,6 +106,15 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                     {{ formatDate(delivery.received_at) }}
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                    <template v-if="delivery.initial_orders && delivery.initial_orders.length > 0">
+                      {{ delivery.initial_orders[0].name || '-' }} / {{ delivery.initial_orders[0].s_name || '-' }}
+                      <span v-if="delivery.initial_orders_count > 1" class="ml-1 text-xs font-medium text-slate-500">
+                        他{{ delivery.initial_orders_count - 1 }}件
+                      </span>
+                    </template>
+                    <span v-else class="text-slate-400">-</span>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <Badge :variant="delivery.sealed_document_image ? 'success' : 'warning'" dot>
                       {{ delivery.sealed_document_image ? '電子印済み' : '未押印' }}
@@ -112,7 +130,7 @@
                   </td>
                 </tr>
                 <tr v-if="deliveries.data.length === 0">
-                  <td colspan="5" class="px-6 py-10 text-center text-slate-400">該当する書類がありません。</td>
+                  <td colspan="6" class="px-6 py-10 text-center text-slate-400">該当する書類がありません。</td>
                 </tr>
               </tbody>
             </table>
@@ -156,6 +174,7 @@ const props = defineProps({
 
 const filters = reactive({
   delivery_type: props.filters.delivery_type || '',
+  seal_status: props.filters.seal_status || '',
   date_from: props.filters.date_from || '',
   date_to: props.filters.date_to || '',
   sort_by: props.filters.sort_by || 'received_at',
