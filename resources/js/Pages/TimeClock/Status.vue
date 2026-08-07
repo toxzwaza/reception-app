@@ -25,15 +25,17 @@ const filteredAttendances = computed(() => {
     return attendances.value.filter((a) => String(a.group_id) === String(selectedGroupId.value));
 });
 
+const displayDate = computed(() => {
+    if (!date.value) return '';
+    return new Date(`${date.value}T00:00:00`).toLocaleDateString('ja-JP', {
+        year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+    });
+});
+
 const statusLabel = (status) => ({
     working: '出勤中',
     clocked_out: '退勤済み',
 }[status] ?? status);
-
-const statusClass = (status) => ({
-    working: 'bg-green-100 text-green-700',
-    clocked_out: 'bg-blue-100 text-blue-700',
-}[status] ?? 'bg-slate-100 text-slate-600');
 
 const fetchToday = async () => {
     errorMessage.value = '';
@@ -64,48 +66,65 @@ onUnmounted(() => {
 <template>
     <Head title="本日の出退勤状況" />
 
-    <div class="min-h-screen bg-slate-100">
+    <div class="tc-bg min-h-screen text-zinc-100">
         <!-- ヘッダー -->
-        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-6 shadow">
-            <div class="mx-auto max-w-4xl flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-bold text-white">本日の出退勤状況</h1>
-                    <p class="mt-0.5 text-sm text-emerald-100">
-                        {{ date }}
-                        <span v-if="lastUpdatedAt" class="ml-2 text-emerald-200">（{{ lastUpdatedAt }} 更新）</span>
-                    </p>
+        <header class="sticky top-0 z-10 border-b border-zinc-700/60 bg-zinc-900/85 backdrop-blur">
+            <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+                <div class="flex min-w-0 items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-zinc-100 to-zinc-400 shadow-lg shadow-black/40">
+                        <span class="text-sm font-black tracking-tight text-zinc-900">A</span>
+                    </div>
+                    <div class="min-w-0 leading-tight">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-400">Attendance</p>
+                        <h1 class="truncate text-sm font-bold tracking-wider text-white sm:text-base">本日の出退勤状況</h1>
+                    </div>
                 </div>
                 <a
                     href="/timeclock"
-                    class="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25 transition"
+                    class="shrink-0 rounded-lg border border-zinc-700/80 bg-zinc-900/60 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
                 >
-                    打刻画面へ
+                    ← 打刻画面
                 </a>
             </div>
-        </div>
+        </header>
 
-        <div class="mx-auto max-w-4xl px-6 py-6">
+        <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+            <!-- 日付・更新時刻 -->
+            <p class="text-xs tracking-wider text-zinc-400">
+                {{ displayDate }}
+                <span v-if="lastUpdatedAt" class="ml-2 text-zinc-600">最終更新 {{ lastUpdatedAt }}・1分ごとに自動更新</span>
+            </p>
+
             <!-- サマリー -->
-            <div class="grid grid-cols-3 gap-4">
-                <div class="rounded-xl bg-white p-4 text-center shadow-sm ring-1 ring-black/5">
-                    <p class="text-sm text-slate-500">本日の出勤者</p>
-                    <p class="mt-1 text-3xl font-bold text-slate-800">{{ count.total }}<span class="text-base font-normal text-slate-400"> 名</span></p>
+            <dl class="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
+                <div class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/90 to-zinc-900/90 px-4 py-4 text-center ring-1 ring-white/[0.05] sm:py-5">
+                    <dt class="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 sm:text-xs">出勤者計</dt>
+                    <dd class="mt-1 text-2xl font-bold tabular-nums text-white sm:text-3xl">
+                        {{ count.total }}<span class="ml-0.5 text-xs font-normal text-zinc-500">名</span>
+                    </dd>
                 </div>
-                <div class="rounded-xl bg-white p-4 text-center shadow-sm ring-1 ring-black/5">
-                    <p class="text-sm text-slate-500">出勤中</p>
-                    <p class="mt-1 text-3xl font-bold text-green-600">{{ count.working }}<span class="text-base font-normal text-slate-400"> 名</span></p>
+                <div class="rounded-xl border border-white/25 bg-gradient-to-b from-zinc-800/90 to-zinc-900/90 px-4 py-4 text-center ring-1 ring-white/10 sm:py-5">
+                    <dt class="flex items-center justify-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-300 sm:text-xs">
+                        <span class="tc-pulse h-1.5 w-1.5 rounded-full bg-white"></span>出勤中
+                    </dt>
+                    <dd class="mt-1 text-2xl font-bold tabular-nums text-white sm:text-3xl">
+                        {{ count.working }}<span class="ml-0.5 text-xs font-normal text-zinc-500">名</span>
+                    </dd>
                 </div>
-                <div class="rounded-xl bg-white p-4 text-center shadow-sm ring-1 ring-black/5">
-                    <p class="text-sm text-slate-500">退勤済み</p>
-                    <p class="mt-1 text-3xl font-bold text-blue-600">{{ count.clocked_out }}<span class="text-base font-normal text-slate-400"> 名</span></p>
+                <div class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/90 to-zinc-900/90 px-4 py-4 text-center ring-1 ring-white/[0.05] sm:py-5">
+                    <dt class="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 sm:text-xs">退勤済み</dt>
+                    <dd class="mt-1 text-2xl font-bold tabular-nums text-zinc-300 sm:text-3xl">
+                        {{ count.clocked_out }}<span class="ml-0.5 text-xs font-normal text-zinc-500">名</span>
+                    </dd>
                 </div>
-            </div>
+            </dl>
 
-            <!-- 絞り込み -->
-            <div class="mt-6 flex items-center justify-between">
+            <!-- 操作列 -->
+            <div class="mt-6 flex items-center justify-between gap-3">
                 <select
                     v-model="selectedGroupId"
-                    class="rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    aria-label="部署で絞り込み"
+                    class="rounded-lg border-zinc-600/80 bg-zinc-900/80 py-2 text-sm text-zinc-100 shadow-inner focus:border-zinc-300 focus:ring-zinc-300/40"
                 >
                     <option value="">すべての部署</option>
                     <option v-for="group in groups" :key="group.id" :value="group.id">
@@ -115,49 +134,119 @@ onUnmounted(() => {
                 <button
                     type="button"
                     @click="fetchToday"
-                    class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition"
+                    class="rounded-lg border border-zinc-700/80 bg-zinc-900/60 px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50 active:scale-[0.97]"
                 >
                     再読み込み
                 </button>
             </div>
 
-            <div v-if="errorMessage" class="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
+            <p v-if="errorMessage" role="alert" class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
                 {{ errorMessage }}
-            </div>
+            </p>
 
             <!-- 一覧 -->
-            <div class="mt-4 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5">
-                <div v-if="loading" class="px-6 py-10 text-center text-slate-400">読み込み中…</div>
-                <div v-else-if="filteredAttendances.length === 0" class="px-6 py-10 text-center text-slate-400">
+            <section class="mt-4 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 ring-1 ring-white/[0.05]">
+                <div v-if="loading" class="px-6 py-14 text-center text-sm text-zinc-500">読み込み中…</div>
+                <div v-else-if="filteredAttendances.length === 0" class="px-6 py-14 text-center text-sm text-zinc-500">
                     本日の出勤記録はまだありません
                 </div>
-                <table v-else class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-slate-50 text-left text-slate-500">
-                            <th class="px-5 py-3 font-semibold">社員番号</th>
-                            <th class="px-5 py-3 font-semibold">名前</th>
-                            <th class="px-5 py-3 font-semibold">部署</th>
-                            <th class="px-5 py-3 font-semibold text-center">出勤</th>
-                            <th class="px-5 py-3 font-semibold text-center">退勤</th>
-                            <th class="px-5 py-3 font-semibold text-center">ステータス</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="attendance in filteredAttendances" :key="attendance.user_id" class="hover:bg-slate-50">
-                            <td class="px-5 py-3 tabular-nums text-slate-500">{{ attendance.emp_no }}</td>
-                            <td class="px-5 py-3 font-medium text-slate-800">{{ attendance.name }}</td>
-                            <td class="px-5 py-3 text-slate-600">{{ groupNames[String(attendance.group_id)] ?? '—' }}</td>
-                            <td class="px-5 py-3 text-center tabular-nums">{{ attendance.clock_in_at ?? '--:--' }}</td>
-                            <td class="px-5 py-3 text-center tabular-nums">{{ attendance.clock_out_at ?? '--:--' }}</td>
-                            <td class="px-5 py-3 text-center">
-                                <span class="inline-block rounded-full px-3 py-0.5 text-xs font-semibold" :class="statusClass(attendance.status)">
+
+                <template v-else>
+                    <!-- デスクトップ：テーブル -->
+                    <div class="hidden overflow-x-auto md:block">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-zinc-700/60 bg-black/25 text-left text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+                                <th class="px-5 py-3 font-semibold">社員番号</th>
+                                <th class="px-5 py-3 font-semibold">名前</th>
+                                <th class="px-5 py-3 font-semibold">部署</th>
+                                <th class="px-5 py-3 text-center font-semibold">出勤</th>
+                                <th class="px-5 py-3 text-center font-semibold">退勤</th>
+                                <th class="px-5 py-3 text-center font-semibold">ステータス</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-800">
+                            <tr v-for="attendance in filteredAttendances" :key="attendance.user_id" class="transition hover:bg-white/[0.03]">
+                                <td class="px-5 py-3.5 tabular-nums text-zinc-500">{{ attendance.emp_no }}</td>
+                                <td class="px-5 py-3.5 font-semibold text-zinc-100">{{ attendance.name }}</td>
+                                <td class="px-5 py-3.5 text-zinc-400">{{ groupNames[String(attendance.group_id)] ?? '—' }}</td>
+                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_in_at ?? '--:--' }}</td>
+                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_out_at ?? '--:--' }}</td>
+                                <td class="px-5 py-3.5 text-center">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-wider"
+                                        :class="attendance.status === 'working'
+                                            ? 'border-white/40 bg-white/10 text-white'
+                                            : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
+                                        ></span>
+                                        {{ statusLabel(attendance.status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+
+                    <!-- モバイル：カード -->
+                    <ul class="divide-y divide-zinc-800 md:hidden">
+                        <li v-for="attendance in filteredAttendances" :key="attendance.user_id" class="px-4 py-3.5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-zinc-100">{{ attendance.name }}</p>
+                                    <p class="mt-0.5 text-[11px] text-zinc-500">
+                                        {{ attendance.emp_no }} ・ {{ groupNames[String(attendance.group_id)] ?? '—' }}
+                                    </p>
+                                </div>
+                                <span
+                                    class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-wider"
+                                    :class="attendance.status === 'working'
+                                        ? 'border-white/40 bg-white/10 text-white'
+                                        : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
+                                    ></span>
                                     {{ statusLabel(attendance.status) }}
                                 </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                            </div>
+                            <div class="mt-2 flex gap-4 text-xs tabular-nums text-zinc-400">
+                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">In</span>{{ attendance.clock_in_at ?? '--:--' }}</span>
+                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">Out</span>{{ attendance.clock_out_at ?? '--:--' }}</span>
+                            </div>
+                        </li>
+                    </ul>
+                </template>
+            </section>
+
+            <p class="mt-6 text-center text-[10px] tracking-[0.3em] text-zinc-600">AKIOKA RECEPTION SYSTEM</p>
+        </main>
     </div>
 </template>
+
+<style scoped>
+/* メタリックな黒背景（打刻画面と共通のトーン） */
+.tc-bg {
+    background-color: #0b0b0d;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        radial-gradient(ellipse at top, rgba(120, 125, 135, 0.18), transparent 60%);
+    background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+.tc-pulse {
+    animation: tc-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tc-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tc-pulse { animation: none; }
+}
+</style>
