@@ -38,6 +38,7 @@ Route::post('/timeclock/login', [AttendanceController::class, 'login'])->name('a
 Route::get('/timeclock/me', [AttendanceController::class, 'me'])->name('api.timeclock.me');
 Route::post('/timeclock/clock-in', [AttendanceController::class, 'clockIn'])->name('api.timeclock.clock-in');
 Route::post('/timeclock/clock-out', [AttendanceController::class, 'clockOut'])->name('api.timeclock.clock-out');
+Route::post('/timeclock/cancel', [AttendanceController::class, 'cancel'])->name('api.timeclock.cancel');
 
 // 当日の出退勤情報取得API（状態確認画面・外部連携用）
 Route::get('/attendances/today', [AttendanceController::class, 'today'])->name('api.attendances.today');

@@ -25,8 +25,24 @@ const clockOutAt = ref(null);
 const punchMessage = ref('');
 const punchError = ref('');
 
-// 誤操作防止：打刻前の確認ダイアログ（'clock-in' | 'clock-out' | null）
+// 誤操作防止：打刻前の確認ダイアログ（'clock-in' | 'clock-out' | 'cancel' | null）
 const confirmAction = ref(null);
+
+// 確認ダイアログの表示内容（取り消しは現在のステータスで文言を変える）
+const confirmMeta = computed(() => {
+    if (confirmAction.value === 'clock-in') {
+        return { icon: '🌅', title: '出勤を記録します', description: null };
+    }
+    if (confirmAction.value === 'clock-out') {
+        return { icon: '🌙', title: '退勤を記録します', description: null };
+    }
+    if (confirmAction.value === 'cancel') {
+        return status.value === 'working'
+            ? { icon: '↩️', title: '出勤を取り消します', description: '本日の出勤記録を削除して「未出勤」に戻します' }
+            : { icon: '↩️', title: '退勤を取り消します', description: '退勤時刻を取り消して「出勤中」に戻します' };
+    }
+    return { icon: '', title: '', description: null };
+});
 
 // 現在時刻表示
 const now = ref(new Date());
@@ -126,11 +142,18 @@ const fetchMyStatus = async () => {
     }
 };
 
+// 取り消しボタン：打刻済み（出勤中・退勤済み）のときのみ表示
+const canCancel = computed(() => status.value !== 'not_clocked_in');
+const cancelLabel = computed(() =>
+    status.value === 'working' ? '出勤を取り消す' : '退勤を取り消す'
+);
+
 // 打刻ボタン押下 → まず確認ダイアログを開く（誤操作防止）
 const requestPunch = (type) => {
     if (processing.value) return;
     if (type === 'clock-in' && !canClockIn.value) return;
     if (type === 'clock-out' && !canClockOut.value) return;
+    if (type === 'cancel' && !canCancel.value) return;
     punchMessage.value = '';
     punchError.value = '';
     confirmAction.value = type;
@@ -381,6 +404,24 @@ onUnmounted(() => {
                         <template v-else-if="status === 'working'">勤務中は退勤ボタンのみ操作できます</template>
                         <template v-else>本日の勤務は終了しました。お疲れさまでした</template>
                     </p>
+
+                    <!-- 打刻の取り消し（打刻済みのときのみ表示） -->
+                    <div v-if="canCancel" class="mt-4 border-t border-zinc-800 pt-4 text-center">
+                        <button
+                            type="button"
+                            @click="requestPunch('cancel')"
+                            :disabled="processing"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50 active:scale-[0.97] disabled:opacity-40"
+                        >
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.79 4.4a.75.75 0 0 1 .01 1.06L5.7 7.6h6.55a4.75 4.75 0 0 1 0 9.5H9a.75.75 0 0 1 0-1.5h3.25a3.25 3.25 0 0 0 0-6.5H5.7l2.1 2.14a.75.75 0 1 1-1.07 1.05L3.4 8.87a.75.75 0 0 1 0-1.05l3.33-3.4a.75.75 0 0 1 1.06-.01Z" clip-rule="evenodd" />
+                            </svg>
+                            {{ cancelLabel }}
+                        </button>
+                        <p class="mt-2 text-[10px] text-zinc-600">
+                            間違えて打刻した場合はこちらから取り消せます
+                        </p>
+                    </div>
                 </div>
             </section>
 
@@ -394,13 +435,14 @@ onUnmounted(() => {
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-sm"
                 role="alertdialog"
                 aria-modal="true"
-                :aria-label="confirmAction === 'clock-in' ? '出勤の確認' : '退勤の確認'"
+                :aria-label="confirmMeta.title"
                 @click.self="confirmAction = null"
             >
                 <div class="w-full max-w-xs rounded-2xl border border-zinc-600/70 bg-gradient-to-b from-zinc-800 to-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
-                    <p class="text-center text-4xl">{{ confirmAction === 'clock-in' ? '🌅' : '🌙' }}</p>
-                    <p class="mt-3 text-center text-lg font-bold text-white">
-                        {{ confirmAction === 'clock-in' ? '出勤を記録します' : '退勤を記録します' }}
+                    <p class="text-center text-4xl">{{ confirmMeta.icon }}</p>
+                    <p class="mt-3 text-center text-lg font-bold text-white">{{ confirmMeta.title }}</p>
+                    <p v-if="confirmMeta.description" class="mt-1.5 text-center text-xs leading-relaxed text-zinc-400">
+                        {{ confirmMeta.description }}
                     </p>
                     <p class="mt-1 text-center text-sm tabular-nums text-zinc-400">{{ currentTime }} 現在</p>
                     <div class="mt-6 grid grid-cols-2 gap-3">
