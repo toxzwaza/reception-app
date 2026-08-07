@@ -161,7 +161,7 @@ const executePunch = async () => {
     }
 };
 
-// 既にログイン済みなら復元
+// localStorage に保存済みのユーザーIDがあれば自動ログイン（次回以降はログイン操作不要）
 const restoreLogin = async () => {
     const savedUserId = localStorage.getItem(STORAGE_KEY);
     if (!savedUserId) return;
@@ -171,8 +171,10 @@ const restoreLogin = async () => {
             loggedInUser.value = response.data.user;
             await fetchMyStatus();
         }
-    } catch {
-        localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+        // サーバーが明示的に拒否した場合（退職・メール削除等で対象外）のみ保存IDを破棄。
+        // 一時的な通信エラーでは保持し、次回アクセス時に再試行する。
+        if (error.response) localStorage.removeItem(STORAGE_KEY);
     }
 };
 

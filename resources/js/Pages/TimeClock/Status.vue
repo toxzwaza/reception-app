@@ -29,7 +29,15 @@ const filteredAttendances = computed(() => {
     const query = normalize(nameQuery.value);
     return attendances.value.filter((a) => {
         if (selectedStatus.value && a.status !== selectedStatus.value) return false;
-        if (query && !normalize(a.name).includes(query) && !normalize(a.emp_no).includes(query)) return false;
+        if (query) {
+            // 名前・社員番号に加え部署名でもマッチ（部署名ヒット時はその部署のメンバー全員が残る）
+            const deptName = normalize(groupNames.value[String(a.group_id)] ?? (a.group_id == null ? '部署なし' : ''));
+            const hit =
+                normalize(a.name).includes(query) ||
+                normalize(a.emp_no).includes(query) ||
+                (deptName && deptName.includes(query));
+            if (!hit) return false;
+        }
         return true;
     });
 });
@@ -220,8 +228,8 @@ onUnmounted(() => {
                         <input
                             v-model="nameQuery"
                             type="search"
-                            aria-label="名前・社員番号で検索"
-                            placeholder="名前・社員番号で検索"
+                            aria-label="名前・社員番号・部署名で検索"
+                            placeholder="名前・社員番号・部署名で検索"
                             class="w-full rounded-lg border-zinc-600/80 bg-zinc-900/80 py-2 pl-9 pr-9 text-sm text-zinc-100 shadow-inner placeholder:text-zinc-600 focus:border-zinc-300 focus:ring-zinc-300/40"
                         />
                         <button
