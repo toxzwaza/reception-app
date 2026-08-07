@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\DisplayController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\LocalStorageAuthController;
@@ -31,6 +32,15 @@ Route::post('/login-local', [LocalStorageAuthController::class, 'login']);
 Route::post('/logout-local', [LocalStorageAuthController::class, 'logout']);
 Route::post('/test-password', [LocalStorageAuthController::class, 'testPassword']); // デバッグ用
 Route::post('/set-session-user', [LocalStorageAuthController::class, 'setSessionUser']); // セッション設定用
+
+// 出退勤打刻API
+Route::post('/timeclock/login', [AttendanceController::class, 'login'])->name('api.timeclock.login');
+Route::get('/timeclock/me', [AttendanceController::class, 'me'])->name('api.timeclock.me');
+Route::post('/timeclock/clock-in', [AttendanceController::class, 'clockIn'])->name('api.timeclock.clock-in');
+Route::post('/timeclock/clock-out', [AttendanceController::class, 'clockOut'])->name('api.timeclock.clock-out');
+
+// 当日の出退勤情報取得API（状態確認画面・外部連携用）
+Route::get('/attendances/today', [AttendanceController::class, 'today'])->name('api.attendances.today');
 
 // 事務所ディスプレイ表示システム用API（固定トークン認証）
 Route::middleware('display.token')->get('/display/facility-schedules', [DisplayController::class, 'facilitySchedules'])->name('api.display.facility-schedules');

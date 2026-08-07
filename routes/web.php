@@ -24,12 +24,17 @@ use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\FacilityTimelineController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\TimeClockController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/facility-timeline', [FacilityTimelineController::class, 'index'])->name('facility-timeline');
+
+// 出退勤打刻（タブレット・管理画面とは独立したパス。ログインはページ内で行う）
+Route::get('/timeclock', [TimeClockController::class, 'index'])->name('timeclock');
+Route::get('/timeclock/status', [TimeClockController::class, 'status'])->name('timeclock.status');
 
 // 認証ルート
 require __DIR__.'/auth.php';
