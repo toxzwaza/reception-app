@@ -35,6 +35,42 @@ const filteredAttendances = computed(() => {
     });
 });
 
+// 部署ごとの縦カラム表示用（部署マスタの並び順・メンバーは社員番号順）
+const groupedAttendances = computed(() => {
+    const byGroup = new Map();
+    for (const attendance of filteredAttendances.value) {
+        const key = attendance.group_id != null ? String(attendance.group_id) : 'none';
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push(attendance);
+    }
+
+    const sortByEmpNo = (members) =>
+        [...members].sort((a, b) => String(a.emp_no ?? '').localeCompare(String(b.emp_no ?? '')));
+
+    const columns = [];
+    for (const group of props.groups) {
+        const members = byGroup.get(String(group.id));
+        if (members) {
+            columns.push({
+                id: group.id,
+                name: group.name,
+                members: sortByEmpNo(members),
+                workingCount: members.filter((m) => m.status === 'working').length,
+            });
+        }
+    }
+    if (byGroup.has('none')) {
+        const members = byGroup.get('none');
+        columns.push({
+            id: 'none',
+            name: '部署なし',
+            members: sortByEmpNo(members),
+            workingCount: members.filter((m) => m.status === 'working').length,
+        });
+    }
+    return columns;
+});
+
 const isFiltered = computed(() =>
     Boolean(selectedGroupId.value || selectedStatus.value || nameQuery.value.trim())
 );
@@ -95,7 +131,7 @@ onUnmounted(() => {
     <div class="tc-bg min-h-screen text-zinc-100">
         <!-- ヘッダー -->
         <header class="sticky top-0 z-10 border-b border-zinc-700/60 bg-zinc-900/85 backdrop-blur">
-            <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
                 <div class="flex min-w-0 items-center gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-zinc-100 to-zinc-400 shadow-lg shadow-black/40">
                         <span class="text-sm font-black tracking-tight text-zinc-900">A</span>
@@ -114,7 +150,7 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
             <!-- 日付・更新時刻 -->
             <p class="text-xs tracking-wider text-zinc-400">
                 {{ displayDate }}
@@ -234,10 +270,12 @@ onUnmounted(() => {
                 {{ errorMessage }}
             </p>
 
-            <!-- 一覧 -->
-            <section class="mt-4 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 ring-1 ring-white/[0.05]">
-                <div v-if="loading" class="px-6 py-14 text-center text-sm text-zinc-500">読み込み中…</div>
-                <div v-else-if="filteredAttendances.length === 0" class="px-6 py-14 text-center text-sm text-zinc-500">
+            <!-- 部署ごとの縦カラム一覧 -->
+            <section class="mt-4">
+                <div v-if="loading" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
+                    読み込み中…
+                </div>
+                <div v-else-if="filteredAttendances.length === 0" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
                     <template v-if="isFiltered">
                         絞り込み条件に該当する記録がありません
                         <button
@@ -251,76 +289,49 @@ onUnmounted(() => {
                     <template v-else>本日の出勤記録はまだありません</template>
                 </div>
 
-                <template v-else>
-                    <!-- デスクトップ：テーブル -->
-                    <div class="hidden overflow-x-auto md:block">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-zinc-700/60 bg-black/25 text-left text-[11px] uppercase tracking-[0.15em] text-zinc-500">
-                                <th class="px-5 py-3 font-semibold">社員番号</th>
-                                <th class="px-5 py-3 font-semibold">名前</th>
-                                <th class="px-5 py-3 font-semibold">部署</th>
-                                <th class="px-5 py-3 text-center font-semibold">出勤</th>
-                                <th class="px-5 py-3 text-center font-semibold">退勤</th>
-                                <th class="px-5 py-3 text-center font-semibold">ステータス</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-zinc-800">
-                            <tr v-for="attendance in filteredAttendances" :key="attendance.user_id" class="transition hover:bg-white/[0.03]">
-                                <td class="px-5 py-3.5 tabular-nums text-zinc-500">{{ attendance.emp_no }}</td>
-                                <td class="px-5 py-3.5 font-semibold text-zinc-100">{{ attendance.name }}</td>
-                                <td class="px-5 py-3.5 text-zinc-400">{{ groupNames[String(attendance.group_id)] ?? '—' }}</td>
-                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_in_at ?? '--:--' }}</td>
-                                <td class="px-5 py-3.5 text-center tabular-nums text-zinc-200">{{ attendance.clock_out_at ?? '--:--' }}</td>
-                                <td class="px-5 py-3.5 text-center">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-wider"
-                                        :class="attendance.status === 'working'
-                                            ? 'border-white/40 bg-white/10 text-white'
-                                            : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
-                                        ></span>
-                                        {{ statusLabel(attendance.status) }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
+                <div v-else class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <section
+                        v-for="column in groupedAttendances"
+                        :key="column.id"
+                        class="overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05]"
+                        :aria-label="`${column.name}の出退勤状況`"
+                    >
+                        <!-- 部署名ヘッダー -->
+                        <header class="flex items-center justify-center gap-2 border-b border-zinc-700/60 bg-black/30 px-4 py-3">
+                            <h2 class="truncate text-sm font-bold tracking-widest text-white">{{ column.name }}</h2>
+                            <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-300">
+                                {{ column.workingCount }}/{{ column.members.length }}
+                            </span>
+                        </header>
 
-                    <!-- モバイル：カード -->
-                    <ul class="divide-y divide-zinc-800 md:hidden">
-                        <li v-for="attendance in filteredAttendances" :key="attendance.user_id" class="px-4 py-3.5">
-                            <div class="flex items-center justify-between gap-3">
+                        <!-- 所属メンバー（縦並び） -->
+                        <ul class="divide-y divide-zinc-800/80">
+                            <li
+                                v-for="member in column.members"
+                                :key="member.user_id"
+                                class="flex items-center justify-between gap-3 px-4 py-2.5 transition hover:bg-white/[0.03]"
+                            >
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-zinc-100">{{ attendance.name }}</p>
-                                    <p class="mt-0.5 text-[11px] text-zinc-500">
-                                        {{ attendance.emp_no }} ・ {{ groupNames[String(attendance.group_id)] ?? '—' }}
+                                    <p class="truncate text-sm font-semibold text-zinc-100">{{ member.name }}</p>
+                                    <p class="mt-0.5 text-[10px] tabular-nums text-zinc-500">
+                                        <span class="mr-0.5 uppercase tracking-wider text-zinc-600">In</span>{{ member.clock_in_at ?? '--:--' }}
+                                        <span class="ml-2 mr-0.5 uppercase tracking-wider text-zinc-600">Out</span>{{ member.clock_out_at ?? '--:--' }}
                                     </p>
                                 </div>
                                 <span
-                                    class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-wider"
-                                    :class="attendance.status === 'working'
-                                        ? 'border-white/40 bg-white/10 text-white'
-                                        : 'border-zinc-600 bg-zinc-800/80 text-zinc-400'"
+                                    class="w-10 shrink-0 rounded-md border py-1 text-center text-xs font-black tracking-wide"
+                                    :class="member.status === 'working'
+                                        ? 'border-emerald-300/60 bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-950 shadow shadow-emerald-900/40'
+                                        : 'border-zinc-500/60 bg-gradient-to-b from-zinc-600 to-zinc-700 text-zinc-300'"
+                                    :title="statusLabel(member.status)"
+                                    :aria-label="statusLabel(member.status)"
                                 >
-                                    <span
-                                        class="h-1.5 w-1.5 rounded-full"
-                                        :class="attendance.status === 'working' ? 'tc-pulse bg-white' : 'bg-zinc-500'"
-                                    ></span>
-                                    {{ statusLabel(attendance.status) }}
+                                    {{ member.status === 'working' ? '出' : '退' }}
                                 </span>
-                            </div>
-                            <div class="mt-2 flex gap-4 text-xs tabular-nums text-zinc-400">
-                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">In</span>{{ attendance.clock_in_at ?? '--:--' }}</span>
-                                <span><span class="mr-1 text-[10px] uppercase tracking-wider text-zinc-600">Out</span>{{ attendance.clock_out_at ?? '--:--' }}</span>
-                            </div>
-                        </li>
-                    </ul>
-                </template>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
             </section>
 
             <p class="mt-6 text-center text-[10px] tracking-[0.3em] text-zinc-600">AKIOKA RECEPTION SYSTEM</p>
