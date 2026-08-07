@@ -12,7 +12,7 @@ const errorMessage = ref('');
 const date = ref('');
 const count = ref({ total: 0, working: 0, clocked_out: 0 });
 const attendances = ref([]);
-const selectedGroupId = ref('');
+const hiddenGroupIds = ref([]); // 非表示にした部署ID（デフォルトはすべて表示）
 const selectedStatus = ref(''); // '' | 'working' | 'clocked_out'
 const nameQuery = ref('');
 const lastUpdatedAt = ref(null);
@@ -28,12 +28,35 @@ const normalize = (text) => String(text ?? '').replace(/[\s　]/g, '').toLowerCa
 const filteredAttendances = computed(() => {
     const query = normalize(nameQuery.value);
     return attendances.value.filter((a) => {
-        if (selectedGroupId.value && String(a.group_id) !== String(selectedGroupId.value)) return false;
         if (selectedStatus.value && a.status !== selectedStatus.value) return false;
         if (query && !normalize(a.name).includes(query) && !normalize(a.emp_no).includes(query)) return false;
         return true;
     });
 });
+
+// 当日の出勤記録がある部署（トグルボタン用。部署マスタの並び順＋部署なし）
+const departmentOptions = computed(() => {
+    const presentIds = new Set(
+        attendances.value.map((a) => (a.group_id != null ? String(a.group_id) : 'none'))
+    );
+    const options = props.groups
+        .filter((g) => presentIds.has(String(g.id)))
+        .map((g) => ({ id: String(g.id), name: g.name }));
+    if (presentIds.has('none')) options.push({ id: 'none', name: '部署なし' });
+    return options;
+});
+
+// 部署ボタンで表示・非表示をトグル
+const toggleGroup = (groupId) => {
+    const id = String(groupId);
+    if (hiddenGroupIds.value.includes(id)) {
+        hiddenGroupIds.value = hiddenGroupIds.value.filter((hidden) => hidden !== id);
+    } else {
+        hiddenGroupIds.value = [...hiddenGroupIds.value, id];
+    }
+};
+
+const isGroupVisible = (groupId) => !hiddenGroupIds.value.includes(String(groupId));
 
 // 部署ごとの縦カラム表示用（部署マスタの並び順・メンバーは社員番号順）
 const groupedAttendances = computed(() => {
@@ -50,7 +73,7 @@ const groupedAttendances = computed(() => {
     const columns = [];
     for (const group of props.groups) {
         const members = byGroup.get(String(group.id));
-        if (members) {
+        if (members && isGroupVisible(group.id)) {
             columns.push({
                 id: group.id,
                 name: group.name,
@@ -59,7 +82,7 @@ const groupedAttendances = computed(() => {
             });
         }
     }
-    if (byGroup.has('none')) {
+    if (byGroup.has('none') && isGroupVisible('none')) {
         const members = byGroup.get('none');
         columns.push({
             id: 'none',
@@ -71,12 +94,17 @@ const groupedAttendances = computed(() => {
     return columns;
 });
 
+// 表示中カラムの合計人数（絞り込み件数表示用）
+const visibleCount = computed(() =>
+    groupedAttendances.value.reduce((sum, column) => sum + column.members.length, 0)
+);
+
 const isFiltered = computed(() =>
-    Boolean(selectedGroupId.value || selectedStatus.value || nameQuery.value.trim())
+    Boolean(hiddenGroupIds.value.length || selectedStatus.value || nameQuery.value.trim())
 );
 
 const clearFilters = () => {
-    selectedGroupId.value = '';
+    hiddenGroupIds.value = [];
     selectedStatus.value = '';
     nameQuery.value = '';
 };
@@ -208,37 +236,45 @@ onUnmounted(() => {
                             </svg>
                         </button>
                     </div>
-
-                    <!-- 部署選択 -->
-                    <select
-                        v-model="selectedGroupId"
-                        aria-label="部署で絞り込み"
-                        class="rounded-lg border-zinc-600/80 bg-zinc-900/80 py-2 text-sm text-zinc-100 shadow-inner focus:border-zinc-300 focus:ring-zinc-300/40"
-                    >
-                        <option value="">すべての部署</option>
-                        <option v-for="group in groups" :key="group.id" :value="group.id">
-                            {{ group.name }}
-                        </option>
-                    </select>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <!-- ステータス切替（セグメントコントロール） -->
-                    <div role="radiogroup" aria-label="ステータスで絞り込み" class="inline-flex rounded-lg border border-zinc-700/80 bg-zinc-900/80 p-1">
-                        <button
-                            v-for="option in statusOptions"
-                            :key="option.value"
-                            type="button"
-                            role="radio"
-                            :aria-checked="selectedStatus === option.value"
-                            @click="selectedStatus = option.value"
-                            class="rounded-md px-3.5 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
-                            :class="selectedStatus === option.value
-                                ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-900 shadow'
-                                : 'text-zinc-400 hover:text-zinc-200'"
-                        >
-                            {{ option.label }}
-                        </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- ステータス切替（セグメントコントロール） -->
+                        <div role="radiogroup" aria-label="ステータスで絞り込み" class="inline-flex rounded-lg border border-zinc-700/80 bg-zinc-900/80 p-1">
+                            <button
+                                v-for="option in statusOptions"
+                                :key="option.value"
+                                type="button"
+                                role="radio"
+                                :aria-checked="selectedStatus === option.value"
+                                @click="selectedStatus = option.value"
+                                class="rounded-md px-3.5 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
+                                :class="selectedStatus === option.value
+                                    ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-900 shadow'
+                                    : 'text-zinc-400 hover:text-zinc-200'"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
+
+                        <!-- 部署ごとの表示トグル（クリックで表示・非表示、デフォルトはすべて表示） -->
+                        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="部署の表示切り替え">
+                            <button
+                                v-for="department in departmentOptions"
+                                :key="department.id"
+                                type="button"
+                                :aria-pressed="isGroupVisible(department.id)"
+                                :title="isGroupVisible(department.id) ? `${department.name} を非表示にする` : `${department.name} を表示する`"
+                                @click="toggleGroup(department.id)"
+                                class="rounded-lg border px-3 py-1.5 text-xs font-bold tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50 active:scale-[0.96]"
+                                :class="isGroupVisible(department.id)
+                                    ? 'border-white/30 bg-white/10 text-white shadow-sm'
+                                    : 'border-zinc-800 bg-transparent text-zinc-600 line-through decoration-zinc-600 hover:text-zinc-400'"
+                            >
+                                {{ department.name }}
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -262,7 +298,7 @@ onUnmounted(() => {
 
                 <!-- 絞り込み結果件数 -->
                 <p v-if="isFiltered && !loading" class="text-xs text-zinc-500" role="status">
-                    {{ filteredAttendances.length }} 件が該当（全 {{ attendances.length }} 件中）
+                    {{ visibleCount }} 件を表示中（全 {{ attendances.length }} 件中）
                 </p>
             </div>
 
@@ -275,7 +311,7 @@ onUnmounted(() => {
                 <div v-if="loading" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
                     読み込み中…
                 </div>
-                <div v-else-if="filteredAttendances.length === 0" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
+                <div v-else-if="groupedAttendances.length === 0" class="rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/70 to-zinc-900/80 px-6 py-14 text-center text-sm text-zinc-500">
                     <template v-if="isFiltered">
                         絞り込み条件に該当する記録がありません
                         <button
@@ -289,11 +325,12 @@ onUnmounted(() => {
                     <template v-else>本日の出勤記録はまだありません</template>
                 </div>
 
-                <div v-else class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <!-- 部署カラムは折り返さず横スクロールで表示 -->
+                <div v-else class="tc-scroll flex items-start gap-4 overflow-x-auto pb-3">
                     <section
                         v-for="column in groupedAttendances"
                         :key="column.id"
-                        class="overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05]"
+                        class="w-64 shrink-0 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05] sm:w-72"
                         :aria-label="`${column.name}の出退勤状況`"
                     >
                         <!-- 部署名ヘッダー -->
@@ -348,6 +385,25 @@ onUnmounted(() => {
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         radial-gradient(ellipse at top, rgba(120, 125, 135, 0.18), transparent 60%);
     background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+/* 部署カラムの横スクロールバー（ダークテーマに合わせた細めのバー） */
+.tc-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.tc-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+.tc-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tc-scroll::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+}
+.tc-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* 検索クリアは自作の×ボタンを使うため、ブラウザ標準のクリアボタンは非表示にする */
