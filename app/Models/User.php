@@ -27,7 +27,10 @@ class User extends Authenticatable
     protected $fillable = [
         'emp_no',
         'name',
+        'name_kana',
         'email',
+        'mobile_phone',
+        'call_search_flg',
         'password',
         'gender_flg',
         'group_id',
@@ -59,6 +62,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'gender_flg' => 'boolean',
+        'call_search_flg' => 'boolean',
         'is_admin' => 'boolean',
         'dispatch_flg' => 'boolean',
         'part_flg' => 'boolean',

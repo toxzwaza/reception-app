@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PickupRequestController as AdminPickupRequestCont
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
 use App\Http\Controllers\Admin\ScreenPatternController as AdminScreenPatternController;
 use App\Http\Controllers\Admin\StaffMemberController;
+use App\Http\Controllers\Admin\StaffPhoneController as AdminStaffPhoneController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DeliveryPickupController;
@@ -67,6 +68,12 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     Route::post('/departments/order', [AdminDepartmentController::class, 'updateOrder'])->name('departments.order');
     Route::get('/departments/{department}/edit', [AdminDepartmentController::class, 'edit'])->name('departments.edit');
     Route::put('/departments/{department}', [AdminDepartmentController::class, 'update'])->name('departments.update');
+
+    // 担当者呼出管理（ヨミ・個人携帯番号。受付の担当者検索呼出で使用）
+    Route::get('/staff-phones', [AdminStaffPhoneController::class, 'index'])->name('staff-phones.index');
+    Route::get('/staff-phones/{user}/edit', [AdminStaffPhoneController::class, 'edit'])->name('staff-phones.edit');
+    Route::post('/staff-phones/{user}/toggle-search', [AdminStaffPhoneController::class, 'toggleSearch'])->name('staff-phones.toggle-search');
+    Route::put('/staff-phones/{user}', [AdminStaffPhoneController::class, 'update'])->name('staff-phones.update');
     
     // 施設予約取得API
     Route::get('/facilities/{facility}/schedule', [AdminAppointmentController::class, 'getFacilitySchedule'])->name('facilities.schedule');
@@ -142,6 +149,7 @@ Route::prefix('other-visitor')->name('other-visitor.')->group(function () {
 // 部署内線発信（受付画面から部署を選んで発信）
 Route::prefix('department-call')->name('department-call.')->group(function () {
     Route::get('/', [DepartmentCallController::class, 'select'])->name('select');
+    Route::get('/staff/{user}/call', [DepartmentCallController::class, 'staffCall'])->name('staff-call');
     Route::get('/{group}/call', [DepartmentCallController::class, 'call'])->name('call');
 });
 
