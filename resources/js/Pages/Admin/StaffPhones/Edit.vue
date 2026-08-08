@@ -47,6 +47,21 @@
               <p v-if="form.errors.mobile_phone" class="mt-1 text-sm text-red-600">{{ form.errors.mobile_phone }}</p>
             </div>
 
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <label class="flex items-start gap-3">
+                <input
+                  v-model="form.call_search_flg"
+                  type="checkbox"
+                  class="mt-0.5 h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>
+                  <span class="block text-sm font-semibold text-slate-700">受付の担当者検索に表示する</span>
+                  <span class="mt-0.5 block text-xs text-slate-500">オフにすると受付端末の検索結果に表示されず、呼び出しもできなくなります。</span>
+                </span>
+              </label>
+              <p v-if="form.errors.call_search_flg" class="mt-1 text-sm text-red-600">{{ form.errors.call_search_flg }}</p>
+            </div>
+
             <div class="flex items-center justify-end gap-3 pt-2">
               <Link
                 :href="route('admin.staff-phones.index')"
@@ -80,6 +95,7 @@ const props = defineProps({
 const form = useForm({
   name_kana: props.staff.name_kana ?? '',
   mobile_phone: props.staff.mobile_phone ?? '',
+  call_search_flg: Boolean(props.staff.call_search_flg),
 });
 
 const submit = () => {

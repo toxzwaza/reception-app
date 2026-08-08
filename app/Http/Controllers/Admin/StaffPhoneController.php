@@ -35,7 +35,7 @@ class StaffPhoneController extends Controller
                 });
             })
             ->orderBy('emp_no')
-            ->get(['id', 'emp_no', 'name', 'name_kana', 'mobile_phone', 'group_id']);
+            ->get(['id', 'emp_no', 'name', 'name_kana', 'mobile_phone', 'call_search_flg', 'group_id']);
 
         return Inertia::render('Admin/StaffPhones/Index', [
             'staff' => $staff,
@@ -51,10 +51,21 @@ class StaffPhoneController extends Controller
         $user->load('group:id,name');
 
         return Inertia::render('Admin/StaffPhones/Edit', [
-            'staff' => $user->only(['id', 'emp_no', 'name', 'name_kana', 'mobile_phone']) + [
+            'staff' => $user->only(['id', 'emp_no', 'name', 'name_kana', 'mobile_phone', 'call_search_flg']) + [
                 'group_name' => $user->group?->name,
             ],
         ]);
+    }
+
+    /**
+     * 受付の担当者検索への表示・非表示をトグル
+     */
+    public function toggleSearch(User $user)
+    {
+        $user->update(['call_search_flg' => !$user->call_search_flg]);
+
+        return Redirect::route('admin.staff-phones.index')
+            ->with('success', '「' . $user->name . '」を受付の担当者検索に' . ($user->call_search_flg ? '表示' : '非表示に') . 'しました。');
     }
 
     /**
@@ -66,6 +77,7 @@ class StaffPhoneController extends Controller
             'name_kana' => ['nullable', 'string', 'max:100'],
             // E.164 を推奨しつつ、ハイフン入力も許容（部署電話番号管理と同基準）
             'mobile_phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-\s]+$/'],
+            'call_search_flg' => ['required', 'boolean'],
         ], [
             'mobile_phone.regex' => '携帯番号は数字・+・-・空白のみで入力してください。',
         ], [
@@ -79,6 +91,7 @@ class StaffPhoneController extends Controller
                 ? mb_convert_kana($validated['name_kana'], 'C')
                 : null,
             'mobile_phone' => $validated['mobile_phone'] ?? null,
+            'call_search_flg' => $validated['call_search_flg'],
         ]);
 
         return Redirect::route('admin.staff-phones.index')

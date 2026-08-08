@@ -72,6 +72,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // 担当者呼出管理（ヨミ・個人携帯番号。受付の担当者検索呼出で使用）
     Route::get('/staff-phones', [AdminStaffPhoneController::class, 'index'])->name('staff-phones.index');
     Route::get('/staff-phones/{user}/edit', [AdminStaffPhoneController::class, 'edit'])->name('staff-phones.edit');
+    Route::post('/staff-phones/{user}/toggle-search', [AdminStaffPhoneController::class, 'toggleSearch'])->name('staff-phones.toggle-search');
     Route::put('/staff-phones/{user}', [AdminStaffPhoneController::class, 'update'])->name('staff-phones.update');
     
     // 施設予約取得API

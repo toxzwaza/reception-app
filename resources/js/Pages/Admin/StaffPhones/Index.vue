@@ -44,6 +44,7 @@
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ヨミ</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">部署</th>
                   <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">携帯番号</th>
+                  <th class="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">受付検索</th>
                   <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
                 </tr>
               </thead>
@@ -60,6 +61,26 @@
                     <span v-if="member.mobile_phone" class="tabular-nums text-slate-800">{{ member.mobile_phone }}</span>
                     <span v-else class="text-slate-400">—</span>
                   </td>
+                  <td class="px-6 py-3.5 text-center">
+                    <button
+                      type="button"
+                      @click="toggleSearch(member)"
+                      :disabled="togglingId === member.id"
+                      role="switch"
+                      :aria-checked="Boolean(member.call_search_flg)"
+                      :aria-label="`${member.name} を受付の担当者検索に${member.call_search_flg ? '表示中' : '非表示'}`"
+                      class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                      :class="member.call_search_flg ? 'bg-emerald-500' : 'bg-slate-300'"
+                    >
+                      <span
+                        class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                        :class="member.call_search_flg ? 'translate-x-6' : 'translate-x-1'"
+                      ></span>
+                    </button>
+                    <p class="mt-1 text-[10px]" :class="member.call_search_flg ? 'text-emerald-600' : 'text-slate-400'">
+                      {{ member.call_search_flg ? '表示中' : '非表示' }}
+                    </p>
+                  </td>
                   <td class="px-6 py-3.5 text-right">
                     <Link
                       :href="route('admin.staff-phones.edit', member.id)"
@@ -70,7 +91,7 @@
                   </td>
                 </tr>
                 <tr v-if="staff.length === 0">
-                  <td colspan="6" class="px-6 py-10 text-center text-sm text-slate-400">該当する担当者がいません</td>
+                  <td colspan="7" class="px-6 py-10 text-center text-sm text-slate-400">該当する担当者がいません</td>
                 </tr>
               </tbody>
             </table>
@@ -92,8 +113,23 @@ const props = defineProps({
 });
 
 const searchKeyword = ref(props.keyword);
+const togglingId = ref(null);
 
 const search = () => {
   router.get(route('admin.staff-phones.index'), { keyword: searchKeyword.value }, { preserveState: true });
+};
+
+// 受付の担当者検索への表示・非表示をトグル
+const toggleSearch = (member) => {
+  togglingId.value = member.id;
+  router.post(
+    route('admin.staff-phones.toggle-search', member.id),
+    {},
+    {
+      preserveState: true,
+      preserveScroll: true,
+      onFinish: () => (togglingId.value = null),
+    }
+  );
 };
 </script>

@@ -36,7 +36,9 @@ class DepartmentCallController extends Controller
      */
     private function searchableStaff()
     {
+        // 管理画面「担当者呼出管理」で表示ONにした担当者のみ検索対象にする
         return User::active()
+            ->where('call_search_flg', true)
             ->with('group:id,name,phone_number')
             ->orderBy('name_kana')
             ->get(['id', 'name', 'name_kana', 'mobile_phone', 'group_id'])
@@ -77,7 +79,7 @@ class DepartmentCallController extends Controller
             'error' => $error,
         ]);
 
-        if ($user->del_flg) {
+        if ($user->del_flg || !$user->call_search_flg) {
             return $backToSelect('選択された担当者は現在呼び出せません。');
         }
 
