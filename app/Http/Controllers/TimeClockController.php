@@ -15,11 +15,11 @@ class TimeClockController extends Controller
      */
     public function index(): Response
     {
-        $groups = Group::select('id', 'name')->orderBy('name')->get();
+        // 役員は打刻対象外のため部署プルダウンからも除外
+        $groups = Group::select('id', 'name')->where('name', '<>', '役員')->orderBy('name')->get();
 
-        // 打刻対象はメールアドレスが登録されているユーザーのみ
-        $users = User::active()
-            ->withEmail()
+        // 打刻対象はメール登録済みかつ役員を除くユーザー
+        $users = User::timeclockTarget()
             ->select('id', 'name', 'emp_no', 'group_id')
             ->orderBy('emp_no')
             ->get();

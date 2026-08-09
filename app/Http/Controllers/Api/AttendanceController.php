@@ -14,7 +14,7 @@ class AttendanceController extends Controller
     /**
      * 出退勤画面用ログイン。
      * 管理画面と異なり StaffMember 登録は不要。
-     * ただしメールアドレスが登録されている社員のみ打刻対象とする。
+     * 打刻対象はメール登録済みかつ役員を除く社員（User::timeclockTarget）。
      *
      * POST /api/timeclock/login
      */
@@ -24,7 +24,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->withEmail()->find($validated['user_id']);
+        $user = User::timeclockTarget()->find($validated['user_id']);
 
         if (!$user) {
             throw ValidationException::withMessages([
@@ -54,7 +54,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->withEmail()->find($validated['user_id']);
+        $user = User::timeclockTarget()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -86,7 +86,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->withEmail()->find($validated['user_id']);
+        $user = User::timeclockTarget()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -129,7 +129,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->withEmail()->find($validated['user_id']);
+        $user = User::timeclockTarget()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);
@@ -169,7 +169,7 @@ class AttendanceController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        $user = User::active()->withEmail()->find($validated['user_id']);
+        $user = User::timeclockTarget()->find($validated['user_id']);
 
         if (!$user) {
             return response()->json(['message' => 'ユーザーが見つかりません。'], 404);

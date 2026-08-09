@@ -88,6 +88,17 @@ class User extends Authenticatable
     }
 
     /**
+     * 出退勤打刻の対象者を取得。
+     * メール登録済みかつ役員グループを除く（役員は打刻せず status 画面の閲覧のみ）。
+     */
+    public function scopeTimeclockTarget($query)
+    {
+        return $query->active()
+            ->withEmail()
+            ->whereDoesntHave('group', fn ($groupQuery) => $groupQuery->where('name', '役員'));
+    }
+
+    /**
      * 管理者権限を持つユーザーのみを取得
      */
     public function scopeAdmin($query)
