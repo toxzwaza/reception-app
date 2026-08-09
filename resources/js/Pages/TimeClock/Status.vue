@@ -167,7 +167,7 @@ onUnmounted(() => {
     <div class="tc-bg min-h-screen text-zinc-100">
         <!-- ヘッダー -->
         <header class="sticky top-0 z-10 border-b border-zinc-700/60 bg-zinc-900/85 backdrop-blur">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+            <div class="mx-auto flex max-w-none items-center justify-between gap-3 px-4 py-4 sm:px-6">
                 <div class="flex min-w-0 items-center gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-zinc-100 to-zinc-400 shadow-lg shadow-black/40">
                         <span class="text-sm font-black tracking-tight text-zinc-900">A</span>
@@ -186,7 +186,7 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+        <main class="mx-auto max-w-none px-4 py-6 sm:px-6 sm:py-8">
             <!-- 日付・更新時刻 -->
             <p class="text-xs tracking-wider text-zinc-400">
                 {{ displayDate }}
@@ -334,15 +334,15 @@ onUnmounted(() => {
                 </div>
 
                 <!-- 部署カラムは折り返さず横スクロールで表示 -->
-                <div v-else class="tc-scroll flex items-start gap-4 overflow-x-auto pb-3">
+                <div v-else class="tc-scroll flex items-start gap-3 overflow-x-auto pb-3">
                     <section
                         v-for="column in groupedAttendances"
                         :key="column.id"
-                        class="w-64 shrink-0 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05] sm:w-72"
+                        class="w-48 shrink-0 overflow-hidden rounded-xl border border-zinc-700/60 bg-gradient-to-b from-zinc-800/80 to-zinc-900/90 ring-1 ring-white/[0.05] sm:w-52"
                         :aria-label="`${column.name}の出退勤状況`"
                     >
                         <!-- 部署名ヘッダー -->
-                        <header class="flex items-center justify-center gap-2 border-b border-zinc-700/60 bg-black/30 px-4 py-3">
+                        <header class="flex items-center justify-center gap-1.5 border-b border-zinc-700/60 bg-black/30 px-3 py-2.5">
                             <h2 class="truncate text-sm font-bold tracking-widest text-white">{{ column.name }}</h2>
                             <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-300">
                                 {{ column.workingCount }}/{{ column.members.length }}
@@ -354,7 +354,7 @@ onUnmounted(() => {
                             <li
                                 v-for="member in column.members"
                                 :key="member.user_id"
-                                class="flex items-center justify-between gap-3 px-4 py-2.5 transition hover:bg-white/[0.03]"
+                                class="flex items-center justify-between gap-1.5 px-2.5 py-2 transition hover:bg-white/[0.03]"
                             >
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-zinc-100">{{ member.name }}</p>
@@ -364,7 +364,7 @@ onUnmounted(() => {
                                     </p>
                                 </div>
                                 <span
-                                    class="w-10 shrink-0 rounded-md border py-1 text-center text-xs font-black tracking-wide"
+                                    class="w-8 shrink-0 rounded-md border py-0.5 text-center text-[11px] font-black tracking-wide"
                                     :class="member.status === 'working'
                                         ? 'border-emerald-300/60 bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-950 shadow shadow-emerald-900/40'
                                         : 'border-zinc-500/60 bg-gradient-to-b from-zinc-600 to-zinc-700 text-zinc-300'"
