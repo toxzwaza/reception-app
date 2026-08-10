@@ -5,12 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Models\WorkTimeSetting;
+use App\Services\AttendanceNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends Controller
 {
+    public function __construct(
+        private readonly AttendanceNotificationService $notification,
+    ) {
+    }
     /**
      * 出退勤画面用ログイン。
      * 管理画面と異なり StaffMember 登録は不要。
@@ -108,6 +115,13 @@ class AttendanceController extends Controller
             'clock_in_at' => now(),
         ]);
 
+        // Teams通知（失敗しても打刻は成立させる）
+        try {
+            $this->notification->notifyClockIn($user, $attendance);
+        } catch (\Throwable $e) {
+            Log::warning('出勤Teams通知に失敗', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => '出勤を記録しました。',
@@ -145,7 +159,29 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'すでに退勤済みです。'], 422);
         }
 
-        $attendance->update(['clock_out_at' => now()]);
+        // 残業計算：勤務時間マスタの終業時刻（17:10）を過ぎた分を残業とする
+        $clockOutAt = now();
+        $overtimeMinutes = 0;
+        $workEnd = WorkTimeSetting::current()?->work_end_time;
+        if ($workEnd) {
+            $workEndAt = $clockOutAt->copy()->setTimeFromTimeString($workEnd);
+            if ($clockOutAt->greaterThan($workEndAt)) {
+                $overtimeMinutes = $workEndAt->diffInMinutes($clockOutAt);
+            }
+        }
+
+        $attendance->update([
+            'clock_out_at' => $clockOutAt,
+            'overtime_minutes' => $overtimeMinutes,
+        ]);
+
+        // Teams通知（失敗しても打刻は成立させる）
+        try {
+            $cumulative = Attendance::cumulativeOvertimeMinutes($user->id, $clockOutAt);
+            $this->notification->notifyClockOut($user, $attendance->fresh(), $cumulative);
+        } catch (\Throwable $e) {
+            Log::warning('退勤Teams通知に失敗', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
 
         return response()->json([
             'success' => true,
@@ -193,8 +229,8 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // 退勤済み → 退勤のみ取り消して出勤中に戻す
-        $attendance->update(['clock_out_at' => null]);
+        // 退勤済み → 退勤のみ取り消して出勤中に戻す（残業もクリアし再退勤時に再計算）
+        $attendance->update(['clock_out_at' => null, 'overtime_minutes' => 0]);
 
         return response()->json([
             'success' => true,
