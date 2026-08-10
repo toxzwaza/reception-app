@@ -30,12 +30,13 @@ class TeamsNotificationService
      * ★ 汎用通知送信メソッド（AkiTalk Bridge 経由）
      *
      * @param string|array $mentionIds 宛先 email（単一 or 配列）。空可。
-     * @param string $title タイトル（先頭に 🚨【緊急】 を自動付与）
+     * @param string $title タイトル（$urgent=true のとき先頭に 🚨【緊急】 を自動付与）
      * @param string $message 本文
      * @param string|null $url 任意。カード下部リンクとして付与
+     * @param bool $urgent 緊急扱いにするか（出退勤通知など通常通知は false を指定）
      * @return bool 送信成功時 true（宛先が空の場合も true）
      */
-    public function notify(string|array $mentionIds, string $title, string $message, ?string $url = null): bool
+    public function notify(string|array $mentionIds, string $title, string $message, ?string $url = null, bool $urgent = true): bool
     {
         // 宛先(email)を配列に正規化
         if (is_string($mentionIds)) {
@@ -59,12 +60,12 @@ class TeamsNotificationService
             return false;
         }
 
-        // 受付システムの通知は全て緊急扱い
-        $urgentTitle = $this->withUrgentPrefix($title);
+        // 受付通知は既定で緊急扱い（出退勤通知など通常通知は $urgent=false でそのまま送る）
+        $sendTitle = $urgent ? $this->withUrgentPrefix($title) : $title;
 
         $payload = [
             'recipients' => $recipients,
-            'title' => $urgentTitle,
+            'title' => $sendTitle,
             'msg' => $message ?? '',
             'from' => config('services.akitalk_bridge.sender', 'AK受付システム通知'),
         ];
@@ -81,7 +82,7 @@ class TeamsNotificationService
                 $data = $response->json();
                 if (($data['ok'] ?? false) === true) {
                     Log::info('Teams通知送信成功(AkiTalk Bridge)', [
-                        'title' => $urgentTitle,
+                        'title' => $sendTitle,
                         'recipients' => count($recipients),
                         'sent' => $data['sent'] ?? null,
                         'skipNoLicense' => $data['skipNoLicense'] ?? null,

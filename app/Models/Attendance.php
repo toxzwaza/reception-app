@@ -19,6 +19,7 @@ class Attendance extends Model
         'work_date',
         'clock_in_at',
         'clock_out_at',
+        'overtime_minutes',
     ];
 
     protected $casts = [
@@ -38,6 +39,37 @@ class Attendance extends Model
     public function scopeToday($query)
     {
         return $query->where('work_date', now()->toDateString());
+    }
+
+    /**
+     * 残業集計期間（前月21日〜当月20日締め）を返す。
+     * 基準日が20日以前なら「前月21日〜当月20日」、21日以降なら「当月21日〜翌月20日」。
+     *
+     * @return array{0: string, 1: string} [開始日, 終了日]（Y-m-d）
+     */
+    public static function overtimePeriod(\Carbon\CarbonInterface $date): array
+    {
+        if ($date->day <= 20) {
+            $start = $date->copy()->subMonthNoOverflow()->day(21);
+            $end = $date->copy()->day(20);
+        } else {
+            $start = $date->copy()->day(21);
+            $end = $date->copy()->addMonthNoOverflow()->day(20);
+        }
+
+        return [$start->toDateString(), $end->toDateString()];
+    }
+
+    /**
+     * 指定ユーザーの当期（前月21日〜当月20日締め）の累計残業時間（分）を返す
+     */
+    public static function cumulativeOvertimeMinutes(int $userId, \Carbon\CarbonInterface $date): int
+    {
+        [$start, $end] = static::overtimePeriod($date);
+
+        return (int) static::where('user_id', $userId)
+            ->whereBetween('work_date', [$start, $end])
+            ->sum('overtime_minutes');
     }
 
     /**
