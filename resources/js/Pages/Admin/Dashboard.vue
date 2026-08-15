@@ -111,7 +111,12 @@
                 <Link :href="route('admin.facilities.index')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">施設管理 →</Link>
               </template>
             </SectionHeader>
-            <div class="space-y-4 max-h-96 overflow-y-auto">
+            <div
+              class="overflow-y-auto"
+              :class="roomSchedules.length > 6
+                ? 'grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 max-h-[32rem]'
+                : 'space-y-4 max-h-96'"
+            >
               <div v-for="room in roomSchedules" :key="room.id">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="w-2 h-2 rounded-full bg-purple-500"></span>

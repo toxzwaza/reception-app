@@ -52,9 +52,10 @@ class DashboardController extends Controller
             ->get(['id', 'reception_number', 'company_name', 'visitor_name', 'visit_time', 'is_checked_in', 'staff_member_id']);
 
         // ── 本日の会議室スケジュール（施設ごと） ─────────
+        // 廃止施設（Outlook同期解除済み）は表示対象外
         $roomSchedules = Facility::with(['scheduleEvents' => function ($q) use ($todayStr) {
             $q->where('date', $todayStr)->orderBy('start_datetime');
-        }])->orderBy('id')->get(['id', 'name']);
+        }])->whereNotNull('outlook_resource_email')->orderBy('id')->get(['id', 'name']);
 
         // ── 要対応アイテム ─────────────────────────────
         // 未押印の納品書
