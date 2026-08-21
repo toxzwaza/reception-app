@@ -113,14 +113,20 @@
                     {{ delivery.id }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <img
+                    <!-- 固定枠にアスペクト比を保って収める（縦長スキャン・横長カメラ撮影の両方に対応） -->
+                    <button
                       v-if="thumbnailUrl(delivery)"
-                      :src="thumbnailUrl(delivery)"
-                      loading="lazy"
-                      alt="納品書サムネイル"
+                      type="button"
                       @click.stop="previewImageUrl = thumbnailUrl(delivery)"
-                      class="h-12 w-16 object-cover rounded-md border border-slate-200 hover:ring-2 hover:ring-blue-400 transition"
+                      class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50 hover:ring-2 hover:ring-blue-400 transition"
                     >
+                      <img
+                        :src="thumbnailUrl(delivery)"
+                        loading="lazy"
+                        alt="納品書サムネイル"
+                        class="max-h-full max-w-full object-contain"
+                      >
+                    </button>
                     <span v-else class="text-slate-400">-</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
