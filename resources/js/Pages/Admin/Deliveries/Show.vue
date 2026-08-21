@@ -7,17 +7,50 @@
         </h2>
         <div class="flex gap-2">
           <Link
-            :href="route('admin.deliveries.index')"
+            :href="route('admin.deliveries.index', listFilters)"
             class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
             ← 一覧に戻る
           </Link>
+          <!-- 絞り込んだ一覧内での前後移動（絞り込み条件を引き継ぐ） -->
+          <Link
+            v-if="prevId"
+            :href="route('admin.deliveries.show', { delivery: prevId, ...listFilters })"
+            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
+          >
+            ← 前へ
+          </Link>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 bg-slate-50 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+          >
+            ← 前へ
+          </span>
+          <Link
+            v-if="nextId"
+            :href="route('admin.deliveries.show', { delivery: nextId, ...listFilters })"
+            class="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
+          >
+            次へ →
+          </Link>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 bg-slate-50 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+          >
+            次へ →
+          </span>
           <button
             v-if="!delivery.sealed_at"
             @click="showSealOverlay = true"
             class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
           >
             電子印押下
+          </button>
+          <button
+            @click="deleteDelivery"
+            class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition"
+          >
+            削除
           </button>
         </div>
       </div>
@@ -861,7 +894,25 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  // 絞り込んだ一覧内での前後移動用（adminShowが同条件のID列から算出）
+  prevId: { type: Number, default: null },
+  nextId: { type: Number, default: null },
+  filters: { type: Object, default: () => ({}) },
 });
+
+// 一覧の絞り込み条件（既存の発注データ絞り込み用 ref `filters` と名前が衝突するため別名で参照する）
+const listFilters = props.filters;
+
+// 納品書の削除（重複撮影の排除用。confirm後に物理削除し一覧へ戻る）
+const deleteDelivery = () => {
+  const linkedWarning = props.linkedOrders.length > 0
+    ? `\n※ 発注データ${props.linkedOrders.length}件との紐づけも解除されます（加算済み在庫は戻りません）。`
+    : '';
+  if (!confirm(`ID:${props.delivery.id} の${props.delivery.delivery_type}を削除します。元に戻せません。よろしいですか？${linkedWarning}`)) {
+    return;
+  }
+  router.delete(route('admin.deliveries.destroy', { delivery: props.delivery.id, ...props.filters }));
+};
 
 // 電子印配置モーダルの表示状態
 const showSealOverlay = ref(false);
@@ -1196,7 +1247,7 @@ const confirmLinkOrder = async () => {
             product: "",
           };
           // ページをリロード
-          router.visit(route("admin.deliveries.show", props.delivery.id), {
+          router.visit(route("admin.deliveries.show", { delivery: props.delivery.id, ...props.filters }), {
             method: "get",
             preserveState: false,
             preserveScroll: false,
@@ -1234,7 +1285,7 @@ const handleUnlinkOrder = async (orderId) => {
         onSuccess: (page) => {
           alert("✅ 発注データの紐づけを解除しました！");
           // ページをリロード
-          router.visit(route("admin.deliveries.show", props.delivery.id), {
+          router.visit(route("admin.deliveries.show", { delivery: props.delivery.id, ...props.filters }), {
             method: "get",
             preserveState: false,
             preserveScroll: false,
@@ -1332,7 +1383,7 @@ const saveRotation = async () => {
           alert("✅ 画像を回転して保存しました！");
           rotationAngle.value = 0; // リセット
           // ページをリロードして画像を再読み込み
-          router.visit(route("admin.deliveries.show", props.delivery.id), {
+          router.visit(route("admin.deliveries.show", { delivery: props.delivery.id, ...props.filters }), {
             method: "get",
             preserveState: false,
             preserveScroll: false,
