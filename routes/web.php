@@ -100,7 +100,9 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     
     // 納品書・受領書管理
     Route::get('/deliveries', [DeliveryController::class, 'adminIndex'])->name('deliveries.index');
+    Route::post('/deliveries', [DeliveryController::class, 'adminStore'])->name('deliveries.store');
     Route::get('/deliveries/{delivery}', [DeliveryController::class, 'adminShow'])->name('deliveries.show');
+    Route::delete('/deliveries/{delivery}', [DeliveryController::class, 'adminDestroy'])->name('deliveries.destroy');
     Route::post('/deliveries/{delivery}/apply-seal', [DeliveryController::class, 'applyDigitalSeal'])->name('deliveries.apply-seal');
     Route::post('/deliveries/{delivery}/rotate-image', [DeliveryController::class, 'rotateImage'])->name('deliveries.rotate-image');
     Route::post('/deliveries/{delivery}/link-order', [DeliveryController::class, 'linkOrder'])->name('deliveries.link-order');

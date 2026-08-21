@@ -228,15 +228,13 @@ class DeliveryController extends Controller
         }
     }
 
-    // 管理画面用：納品書・受領書一覧
-    public function adminIndex(Request $request)
+    // 管理画面一覧の絞り込みパラメータ（一覧・詳細・削除で共用）
+    private const ADMIN_FILTER_KEYS = ['delivery_type', 'date_from', 'date_to', 'seal_status', 'sort_by', 'sort_order'];
+
+    // 管理画面一覧の絞り込み＋並び順を適用したクエリを構築（一覧と詳細の前後移動で共用）
+    private function buildAdminDeliveriesQuery(Request $request)
     {
-        // 一覧に品名・品番を表示するため、紐づけ済み発注データを件数付きで取得
-        $query = Delivery::query()
-            ->with(['initialOrders' => function ($q) {
-                $q->select('initial_orders.id', 'initial_orders.name', 'initial_orders.s_name');
-            }])
-            ->withCount('initialOrders');
+        $query = Delivery::query();
 
         // 検索フィルター
         if ($request->filled('delivery_type')) {
@@ -260,22 +258,107 @@ class DeliveryController extends Controller
             }
         }
 
-        // ソート
-        $sortBy = $request->get('sort_by', 'received_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // ソート（同値時はidで順序を安定させ、一覧と前後移動の並びを一致させる）
+        $sortBy = in_array($request->get('sort_by'), ['id', 'received_at'], true) ? $request->get('sort_by') : 'received_at';
+        $sortOrder = $request->get('sort_order') === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
+        if ($sortBy !== 'id') {
+            $query->orderBy('id', $sortOrder);
+        }
+
+        return $query;
+    }
+
+    // 管理画面用：納品書・受領書一覧
+    public function adminIndex(Request $request)
+    {
+        // 一覧に品名・品番を表示するため、紐づけ済み発注データを件数付きで取得
+        $query = $this->buildAdminDeliveriesQuery($request)
+            ->with(['initialOrders' => function ($q) {
+                $q->select('initial_orders.id', 'initial_orders.name', 'initial_orders.s_name');
+            }])
+            ->withCount('initialOrders');
 
         $deliveries = $query->paginate(20)->appends($request->query());
 
         return Inertia::render('Admin/Deliveries/Index', [
             'deliveries' => $deliveries,
-            'filters' => $request->only(['delivery_type', 'date_from', 'date_to', 'seal_status', 'sort_by', 'sort_order'])
+            'filters' => $request->only(self::ADMIN_FILTER_KEYS)
         ]);
     }
 
-    // 管理画面用：納品書・受領書詳細
-    public function adminShow(Delivery $delivery)
+    // 管理画面用：納品書の手動追加（端末カメラで撮影して登録）
+    public function adminStore(Request $request)
     {
+        $validated = $request->validate([
+            'delivery_type' => 'required|in:納品書,その他書類',
+            'document_image' => 'required|image|max:10240', // 10MB
+        ]);
+
+        // 書類画像の保存（タブレット受付の store() と同じ形式で公開URLを格納）
+        $documentPath = $request->file('document_image')->store('delivery_documents', 'public');
+        $publicUrl = config('app.url') . '/storage/' . ltrim($documentPath, '/');
+
+        $delivery = Delivery::create([
+            'delivery_type' => $validated['delivery_type'],
+            'document_image' => $publicUrl,
+            'received_at' => now(),
+            'token' => Str::random(40),
+        ]);
+
+        // QRコードURL・QR画像ファイルもタブレット受付と同様に生成する
+        $qrCodeUrl = route('delivery.show', ['delivery' => $delivery, 'token' => $delivery->token]);
+        $delivery->update(['qr_code_url' => $qrCodeUrl]);
+        $qrCodePath = $this->generateQrCodeFile($delivery->id, $qrCodeUrl);
+        $delivery->update(['qr_code_file_path' => $qrCodePath]);
+
+        // 管理者による手動追加のため、タブレット受付と異なり通知（Teams等）は送らない
+
+        return redirect()->route('admin.deliveries.show', $delivery);
+    }
+
+    // 管理画面用：納品書・受領書の削除（重複撮影の排除用。画像・QRファイルも削除する）
+    public function adminDestroy(Delivery $delivery, Request $request)
+    {
+        $this->deletePublicFile($delivery->document_image);
+        $this->deletePublicFile($delivery->sealed_document_image);
+        $this->deletePublicFile($delivery->qr_code_file_path);
+
+        // 発注紐づけ（delivery_initial_order）はFKのon delete cascadeで削除される
+        $delivery->delete();
+
+        return redirect()->route('admin.deliveries.index', $request->only(self::ADMIN_FILTER_KEYS));
+    }
+
+    // 公開URL（https://.../storage/xxx）・/storage/xxx・ディスク相対パスのいずれの形式でも
+    // public ディスク上の実ファイルを削除する
+    private function deletePublicFile(?string $path): void
+    {
+        if (!$path) {
+            return;
+        }
+        $relative = $path;
+        if (preg_match('#^https?://[^/]+(/.*)$#', $relative, $m)) {
+            $relative = $m[1];
+        }
+        if (str_starts_with($relative, '/storage/')) {
+            $relative = substr($relative, strlen('/storage/'));
+        }
+        $relative = ltrim($relative, '/');
+        if ($relative !== '' && Storage::disk('public')->exists($relative)) {
+            Storage::disk('public')->delete($relative);
+        }
+    }
+
+    // 管理画面用：納品書・受領書詳細
+    public function adminShow(Delivery $delivery, Request $request)
+    {
+        // 絞り込んだ一覧内での前後移動用：同条件・同順序のID列から現在位置を特定
+        $ids = $this->buildAdminDeliveriesQuery($request)->pluck('id')->values();
+        $pos = $ids->search($delivery->id);
+        $prevId = ($pos !== false && $pos > 0) ? $ids[$pos - 1] : null;
+        $nextId = ($pos !== false && $pos < $ids->count() - 1) ? $ids[$pos + 1] : null;
+
         // 紐づけ済み発注データを取得（複数件対応）
         $linkedOrders = [];
         $delivery->load('initialOrders');
@@ -309,6 +392,9 @@ class DeliveryController extends Controller
             'documentUrl' => $documentUrl,
             'qrCodeUrl' => $delivery->qr_code_file_path ? route('delivery.qr', $delivery) : null,
             'linkedOrders' => $linkedOrders, // 複数件対応
+            'prevId' => $prevId,
+            'nextId' => $nextId,
+            'filters' => $request->only(self::ADMIN_FILTER_KEYS),
         ]);
     }
 
