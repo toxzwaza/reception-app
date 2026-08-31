@@ -382,7 +382,7 @@ const props = defineProps({
 // ====== スキャンツール設定 ======
 // 環境変数から設定を取得（VITE_プレフィックスが必要）
 // または、windowオブジェクトから取得（Laravelの環境変数から設定）
-const RASPI_IP = import.meta.env.VITE_SCAN_TOOL_IP || window.SCAN_TOOL_IP || "192.168.210.90";
+const RASPI_IP = import.meta.env.VITE_SCAN_TOOL_IP || window.SCAN_TOOL_IP || "192.168.0.46";
 const PORT = import.meta.env.VITE_SCAN_TOOL_PORT || window.SCAN_TOOL_PORT || 5001;
 
 // プロトコルを環境に応じて切り替え
