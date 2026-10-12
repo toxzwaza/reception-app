@@ -386,6 +386,19 @@
             <div class="space-y-4">
               <div class="bg-slate-50 p-4 rounded-lg">
                 <h4 class="text-md font-medium text-slate-800 mb-4">絞り込み条件</h4>
+
+                <!-- 書類QRから発注データを特定し、注文No欄へ自動入力した旨の通知 -->
+                <div
+                  v-if="qrFilledOrderNo"
+                  class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                >
+                  <p class="text-sm text-blue-800">
+                    🔎 書類のQRコードから発注データを特定し、注文No
+                    <span class="font-semibold">「{{ qrFilledOrderNo }}」</span>
+                    で絞り込みました。下の検索結果からご確認のうえ「追加」で紐づけてください。
+                  </p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <!-- 注文No -->
                   <div>
@@ -880,8 +893,9 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
+import jsQR from "jsqr";
 import AdminLayout from "@/Layouts/AdminLayout.vue";
 import SealOverlay from "@/Components/SealOverlay.vue";
 import Badge from "@/Components/UI/Badge.vue";
@@ -1026,6 +1040,13 @@ const productOptions = computed(() => {
   return Array.from(set).sort();
 });
 
+// 画像キャッシュバスター（回転保存でファイルを上書きしても同一URLで旧画像が
+// 表示されるのを防ぐ。updated_at はサーバの rotateImage で touch される）
+const cacheVersion = computed(() => {
+  const u = props.delivery.updated_at;
+  return u ? new Date(u).getTime() : Date.now();
+});
+
 // 電子印済み書類画像のURL
 const sealedDocumentUrl = computed(() => {
   if (!props.delivery.sealed_document_image) {
@@ -1033,10 +1054,11 @@ const sealedDocumentUrl = computed(() => {
   }
   // 絶対URLの場合はそのまま、相対パスの場合は/storage/を付与
   const imagePath = props.delivery.sealed_document_image;
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
-  }
-  return `/storage/${imagePath}`;
+  const base =
+    imagePath.startsWith("http://") || imagePath.startsWith("https://")
+      ? imagePath
+      : `/storage/${imagePath}`;
+  return base + (base.includes("?") ? "&" : "?") + "v=" + cacheVersion.value;
 });
 
 // 表示する画像URL（電子印済み画像を優先、なければ元の書類画像）
@@ -1106,6 +1128,82 @@ const handleSealSave = async (sealPositions) => {
   }
 };
 
+// 書類画像のQRコードから検出した発注データのID（initial_order.id）。
+// 納品書に印字されたQRには発注データの主キーID（数値）が入る。
+const qrDetectedIds = ref([]);
+
+// QR由来で検索BOXに自動入力した注文No（ユーザーへの通知表示用）
+const qrFilledOrderNo = ref("");
+let qrAutoFilled = false; // 一度だけ自動入力する（ユーザーの手入力を上書きしない）
+
+// QR検出ID と 発注データ の両方が揃ったら、該当発注の order_no を検索BOXに自動入力する。
+// → 既存の検索結果テーブル（画像・品番・単価付き）に表示され、そこの「追加」で紐付け。
+watch(
+  [qrDetectedIds, allInitialOrders],
+  () => {
+    if (qrAutoFilled) return;
+    if (qrDetectedIds.value.length === 0 || allInitialOrders.value.length === 0) return;
+    for (const id of qrDetectedIds.value) {
+      const order = allInitialOrders.value.find(
+        (o) => String(o.id) === String(id)
+      );
+      if (order && order.order_no && !linkedOrderIds.value.includes(order.id)) {
+        filters.value.orderNo = String(order.order_no);
+        qrFilledOrderNo.value = String(order.order_no);
+        qrAutoFilled = true;
+        break;
+      }
+    }
+  },
+  { deep: true }
+);
+
+// 書類画像を読み込んでQRコードを解析し、発注データIDを検出する
+const scanDocumentQr = () => {
+  // 元の書類画像（電子印合成前）を対象にする
+  const src = props.documentUrl;
+  if (!src) return;
+
+  const img = new Image();
+  img.crossOrigin = "anonymous"; // 同一オリジンだがcanvas汚染回避のため明示
+  img.onload = () => {
+    try {
+      // 大きい写真はQR検出に十分な解像度を保ちつつ縮小して高速化
+      const maxDim = 1600;
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+      const scale = Math.min(1, maxDim / Math.max(width, height));
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      const imageData = ctx.getImageData(0, 0, width, height);
+
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        const value = code.data.trim();
+        // QRには発注データのID（純数値）が入る。URL/JSON等は除外
+        if (/^[0-9]+$/.test(value)) {
+          if (!qrDetectedIds.value.includes(value)) {
+            qrDetectedIds.value.push(value);
+          }
+        }
+      }
+    } catch (e) {
+      // CORS等で読めない場合は静かにスキップ（機能を妨げない）
+      console.warn("書類QRの読み取りをスキップしました:", e);
+    }
+  };
+  img.onerror = () => {
+    // 画像読み込み失敗時は何もしない
+  };
+  img.src = src;
+};
+
 // 未納品発注データを取得
 const loadInitialOrders = async () => {
   isSearching.value = true;
@@ -1128,6 +1226,8 @@ const loadInitialOrders = async () => {
 // コンポーネントマウント時に発注データを取得（以降はフロント側で自動絞り込み）
 onMounted(() => {
   loadInitialOrders();
+  // 書類画像のQRから発注番号を検出してサジェスト
+  scanDocumentQr();
 });
 
 // 絞り込み条件をクリア

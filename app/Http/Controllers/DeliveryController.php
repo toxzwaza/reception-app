@@ -232,7 +232,7 @@ class DeliveryController extends Controller
     private const ADMIN_FILTER_KEYS = ['delivery_type', 'date_from', 'date_to', 'seal_status', 'sort_by', 'sort_order'];
 
     // 管理画面一覧の絞り込み＋並び順を適用したクエリを構築（一覧と詳細の前後移動で共用）
-    private function buildAdminDeliveriesQuery(Request $request)
+    private function buildAdminDeliveriesQuery(Request $request, bool $ignoreSealStatus = false)
     {
         $query = Delivery::query();
 
@@ -250,7 +250,10 @@ class DeliveryController extends Controller
         }
 
         // 電子印状態フィルター（一覧バッジと同じ sealed_document_image の有無で判定）
-        if ($request->filled('seal_status')) {
+        // 前後移動のID列算出時($ignoreSealStatus=true)は除外する。これをしないと
+        // 「未処理のみ」で絞った一覧から電子印を押した瞬間に自分がリストから外れ、
+        // 前後移動の位置特定ができず「前へ/次へ」が両方グレーアウトしてしまう。
+        if (!$ignoreSealStatus && $request->filled('seal_status')) {
             if ($request->seal_status === 'sealed') {
                 $query->whereNotNull('sealed_document_image');
             } elseif ($request->seal_status === 'unsealed') {
@@ -354,7 +357,8 @@ class DeliveryController extends Controller
     public function adminShow(Delivery $delivery, Request $request)
     {
         // 絞り込んだ一覧内での前後移動用：同条件・同順序のID列から現在位置を特定
-        $ids = $this->buildAdminDeliveriesQuery($request)->pluck('id')->values();
+        // seal_status だけは除外（電子印完了で自分がリストから外れて前後移動不能になるのを防ぐ）
+        $ids = $this->buildAdminDeliveriesQuery($request, true)->pluck('id')->values();
         $pos = $ids->search($delivery->id);
         $prevId = ($pos !== false && $pos > 0) ? $ids[$pos - 1] : null;
         $nextId = ($pos !== false && $pos < $ids->count() - 1) ? $ids[$pos + 1] : null;
@@ -386,6 +390,11 @@ class DeliveryController extends Controller
         } else {
             $documentUrl = Storage::url($documentImage);
         }
+
+        // キャッシュバスターを付与（回転保存でファイルを上書きしてもURLが変わらず
+        // ブラウザが旧画像を表示するのを防ぐ。updated_at はrotateImageでtouchされる）
+        $cacheVersion = optional($delivery->updated_at)->timestamp ?? time();
+        $documentUrl .= (strpos($documentUrl, '?') !== false ? '&' : '?') . 'v=' . $cacheVersion;
 
         return Inertia::render('Admin/Deliveries/Show', [
             'delivery' => $delivery,
@@ -812,6 +821,10 @@ class DeliveryController extends Controller
 
             // sealed_document_imageがある場合は、それも更新が必要な場合がある
             // ただし、同じファイルを回転しているので、特に更新は不要
+
+            // ファイル名は変わらないため、updated_at を更新してキャッシュバスターの元にする
+            // （これをしないと回転後も同一URLとなりブラウザが旧画像をキャッシュ表示してしまう）
+            $delivery->touch();
 
             return redirect()->back()->with('success', '画像を回転しました。');
         } catch (\Exception $e) {
