@@ -387,34 +387,16 @@
               <div class="bg-slate-50 p-4 rounded-lg">
                 <h4 class="text-md font-medium text-slate-800 mb-4">絞り込み条件</h4>
 
-                <!-- 書類QRから特定した発注データ（確認式サジェスト・自動紐付けはしない） -->
+                <!-- 書類QRから発注データを特定し、注文No欄へ自動入力した旨の通知 -->
                 <div
-                  v-if="qrSuggestedOrders.length > 0"
+                  v-if="qrFilledOrderNo"
                   class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
                 >
-                  <p class="text-sm text-blue-800 mb-2">
-                    🔎 書類のQRコードから発注データを特定しました。もしかしてこの発注では？
+                  <p class="text-sm text-blue-800">
+                    🔎 書類のQRコードから発注データを特定し、注文No
+                    <span class="font-semibold">「{{ qrFilledOrderNo }}」</span>
+                    で絞り込みました。下の検索結果からご確認のうえ「追加」で紐づけてください。
                   </p>
-                  <div
-                    v-for="order in qrSuggestedOrders"
-                    :key="order.id"
-                    class="flex items-center justify-between gap-3 bg-white border border-blue-200 rounded-lg px-3 py-2 mb-2 last:mb-0"
-                  >
-                    <div class="text-sm text-slate-700 min-w-0">
-                      <span class="font-semibold">注文No: {{ order.order_no || "-" }}</span>
-                      <span class="text-slate-500 ml-2">{{ order.name || "" }} {{ order.s_name || "" }}</span>
-                      <span class="text-slate-500 ml-2" v-if="order.quantity">数量: {{ order.quantity }}{{ order.order_unit || "" }}</span>
-                      <span class="text-slate-500 ml-2" v-if="order.order_user">注文者: {{ order.order_user }}</span>
-                      <span class="text-slate-400 ml-2">(発注ID: {{ order.id }})</span>
-                    </div>
-                    <button
-                      @click="linkOrder(order)"
-                      class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 px-4 rounded-lg text-xs whitespace-nowrap"
-                      title="この発注データを紐づける"
-                    >
-                      追加
-                    </button>
-                  </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -911,7 +893,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import jsQR from "jsqr";
 import AdminLayout from "@/Layouts/AdminLayout.vue";
@@ -1150,15 +1132,31 @@ const handleSealSave = async (sealPositions) => {
 // 納品書に印字されたQRには発注データの主キーID（数値）が入る。
 const qrDetectedIds = ref([]);
 
-// 検出したIDに一致する発注データ（紐づけ済みは除外）＝「もしかして」候補
-const qrSuggestedOrders = computed(() => {
-  if (qrDetectedIds.value.length === 0) return [];
-  return qrDetectedIds.value
-    .map((id) =>
-      allInitialOrders.value.find((o) => String(o.id) === String(id))
-    )
-    .filter((o) => o && !linkedOrderIds.value.includes(o.id));
-});
+// QR由来で検索BOXに自動入力した注文No（ユーザーへの通知表示用）
+const qrFilledOrderNo = ref("");
+let qrAutoFilled = false; // 一度だけ自動入力する（ユーザーの手入力を上書きしない）
+
+// QR検出ID と 発注データ の両方が揃ったら、該当発注の order_no を検索BOXに自動入力する。
+// → 既存の検索結果テーブル（画像・品番・単価付き）に表示され、そこの「追加」で紐付け。
+watch(
+  [qrDetectedIds, allInitialOrders],
+  () => {
+    if (qrAutoFilled) return;
+    if (qrDetectedIds.value.length === 0 || allInitialOrders.value.length === 0) return;
+    for (const id of qrDetectedIds.value) {
+      const order = allInitialOrders.value.find(
+        (o) => String(o.id) === String(id)
+      );
+      if (order && order.order_no && !linkedOrderIds.value.includes(order.id)) {
+        filters.value.orderNo = String(order.order_no);
+        qrFilledOrderNo.value = String(order.order_no);
+        qrAutoFilled = true;
+        break;
+      }
+    }
+  },
+  { deep: true }
+);
 
 // 書類画像を読み込んでQRコードを解析し、発注データIDを検出する
 const scanDocumentQr = () => {
