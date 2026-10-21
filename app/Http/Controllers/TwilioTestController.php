@@ -38,9 +38,9 @@ class TwilioTestController extends Controller
         ]);
 
         try {
-            $accountSid = env('TWILIO_ACCOUNT_SID');
-            $authToken = env('TWILIO_AUTH_TOKEN');
-            $twilioNumber = $validated['from_number'] ?? env('TWILIO_PHONE_NUMBER');
+            $accountSid = config('services.twilio.account_sid');
+            $authToken = config('services.twilio.auth_token');
+            $twilioNumber = $validated['from_number'] ?? config('services.twilio.phone_number');
 
             if (!$accountSid || !$authToken || !$twilioNumber) {
                 return response()->json([
@@ -114,8 +114,8 @@ class TwilioTestController extends Controller
         ]);
 
         try {
-            $accountSid = env('TWILIO_ACCOUNT_SID');
-            $authToken = env('TWILIO_AUTH_TOKEN');
+            $accountSid = config('services.twilio.account_sid');
+            $authToken = config('services.twilio.auth_token');
 
             // 開発環境でのSSL検証を無効化
             $guzzleClient = new \GuzzleHttp\Client([
@@ -169,9 +169,9 @@ class TwilioTestController extends Controller
         ]);
 
         try {
-            $accountSid = env('TWILIO_ACCOUNT_SID');
-            $authToken = env('TWILIO_AUTH_TOKEN');
-            $twilioNumber = env('TWILIO_PHONE_NUMBER');
+            $accountSid = config('services.twilio.account_sid');
+            $authToken = config('services.twilio.auth_token');
+            $twilioNumber = config('services.twilio.phone_number');
 
             if (!$accountSid || !$authToken || !$twilioNumber) {
                 return response()->json([

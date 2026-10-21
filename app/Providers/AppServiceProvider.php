@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         // HTTPS接続を強制（ngrok等の開発環境用）
-        if (env('APP_ENV') === 'local' && str_contains(env('APP_URL'), 'ngrok')) {
+        if ($this->app->environment('local') && str_contains((string) config('app.url'), 'ngrok')) {
             URL::forceScheme('https');
         }
     }

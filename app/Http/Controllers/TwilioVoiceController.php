@@ -37,10 +37,10 @@ class TwilioVoiceController extends Controller
         ]);
 
         try {
-            $accountSid = env('TWILIO_ACCOUNT_SID');
-            $apiKey = env('TWILIO_API_KEY');
-            $apiSecret = env('TWILIO_API_SECRET');
-            $twimlAppSid = env('TWILIO_TWIML_APP_SID');
+            $accountSid = config('services.twilio.account_sid');
+            $apiKey = config('services.twilio.api_key');
+            $apiSecret = config('services.twilio.api_secret');
+            $twimlAppSid = config('services.twilio.twiml_app_sid');
 
             if (!$accountSid || !$apiKey || !$apiSecret || !$twimlAppSid) {
                 Log::error('Twilio configuration incomplete', [
@@ -107,7 +107,7 @@ class TwilioVoiceController extends Controller
     public function handleOutgoingCall(Request $request)
     {
         $phoneNumber = $request->input('To');
-        $from = env('TWILIO_PHONE_NUMBER');
+        $from = config('services.twilio.phone_number');
 
         Log::info('Outgoing call initiated', [
             'to' => $phoneNumber,
@@ -184,11 +184,11 @@ class TwilioVoiceController extends Controller
             'success' => true,
             'message' => 'Device test endpoint',
             'config' => [
-                'account_sid' => env('TWILIO_ACCOUNT_SID') ? 'configured' : 'missing',
-                'api_key' => env('TWILIO_API_KEY') ? 'configured' : 'missing',
-                'api_secret' => env('TWILIO_API_SECRET') ? 'configured' : 'missing',
-                'twiml_app_sid' => env('TWILIO_TWIML_APP_SID') ? 'configured' : 'missing',
-                'phone_number' => env('TWILIO_PHONE_NUMBER') ? 'configured' : 'missing',
+                'account_sid' => config('services.twilio.account_sid') ? 'configured' : 'missing',
+                'api_key' => config('services.twilio.api_key') ? 'configured' : 'missing',
+                'api_secret' => config('services.twilio.api_secret') ? 'configured' : 'missing',
+                'twiml_app_sid' => config('services.twilio.twiml_app_sid') ? 'configured' : 'missing',
+                'phone_number' => config('services.twilio.phone_number') ? 'configured' : 'missing',
             ]
         ]);
     }
