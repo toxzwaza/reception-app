@@ -75,6 +75,10 @@
 
     <!-- 管理者ボタン＋モーダルは body 直下へ Teleport（フッター等の重なり順の影響を避ける） -->
     <Teleport to="body">
+    <!-- 受付横断連携：この端末の番号（?terminal=N で設定）を右下に小さく表示 -->
+    <div class="pointer-events-none fixed bottom-1 right-2 z-[80] text-[10px] text-slate-400/80 select-none">
+      {{ terminalNumber ? `端末 ${terminalNumber}` : "端末未設定" }}
+    </div>
     <!-- 管理者ボタン（画面パターン切替）：左下に控えめに配置 -->
     <button
       type="button"
@@ -170,6 +174,7 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { Link } from "@inertiajs/vue3";
 import ReceptionLayout from "@/Layouts/ReceptionLayout.vue";
+import { getTerminal } from "@/utils/terminal";
 import {
   FEATURE_CARDS,
   FEATURE_CARD_MAP,
@@ -184,6 +189,9 @@ const props = defineProps({
 });
 
 const STORAGE_KEY = "reception_screen_pattern_id";
+
+// 受付横断連携：この端末の番号（未設定なら null）
+const terminalNumber = getTerminal();
 
 // ── 画面パターン（localStorage で端末ごとに選択） ──────────
 const selectedPatternId = ref(null);

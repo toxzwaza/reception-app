@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\FacilityReservationController as AdminFacilityRes
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\PickupRequestController as AdminPickupRequestController;
 use App\Http\Controllers\Admin\ProjectGroupController as AdminProjectGroupController;
+use App\Http\Controllers\Admin\ReceptionTerminalController as AdminReceptionTerminalController;
 use App\Http\Controllers\Admin\ScreenPatternController as AdminScreenPatternController;
 use App\Http\Controllers\Admin\StaffMemberController;
 use App\Http\Controllers\Admin\StaffPhoneController as AdminStaffPhoneController;
@@ -117,6 +118,11 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // 画面パターン管理（受付端末の設置場所ごとの表示切替）
     Route::post('/screen-patterns/password', [AdminScreenPatternController::class, 'updatePassword'])->name('screen-patterns.password');
     Route::resource('screen-patterns', AdminScreenPatternController::class)->except(['show']);
+
+    // 受付端末管理（端末番号と来客時に全画面にするカメラ。受付横断連携）
+    Route::post('/reception-terminals/default-camera', [AdminReceptionTerminalController::class, 'updateDefaultCamera'])->name('reception-terminals.default-camera');
+    Route::post('/reception-terminals/chime-volume', [AdminReceptionTerminalController::class, 'updateChimeVolume'])->name('reception-terminals.chime-volume');
+    Route::resource('reception-terminals', AdminReceptionTerminalController::class)->except(['show', 'destroy']);
 });
 
 // アポイントありの方

@@ -19,6 +19,11 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/outlook-sync.log'));
+
+        // 受付横断連携：90日より古い来客イベントを削除
+        $schedule->command('lan-relay:prune')
+            ->dailyAt('03:30')
+            ->withoutOverlapping();
     }
 
     /**

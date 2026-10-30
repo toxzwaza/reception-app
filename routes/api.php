@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\DisplayController;
+use App\Http\Controllers\Api\LanRelayController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Auth\LocalStorageAuthController;
 use App\Http\Controllers\ReceiveController;
@@ -51,3 +52,12 @@ Route::get('/initial-orders', [ReceiveController::class, 'getInitialOrders'])->n
 Route::get('/com-names', [ReceiveController::class, 'getComNames'])->name('api.com-names');
 // 物品(stock)の格納先候補取得API（在庫加算先の選択用）
 Route::get('/stocks/{stock}/storages', [ReceiveController::class, 'getStockStorages'])->name('api.stock-storages');
+
+// 受付横断連携：中継役（音楽サーバー）用API（Bearer トークン認証。2秒ごとの取得＋ack のため専用の頻度制限）
+Route::middleware(['lan_relay.token', 'throttle:lan-relay'])
+    ->withoutMiddleware('throttle:api')
+    ->prefix('lan-relay')
+    ->group(function () {
+        Route::get('/events', [LanRelayController::class, 'events'])->name('api.lan-relay.events');
+        Route::post('/events/{id}/ack', [LanRelayController::class, 'ack'])->whereNumber('id')->name('api.lan-relay.ack');
+    });

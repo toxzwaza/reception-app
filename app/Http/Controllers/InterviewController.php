@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\NotificationSetting;
 use App\Models\NotificationRecipient;
+use App\Services\LanRelay\LanRelayEventRecorder;
 use App\Services\TeamsNotificationService;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,8 +39,11 @@ class InterviewController extends Controller
      * 「担当者を呼ぶ」ボタン押下時に呼ばれる POST エンドポイント。
      * Teams 通知のみ担当（Twilio 発信はフロント側で別途実行）。
      */
-    public function notifyStaff(): JsonResponse
+    public function notifyStaff(Request $request): JsonResponse
     {
+        // 受付横断連携：来客イベントを1件記録（Teams送信より前。同じ端末の2分以内は抑止付きで記録）
+        app(LanRelayEventRecorder::class)->recordInterview($request);
+
         $ok = $this->teamsNotification->notifyInterviewArrival();
 
         return response()->json([

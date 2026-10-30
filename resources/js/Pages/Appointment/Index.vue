@@ -182,6 +182,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { router } from "@inertiajs/vue3";
 import ReceptionLayout from "@/Layouts/ReceptionLayout.vue";
+import { getTerminal } from "@/utils/terminal";
 import jsQR from "jsqr";
 
 const videoElement = ref(null);
@@ -262,6 +263,7 @@ const handleQRCodeDetected = (qrData) => {
   // QRコードデータを処理
   router.post(route("appointment.check-in-qr"), {
     qr_data: qrData,
+    terminal: getTerminal(),
   });
 };
 
@@ -310,6 +312,7 @@ const submitReceptionNumber = () => {
     route("appointment.check-in-number"),
     {
       reception_number: number,
+      terminal: getTerminal(),
     },
     {
       onFinish: () => {

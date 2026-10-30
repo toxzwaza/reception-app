@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Visitor;
 use App\Models\Appointment;
 use App\Models\ScheduleEvent;
+use App\Services\LanRelay\LanRelayEventRecorder;
 use App\Services\NotificationService;
 use App\Services\TeamsNotificationService;
 use Illuminate\Http\Request;
@@ -46,8 +47,11 @@ class AppointmentController extends Controller
     }
 
     // 新フロー：来訪者が自分の予定をタップ → 予定の主催者＋参加者全員へ通知
-    public function notifyArrival(ScheduleEvent $scheduleEvent)
+    public function notifyArrival(Request $request, ScheduleEvent $scheduleEvent)
     {
+        // 受付横断連携：来客イベントを1件記録（Teams送信より前・通知設定と無関係）
+        app(LanRelayEventRecorder::class)->recordScheduleArrival($request, $scheduleEvent);
+
         $emails = $this->recipientEmails($scheduleEvent);
 
         $facilityName = $scheduleEvent->facility->name ?? '—';
@@ -126,6 +130,9 @@ class AppointmentController extends Controller
             'check_in_time' => now(),
         ]);
 
+        // 受付横断連携：来客イベントを1件記録（Teams送信より前・通知設定と無関係）
+        app(LanRelayEventRecorder::class)->recordAppointment($request, $preRegisteredVisitor['id']);
+
         // アポイント通知を送信
         $this->sendAppointmentNotification($visitor);
 
@@ -157,6 +164,9 @@ class AppointmentController extends Controller
             'reception_number' => $validated['reception_number'],
             'check_in_time' => now(),
         ]);
+
+        // 受付横断連携：来客イベントを1件記録（Teams送信より前・通知設定と無関係）
+        app(LanRelayEventRecorder::class)->recordAppointment($request, $preRegisteredVisitor['id']);
 
         // アポイント通知を送信
         $this->sendAppointmentNotification($visitor);
