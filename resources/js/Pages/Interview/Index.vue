@@ -72,6 +72,7 @@ import { ref, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
+import { getTerminal } from '@/utils/terminal';
 import TwilioAutoCall from '@/Components/TwilioAutoCall.vue';
 
 const props = defineProps({
@@ -102,7 +103,7 @@ const startNotification = async () => {
 
   try {
     // Teams 通知を送信（明示的ボタン押下でのみ発火）
-    await axios.post(route('interview.notify-staff'));
+    await axios.post(route('interview.notify-staff'), { terminal: getTerminal() });
     console.log('✅ Teams 通知送信');
 
     // TwilioAutoCall コンポーネントをレンダリングして発信開始

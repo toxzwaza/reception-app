@@ -48,5 +48,10 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        // 受付横断連携の中継役用API（2秒ごとの取得＋ack）
+        RateLimiter::for('lan-relay', function (Request $request) {
+            return Limit::perMinute((int) config('lan_relay.api_per_minute', 300))->by($request->ip());
+        });
     }
 }

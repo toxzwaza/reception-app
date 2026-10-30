@@ -67,6 +67,7 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
+import { getTerminal } from '@/utils/terminal';
 
 const props = defineProps({
   visitorData: {
@@ -93,7 +94,8 @@ const submitDepartment = () => {
   
   router.post(route('other-visitor.store'), {
     ...props.visitorData,
-    group_id: selectedDepartment.value
+    group_id: selectedDepartment.value,
+    terminal: getTerminal(),
   }, {
     onFinish: () => {
       processing.value = false;

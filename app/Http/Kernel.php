@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'localstorage.auth' => \App\Http\Middleware\CheckLocalStorageAuth::class,
         'display.token' => \App\Http\Middleware\VerifyDisplayToken::class,
+        'lan_relay.token' => \App\Http\Middleware\VerifyLanRelayToken::class,
     ];
 }

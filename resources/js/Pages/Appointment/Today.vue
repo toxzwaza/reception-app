@@ -110,6 +110,7 @@
 import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import ReceptionLayout from '@/Layouts/ReceptionLayout.vue';
+import { getTerminal } from '@/utils/terminal';
 
 defineProps({
   events: { type: Array, default: () => [] },
@@ -130,7 +131,7 @@ const closeConfirm = () => {
 const notifyArrival = () => {
   if (!selected.value || selected.value.recipient_count === 0) return;
   sending.value = true;
-  router.post(route('appointment.today.notify', selected.value.id), {}, {
+  router.post(route('appointment.today.notify', selected.value.id), { terminal: getTerminal() }, {
     preserveScroll: true,
     onSuccess: () => {
       selected.value = null;

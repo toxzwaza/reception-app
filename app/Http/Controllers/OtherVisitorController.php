@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Visitor;
 use App\Models\StaffMember;
+use App\Services\LanRelay\LanRelayEventRecorder;
 use App\Services\TeamsNotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -74,6 +75,9 @@ class OtherVisitorController extends Controller
             'visitor_type' => 'other',
             'check_in_time' => now(),
         ]);
+
+        // 受付横断連携：来客イベントを1件記録（Teams送信より前・訪問者名は記録しない）
+        app(LanRelayEventRecorder::class)->recordWalkIn($request, $validated['company_name'], $validated['group_id']);
 
         // 選択部署へTeams通知を送信
         $this->teamsNotification->notifyDepartmentVisitor($visitor->toArray(), $validated['group_id']);
