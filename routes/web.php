@@ -122,6 +122,7 @@ Route::middleware(['localstorage.auth'])->prefix('admin')->name('admin.')->group
     // 受付端末管理（端末番号と来客時に全画面にするカメラ。受付横断連携）
     Route::post('/reception-terminals/default-camera', [AdminReceptionTerminalController::class, 'updateDefaultCamera'])->name('reception-terminals.default-camera');
     Route::post('/reception-terminals/chime-volume', [AdminReceptionTerminalController::class, 'updateChimeVolume'])->name('reception-terminals.chime-volume');
+    Route::post('/reception-terminals/test-event', [AdminReceptionTerminalController::class, 'sendTestEvent'])->name('reception-terminals.test-event');
     Route::resource('reception-terminals', AdminReceptionTerminalController::class)->except(['show', 'destroy']);
 });
 

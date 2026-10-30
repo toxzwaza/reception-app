@@ -19,6 +19,13 @@ use Inertia\Response;
  */
 class ReceptionTerminalController extends Controller
 {
+    /** テスト送信の既定値（種別ごとの会社名・担当者/部署。面接は表示しない） */
+    public const TEST_DEFAULTS = [
+        'appointment' => ['company_name' => 'テスト商事株式会社', 'staff_name' => '受付テスト'],
+        'walk_in' => ['company_name' => 'テスト商事株式会社', 'staff_name' => '総務部'],
+        'interview' => ['company_name' => null, 'staff_name' => null],
+    ];
+
     /**
      * 受付端末一覧＋既定カメラ＋直近の来客イベント
      */
@@ -48,6 +55,7 @@ class ReceptionTerminalController extends Controller
             'defaultCamera' => LanRelayEventRecorder::defaultCamera(),
             'chimeVolume' => LanRelayEventRecorder::chimeVolume(),
             'events' => $events,
+            'testDefaults' => self::TEST_DEFAULTS,
         ]);
     }
 
@@ -126,6 +134,39 @@ class ReceptionTerminalController extends Controller
 
         return Redirect::route('admin.reception-terminals.index')
             ->with('success', 'チャイム音量を更新しました。');
+    }
+
+    /**
+     * テスト送信：来客イベントを1件記録し、中継役がチャイムとディスプレイ表示を行う（Teams には送らない）。
+     * 会社名・担当者（部署）が空なら種別ごとの既定値を使う
+     */
+    public function sendTestEvent(Request $request, LanRelayEventRecorder $recorder)
+    {
+        $validated = $request->validate([
+            'type' => ['required', Rule::in(array_keys(self::TEST_DEFAULTS))],
+            'terminal' => 'nullable|integer|min:1|max:99',
+            'company_name' => 'nullable|string|max:100',
+            'staff_name' => 'nullable|string|max:100',
+        ], [], [
+            'type' => '種別',
+            'terminal' => '端末番号',
+            'company_name' => '会社名',
+            'staff_name' => '担当者・部署',
+        ]);
+
+        $defaults = self::TEST_DEFAULTS[$validated['type']];
+        $event = $recorder->recordTest(
+            $validated['type'],
+            isset($validated['terminal']) ? (int) $validated['terminal'] : null,
+            filled($validated['company_name'] ?? null) ? $validated['company_name'] : $defaults['company_name'],
+            filled($validated['staff_name'] ?? null) ? $validated['staff_name'] : $defaults['staff_name'],
+        );
+
+        $message = $event->suppressed
+            ? "テスト送信を記録しました（ID {$event->id}）。端末が無効のため鳴らしません。"
+            : "テスト送信しました（ID {$event->id}）。数秒後にチャイムとディスプレイ表示が行われます。";
+
+        return Redirect::route('admin.reception-terminals.index')->with('success', $message);
     }
 
     private function validated(Request $request, ?ReceptionTerminal $terminal = null): array

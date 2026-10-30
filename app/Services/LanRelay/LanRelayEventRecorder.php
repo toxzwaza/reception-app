@@ -32,6 +32,9 @@ class LanRelayEventRecorder
 
     public const CHIME_VOLUME_SETTING = 'lan_relay_chime_volume';
 
+    /** 管理画面からのテスト送信で表示文字の先頭に付ける印 */
+    public const TEST_PREFIX = '【テスト】';
+
     /** 番号なし（未設定・不正値）の端末をまとめて扱う単位 */
     private const NO_TERMINAL_KEY = 'none';
 
@@ -84,6 +87,30 @@ class LanRelayEventRecorder
     }
 
     /**
+     * 管理画面からのテスト送信：表示文字の先頭に【テスト】を付けて記録する。
+     * 頻度制限・面接2分抑止は掛けない（端末が無効なら実際の受付と同じく抑止）。Teams には送らない。
+     */
+    public function recordTest(string $type, ?int $terminal, ?string $companyName, ?string $staffName): LanRelayEvent
+    {
+        $registered = $terminal === null
+            ? null
+            : ReceptionTerminal::where('number', $terminal)->first();
+        $isInterview = $type === LanRelayEvent::TYPE_INTERVIEW;
+
+        return $this->create([
+            'type' => $type,
+            'terminal' => $terminal,
+            'camera' => $registered !== null ? $registered->camera_src : self::defaultCamera(),
+            'company_name' => $isInterview ? null : self::nullIfEmpty($companyName),
+            'staff_name' => $isInterview ? null : self::nullIfEmpty($staffName),
+            'message' => self::truncate(
+                self::TEST_PREFIX . self::buildMessage($type, $companyName, $staffName),
+                (int) config('lan_relay.message_max_length', 60)
+            ),
+        ], $registered !== null && !$registered->enabled ? LanRelayEvent::REASON_TERMINAL_DISABLED : null);
+    }
+
+    /**
      * リクエストから端末番号（1〜99）を取り出す。未設定・不正な値は null。
      */
     public static function terminalFromRequest(Request $request): ?int
@@ -101,9 +128,6 @@ class LanRelayEventRecorder
     }
 
     /**
-     * 既定カメラ（管理画面の設定 → config の順。許可リスト外なら config 値）
-     */
-    /**
      * チャイム音量（0〜100）。管理画面で保存した値、無ければ config の値
      */
     public static function chimeVolume(): int
@@ -118,6 +142,9 @@ class LanRelayEventRecorder
         return max(0, min(100, $volume));
     }
 
+    /**
+     * 既定カメラ（管理画面の設定 → config の順。許可リスト外なら config 値）
+     */
     public static function defaultCamera(): string
     {
         $configured = (string) config('lan_relay.default_camera', 'nvr1');

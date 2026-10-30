@@ -112,6 +112,102 @@
           </form>
         </div>
 
+        <!-- テスト送信 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <h3 class="text-lg font-semibold text-slate-800">テスト送信</h3>
+          <p class="mt-1 text-sm text-slate-600">
+            受付をしたときと同じように、音楽サーバーでチャイムを鳴らし、事務所ディスプレイにカメラと文字を表示します（表示文字の先頭に「【テスト】」が付きます。Teams には送りません）。
+            空欄の項目は既定値で送ります。
+          </p>
+          <form @submit.prevent="sendTest" class="mt-4 space-y-4">
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="(label, type) in typeLabels"
+                :key="type"
+                type="button"
+                @click="testForm.type = type"
+                :class="testForm.type === type
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
+                class="px-4 py-2 rounded-lg border text-sm font-semibold transition"
+              >
+                {{ label }}
+              </button>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-slate-700">端末（どのカメラを全画面にするか）</span>
+              <div class="mt-1 flex flex-wrap gap-2">
+                <button
+                  v-for="terminal in terminals"
+                  :key="terminal.id"
+                  type="button"
+                  @click="testForm.terminal = terminal.number"
+                  :class="testForm.terminal === terminal.number
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
+                  class="px-4 py-2 rounded-lg border text-sm text-left transition"
+                >
+                  <span class="font-semibold">端末{{ terminal.number }}</span>：{{ terminal.name }}{{ terminal.enabled ? '' : '（無効）' }}
+                  <span class="block text-xs opacity-80">{{ cameraLabel(terminal.camera_src) }}</span>
+                </button>
+                <button
+                  type="button"
+                  @click="testForm.terminal = null"
+                  :class="testForm.terminal === null
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
+                  class="px-4 py-2 rounded-lg border text-sm text-left transition"
+                >
+                  <span class="font-semibold">端末未設定</span>
+                  <span class="block text-xs opacity-80">既定カメラ：{{ cameraLabel(defaultCamera) }}</span>
+                </button>
+              </div>
+            </div>
+            <div v-if="testForm.type !== 'interview'" class="grid gap-4 sm:grid-cols-2">
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">会社名</span>
+                <input
+                  v-model="testForm.company_name"
+                  type="text"
+                  maxlength="100"
+                  :placeholder="testDefaults[testForm.type]?.company_name || ''"
+                  class="mt-1 w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">{{ testForm.type === 'walk_in' ? '部署' : '担当者' }}</span>
+                <input
+                  v-model="testForm.staff_name"
+                  type="text"
+                  maxlength="100"
+                  :placeholder="testDefaults[testForm.type]?.staff_name || ''"
+                  class="mt-1 w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+            </div>
+            <p class="text-sm text-slate-600">
+              表示される文字：<span class="font-medium text-slate-800">{{ testPreview }}</span>
+            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                :disabled="testForm.processing"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition"
+              >
+                テスト送信
+              </button>
+              <button
+                type="button"
+                @click="testForm.reset('company_name', 'staff_name')"
+                class="text-sm text-slate-500 hover:text-slate-700"
+              >
+                既定値に戻す
+              </button>
+            </div>
+            <div v-for="(error, key) in testForm.errors" :key="key" class="text-sm text-rose-600">{{ error }}</div>
+          </form>
+        </div>
+
         <!-- 直近の来客イベント -->
         <div class="bg-white overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
           <div class="px-6 pt-5 pb-3">
@@ -164,6 +260,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Badge from '@/Components/UI/Badge.vue';
@@ -174,6 +271,7 @@ const props = defineProps({
   defaultCamera: { type: String, default: 'nvr1' },
   chimeVolume: { type: Number, default: 60 },
   events: { type: Array, default: () => [] },
+  testDefaults: { type: Object, default: () => ({}) },
 });
 
 const typeLabels = {
@@ -214,6 +312,35 @@ const saveChimeVolume = () => {
   volumeForm.post(route('admin.reception-terminals.chime-volume'), {
     preserveScroll: true,
     onSuccess: () => volumeForm.defaults(),
+  });
+};
+
+const testForm = useForm({
+  type: 'appointment',
+  terminal: props.terminals[0]?.number ?? null,
+  company_name: '',
+  staff_name: '',
+});
+
+// 表示文字の見本（サーバー側 LanRelayEventRecorder::buildMessage と同じ書式）
+const testPreview = computed(() => {
+  const defaults = props.testDefaults[testForm.type] || {};
+  const company = (testForm.company_name || '').trim() || defaults.company_name || '';
+  const staff = (testForm.staff_name || '').trim() || defaults.staff_name || '';
+  let message;
+  if (testForm.type === 'interview') {
+    message = '面接の方がご来社';
+  } else if (testForm.type === 'walk_in') {
+    message = 'ご来客（アポイントなし）' + (company ? `${company} 様` : '') + (staff ? ` → 部署：${staff}` : '');
+  } else {
+    message = 'ご来客（アポイントあり）' + (company ? `${company} 様` : '') + (staff ? ` → 担当：${staff}` : '');
+  }
+  return `【テスト】${message}`.slice(0, 60);
+});
+
+const sendTest = () => {
+  testForm.post(route('admin.reception-terminals.test-event'), {
+    preserveScroll: true,
   });
 };
 </script>
