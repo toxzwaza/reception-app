@@ -37,6 +37,10 @@ return [
         'url' => env('AKITALK_BRIDGE_URL', 'https://akitalk.akioka-sub.com/api/teams/bridge-notify'),
         'api_key' => env('AKITALK_BRIDGE_API_KEY'),
         'sender' => env('AKITALK_BRIDGE_SENDER', 'AK受付システム通知'),
+        // Teams カードの見出し（アイコン＋システム名の色の帯）。空にすると送らない（従来表示）
+        'system' => env('AKITALK_BRIDGE_SYSTEM', '受付システム'),
+        'icon' => env('AKITALK_BRIDGE_ICON', '🏢'),
+        'color' => env('AKITALK_BRIDGE_COLOR', 'good'),
     ],
 
     'teams' => [

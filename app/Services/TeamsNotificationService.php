@@ -13,7 +13,8 @@ use App\Models\NotificationSetting;
  *
  * 送信経路: AkiTalk Bridge（社内Notifyバッチ notify.py と同一）
  *   POST {services.akitalk_bridge.url}  ヘッダ x-api-key で認証
- *   payload = { recipients:[email...], title, msg, from, url? }
+ *   payload = { recipients:[email...], title, msg, from, url?, system?, icon?, color? }
+ *   system/icon/color は Teams カードの見出し（services.akitalk_bridge.* で設定。既定「🏢 受付システム」緑）
  *   宛先ユーザーの Teams 個人チャットへプロアクティブ通知される。
  *   （旧 Office365 Incoming Webhook は Microsoft 廃止により 403 で送信不可となったため移行）
  *
@@ -71,6 +72,13 @@ class TeamsNotificationService
         ];
         if ($url) {
             $payload['url'] = $url;
+        }
+        // カード見出しのシステム名・アイコン・色（AkiTalk 側で省略可。空の項目は送らない）
+        foreach (['system', 'icon', 'color'] as $key) {
+            $value = config("services.akitalk_bridge.{$key}");
+            if (is_string($value) && trim($value) !== '') {
+                $payload[$key] = $value;
+            }
         }
 
         try {
